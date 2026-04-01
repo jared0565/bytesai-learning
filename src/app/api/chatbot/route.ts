@@ -188,12 +188,12 @@ export async function POST(req: NextRequest) {
 
   const db = await getDB();
 
-  // ─── Try LLM ────────────────────────────────────────────────────────────────
-  const openaiKey = process.env.OPENAI_API_KEY;
+  // ─── Try LLM (via OpenRouter) ────────────────────────────────────────────────
+  const apiKey = process.env.OPENROUTER_API_KEY;
   let llmReply: string | null = null;
   let llmSearchQuery: string | null = null;
 
-  if (openaiKey && db) {
+  if (apiKey && db) {
     try {
       const history = parsed.data.history ?? [];
       const msgs = [
@@ -205,10 +205,15 @@ export async function POST(req: NextRequest) {
         },
       ];
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
-        body: JSON.stringify({ model: process.env.CHATBOT_MODEL ?? 'gpt-4o-mini', messages: msgs, max_tokens: 280, temperature: 0.45 }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+          'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL ?? 'https://learn.bytesai.com',
+          'X-Title': 'BytesAI Learning',
+        },
+        body: JSON.stringify({ model: process.env.CHATBOT_MODEL ?? 'google/gemini-2.0-flash-001', messages: msgs, max_tokens: 280, temperature: 0.45 }),
       });
 
       if (response.ok) {
