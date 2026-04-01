@@ -24,15 +24,20 @@ async function getDB() {
 
 async function getHomeData() {
   const db = await getDB();
-  if (!db) return { alison: [], dynamic: [], trending: [] };
+  if (!db) return { alison: [], dynamic: [], trending: [], courseCount: 0, providerCount: 0 };
   try {
-    const [featured, trending] = await Promise.all([
+    const [featured, trending, counts] = await Promise.all([
       getFeaturedCourses(db),
       getTrendingCourses(db, 8),
+      db.prepare(
+        `SELECT
+          (SELECT COUNT(*) FROM courses WHERE published_status = 'published') as courses,
+          (SELECT COUNT(DISTINCT provider_id) FROM courses WHERE published_status = 'published' AND provider_id IS NOT NULL) as providers`
+      ).first<{ courses: number; providers: number }>(),
     ]);
-    return { ...featured, trending };
+    return { ...featured, trending, courseCount: counts?.courses ?? 0, providerCount: counts?.providers ?? 0 };
   } catch {
-    return { alison: [], dynamic: [], trending: [] };
+    return { alison: [], dynamic: [], trending: [], courseCount: 0, providerCount: 0 };
   }
 }
 
@@ -49,7 +54,7 @@ const FEATURES = [
 ];
 
 export default async function HomePage() {
-  const [session, { alison, dynamic, trending }] = await Promise.all([
+  const [session, { alison, dynamic, trending, courseCount, providerCount }] = await Promise.all([
     getSession(),
     getHomeData(),
   ]);
@@ -72,7 +77,7 @@ export default async function HomePage() {
             <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 'var(--radius-full)', padding: '0.375rem 1rem', fontSize: '0.8125rem', fontWeight: 600, color: '#e0e7ff', marginBottom: '1.5rem' }}>
                 <Sparkles size={13} />
-                108 courses · 28 providers · 100% free to start
+                {courseCount > 0 ? courseCount : '100'}+ courses · {providerCount > 0 ? providerCount : '28'} providers · 100% free to start
               </div>
               <h1 className="text-hero" style={{ color: 'white', marginBottom: '1.25rem' }}>
                 The best free AI courses,{' '}
