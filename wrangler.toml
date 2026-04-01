@@ -1,0 +1,36 @@
+name = "bytesai-learning"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Pages output
+pages_build_output_dir = ".vercel/output/static"
+
+# Cloudflare D1 — source of truth database
+[[d1_databases]]
+binding = "DB"
+database_name = "bytesai-learning-d1"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+migrations_dir = "db/migrations"
+
+# Cloudflare KV — cache and derived state only
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_YOUR_KV_PREVIEW_ID"
+
+[vars]
+NEXT_PUBLIC_SITE_NAME = "BytesAI Learning"
+NEXT_PUBLIC_SITE_URL = "https://learn.bytesai.com"
+NODE_ENV = "production"
+# Set these as Cloudflare secrets (never in source):
+# JWT_SECRET
+# SEED_ADMIN_EMAIL
+# SEED_ADMIN_PASSWORD
+# SEED_ADMIN_NAME
+# GOOGLE_CLIENT_ID
+# GOOGLE_CLIENT_SECRET
+# LINKEDIN_CLIENT_ID
+# LINKEDIN_CLIENT_SECRET
+# OPENAI_API_KEY
+# TURNSTILE_SITE_KEY
+# TURNSTILE_SECRET_KEY

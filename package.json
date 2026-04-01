@@ -1,17 +1,31 @@
 {
-  "name": "app",
+  "name": "bytesai-learning",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "wrangler d1 execute bytesai-learning-d1 --local --file=db/schema.sql",
+    "db:seed:providers": "wrangler d1 execute bytesai-learning-d1 --local --file=db/seed/providers.sql",
+    "db:seed:courses": "wrangler d1 execute bytesai-learning-d1 --local --file=db/seed/courses.sql",
+    "db:seed:featured": "wrangler d1 execute bytesai-learning-d1 --local --file=db/seed/featured.sql",
+    "db:seed": "npm run db:seed:providers && npm run db:seed:courses && npm run db:seed:featured",
+    "db:bootstrap": "npm run db:migrate && npm run db:seed",
+    "db:seed:admin": "node scripts/seed-admin.mjs",
+    "db:migrate:prod": "wrangler d1 execute bytesai-learning-d1 --file=db/schema.sql",
+    "db:seed:prod": "wrangler d1 execute bytesai-learning-d1 --file=db/seed/providers.sql && wrangler d1 execute bytesai-learning-d1 --file=db/seed/courses.sql && wrangler d1 execute bytesai-learning-d1 --file=db/seed/featured.sql"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
+    "jose": "^6.2.2",
+    "lucide-react": "^1.7.0",
+    "nanoid": "^5.1.7",
     "next": "16.2.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^20",

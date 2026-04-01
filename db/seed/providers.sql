@@ -1,0 +1,32 @@
+-- BytesAI Learning — Provider seed data (28 providers)
+-- Generated from ai_courses_catalog_latest_alison_affiliate.md
+
+INSERT OR IGNORE INTO providers (id, slug, name, website_url, affiliate_enabled, affiliate_disclosure, created_at, updated_at) VALUES
+('prov-alison','alison','Alison','https://alison.com',1,'Affiliate link. We may earn a commission if you purchase a certificate or diploma, at no extra cost to you. The course content itself is free to enrol, study, and complete on Alison.','2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-microsoft','microsoft','Microsoft','https://learn.microsoft.com',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-nvidia','nvidia','NVIDIA','https://learn.nvidia.com',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-anthropic','anthropic','Anthropic','https://anthropic.com',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-google','google','Google','https://learn.google.com',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-ibm','ibm','IBM','https://skillsbuild.org',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-aws','aws','AWS','https://skillbuilder.aws',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-langchain','langchain','LangChain','https://academy.langchain.com',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-berkeley','berkeley','Berkeley','https://rdi.berkeley.edu',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-deeplearning-ai','deeplearning-ai','DeepLearning.AI','https://www.deeplearning.ai',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-hugging-face','hugging-face','Hugging Face','https://huggingface.co',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-stanford','stanford','Stanford','https://stanford.edu',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-harvard','harvard','Harvard','https://pll.harvard.edu',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-harvard-cs50','harvard-cs50','Harvard CS50','https://cs50.harvard.edu',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-harvard-cs50-ext','harvard-cs50-extension','Harvard CS50 Extension','https://cs50.harvard.edu/extension',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-meta','meta','Meta','https://www.facebook.com/business/learn',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-linux-foundation','linux-foundation','Linux Foundation','https://www.linuxfoundation.org',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-microsoft-learn','microsoft-learn','Microsoft Learn','https://learn.microsoft.com',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-ibm-skillsbuild','ibm-skillsbuild','IBM SkillsBuild','https://skillsbuild.org',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-umich','umich','University of Michigan','https://online.umich.edu',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-umich-py4e','umich-py4e','University of Michigan / PY4E','https://www.py4e.com',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-kevin-murphy','kevin-murphy','Kevin Murphy','https://probml.github.io',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-goodfellow','goodfellow-bengio-courville','Goodfellow, Bengio, Courville','https://www.deeplearningbook.org',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-sutton-barto','sutton-barto','Sutton and Barto','https://incompleteideas.net',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-mohri','mohri-rostamizadeh-talwalkar','Mohri, Rostamizadeh, Talwalkar','https://cs.nyu.edu/~mohri/mlbook/',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-simon-prince','simon-prince','Simon J.D. Prince','https://udlbook.github.io/udlbook/',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-ankur-moitra','ankur-moitra','Ankur Moitra','https://people.csail.mit.edu/moitra/',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-albrecht','albrecht-christianos-schafer','Albrecht, Christianos, Schäfer','https://www.marl-book.com',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z');

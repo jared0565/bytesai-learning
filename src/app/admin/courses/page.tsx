@@ -1,0 +1,139 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { BookOpen, ExternalLink } from 'lucide-react';
+import AddCourseForm from './AddCourseForm';
+
+export const metadata: Metadata = {
+  title: 'Courses — Admin',
+  robots: { index: false, follow: false },
+};
+
+async function getDB() {
+  return (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
+}
+
+interface CourseRow {
+  id: string;
+  slug: string;
+  title: string;
+  category: string | null;
+  level: string | null;
+  published_status: string;
+  is_alison: number;
+  is_affiliate: number;
+  featured_priority: number;
+  updated_at: string;
+}
+
+export default async function AdminCoursesPage() {
+  const db = await getDB();
+  let courses: CourseRow[] = [];
+
+  if (db) {
+    try {
+      const result = await db.prepare(
+        `SELECT id, slug, title, category, level, published_status, is_alison, is_affiliate, featured_priority, updated_at
+         FROM courses ORDER BY updated_at DESC LIMIT 200`
+      ).all<CourseRow>();
+      courses = result.results;
+    } catch { /* ignore */ }
+  }
+
+  const statusColor: Record<string, string> = {
+    published: 'var(--emerald)',
+    draft: 'var(--amber)',
+    archived: 'var(--text-muted)',
+  };
+
+  return (
+    <div style={{ padding: '2rem', maxWidth: 1200 }}>
+      <div style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '1.625rem', fontWeight: 800, marginBottom: '0.25rem' }}>Courses</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          {courses.length} course{courses.length !== 1 ? 's' : ''} in the catalog.
+        </p>
+      </div>
+
+      {/* Add course form */}
+      <div style={{ marginBottom: '2.5rem' }}>
+        <AddCourseForm />
+      </div>
+
+      {/* Course table */}
+      {courses.length === 0 ? (
+        <div className="card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
+          <BookOpen size={40} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem' }} />
+          <p style={{ color: 'var(--text-secondary)' }}>No courses yet. Add one above.</p>
+        </div>
+      ) : (
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
+                {['Title', 'Category', 'Level', 'Status', 'Flags', 'Updated', ''].map(h => (
+                  <th key={h} style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {courses.map((c, i) => (
+                <tr
+                  key={c.id}
+                  style={{ borderBottom: i < courses.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background 0.15s' }}
+                >
+                  <td style={{ padding: '0.75rem 1rem', maxWidth: 280 }}>
+                    <p style={{ fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {c.title}
+                    </p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.125rem', fontFamily: 'monospace' }}>{c.slug}</p>
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                    {c.category ?? '—'}
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                    {c.level ?? '—'}
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem' }}>
+                    <span style={{
+                      display: 'inline-block', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)',
+                      fontSize: '0.75rem', fontWeight: 700, textTransform: 'capitalize',
+                      color: statusColor[c.published_status] ?? 'var(--text-muted)',
+                      background: `${statusColor[c.published_status] ?? 'var(--text-muted)'}18`,
+                    }}>
+                      {c.published_status}
+                    </span>
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem' }}>
+                    <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'nowrap' }}>
+                      {c.is_alison === 1 && (
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.15rem 0.45rem', borderRadius: 4, background: 'rgba(245,158,11,0.15)', color: 'var(--amber)' }}>Alison</span>
+                      )}
+                      {c.is_affiliate === 1 && (
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.15rem 0.45rem', borderRadius: 4, background: 'rgba(79,110,247,0.1)', color: 'var(--accent)' }}>Affiliate</span>
+                      )}
+                      {c.featured_priority > 0 && (
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.15rem 0.45rem', borderRadius: 4, background: 'rgba(16,185,129,0.1)', color: 'var(--emerald)' }}>P{c.featured_priority}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: '0.8125rem' }}>
+                    {new Date(c.updated_at).toLocaleDateString()}
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem' }}>
+                    <Link
+                      href={`/courses/${c.slug}`}
+                      target="_blank"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: 'var(--accent)', fontSize: '0.8125rem', fontWeight: 600 }}
+                    >
+                      View <ExternalLink size={12} />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
