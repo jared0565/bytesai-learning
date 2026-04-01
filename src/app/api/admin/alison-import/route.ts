@@ -111,6 +111,7 @@ export interface AlisonCourseDetail {
   affiliateUrl: string;
   category: string | null;
   certType: string | null;
+  enrollCount: number | null;
 }
 
 async function scrapeAlisonDetail(slug: string): Promise<AlisonCourseDetail> {
@@ -167,6 +168,22 @@ async function scrapeAlisonDetail(slug: string): Promise<AlisonCourseDetail> {
   const categoryMatch = html.match(/"category"\s*:\s*"([^"]{3,80})"/i);
   const category = categoryMatch ? categoryMatch[1] : null;
 
+  // Enrollment count — Alison shows "X,XXX Learners" or "X learners already enrolled"
+  let enrollCount: number | null = null;
+  const enrollPatterns = [
+    /(\d[\d,]+)\s+(?:learners?|students?)\s+(?:already\s+)?enrolled/i,
+    /enrolled[^<]{0,30}?(\d[\d,]+)\s+(?:learners?|students?)/i,
+    /"numberOfStudents"\s*:\s*(\d+)/i,
+    /(\d[\d,]+)\s+Learners/,
+  ];
+  for (const p of enrollPatterns) {
+    const m = html.match(p);
+    if (m) {
+      enrollCount = parseInt(m[1].replace(/,/g, ''), 10);
+      break;
+    }
+  }
+
   return {
     slug,
     title: sanitizeText(title).slice(0, 200),
@@ -179,6 +196,7 @@ async function scrapeAlisonDetail(slug: string): Promise<AlisonCourseDetail> {
     affiliateUrl,
     category,
     certType,
+    enrollCount,
   };
 }
 
@@ -200,6 +218,7 @@ const ImportSchema = z.object({
     certType: z.string().nullable().optional(),
     dbCategory: z.string().nullable().optional(),   // admin-selected DB category
     publishedStatus: z.enum(['draft', 'published']).default('draft'),
+    enrollCount: z.number().nullable().optional(),
   })).min(1).max(12),
 });
 
@@ -290,6 +309,7 @@ export async function POST(req: NextRequest) {
       unique_learners_30d: 0,
       starts_30d: 0,
       completion_rate: 0,
+      enroll_count: c.enrollCount ?? null,
       last_verified_at: now.slice(0, 10),
       created_at: now,
       updated_at: now,

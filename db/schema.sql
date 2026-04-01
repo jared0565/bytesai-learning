@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS courses (
   unique_learners_30d INTEGER NOT NULL DEFAULT 0,
   starts_30d INTEGER NOT NULL DEFAULT 0,
   completion_rate REAL NOT NULL DEFAULT 0,
+  enroll_count INTEGER,
   published_status TEXT NOT NULL DEFAULT 'draft' CHECK (published_status IN ('draft','published','archived')),
   last_verified_at TEXT,
   cover_image_url TEXT,

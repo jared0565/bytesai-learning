@@ -1,11 +1,49 @@
 import Link from 'next/link';
-import { ExternalLink, BookOpen, Layers } from 'lucide-react';
+import { ExternalLink, BookOpen, Layers, Brain, Cpu, MessageSquare, Shield, Database, Code, Rss, Users } from 'lucide-react';
 import type { Course } from '@/lib/db';
+
+function formatEnrollCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`;
+  return n.toLocaleString();
+}
 
 interface CourseCardProps {
   course: Course;
   featured?: boolean;
   compact?: boolean;
+}
+
+// Category → gradient + icon
+const CATEGORY_STYLE: Record<string, { gradient: string; icon: React.ReactNode }> = {
+  'AI Foundations':              { gradient: 'linear-gradient(135deg,#4f6ef7,#818cf8)', icon: <Brain size={20} color="white" /> },
+  'LLMs / Generative AI':        { gradient: 'linear-gradient(135deg,#0ea5e9,#38bdf8)', icon: <Cpu size={20} color="white" /> },
+  'AI Agents':                   { gradient: 'linear-gradient(135deg,#8b5cf6,#c084fc)', icon: <Rss size={20} color="white" /> },
+  'Prompt Engineering':          { gradient: 'linear-gradient(135deg,#f59e0b,#fb923c)', icon: <MessageSquare size={20} color="white" /> },
+  'Governance / Responsible AI': { gradient: 'linear-gradient(135deg,#10b981,#34d399)', icon: <Shield size={20} color="white" /> },
+  'Data / ML':                   { gradient: 'linear-gradient(135deg,#3b82f6,#60a5fa)', icon: <Database size={20} color="white" /> },
+  'Programming Foundations':     { gradient: 'linear-gradient(135deg,#22c55e,#4ade80)', icon: <Code size={20} color="white" /> },
+  'Books / Reading Sources':     { gradient: 'linear-gradient(135deg,#64748b,#94a3b8)', icon: <BookOpen size={20} color="white" /> },
+};
+const DEFAULT_STYLE = { gradient: 'linear-gradient(135deg,#4f6ef7,#0ea5e9)', icon: <Layers size={20} color="white" /> };
+
+function getCategoryStyle(category: string | null) {
+  if (!category) return DEFAULT_STYLE;
+  return CATEGORY_STYLE[category] ?? DEFAULT_STYLE;
+}
+
+function formatProvider(providerId: string | null): string {
+  if (!providerId) return '';
+  const map: Record<string, string> = {
+    'prov-microsoft': 'Microsoft', 'prov-google': 'Google', 'prov-anthropic': 'Anthropic',
+    'prov-nvidia': 'NVIDIA', 'prov-deeplearning-ai': 'DeepLearning.AI', 'prov-hugging-face': 'Hugging Face',
+    'prov-alison': 'Alison', 'prov-aws': 'AWS', 'prov-ibm': 'IBM', 'prov-stanford': 'Stanford',
+    'prov-harvard': 'Harvard', 'prov-berkeley': 'UC Berkeley', 'prov-linux-foundation': 'Linux Foundation',
+    'prov-meta': 'Meta', 'prov-langchain': 'LangChain', 'prov-fast-ai': 'fast.ai',
+    'prov-goodfellow': 'Goodfellow et al.', 'prov-prince': 'Simon Prince', 'prov-sutton-barto': 'Sutton & Barto',
+    'prov-murphy': 'Kevin Murphy', 'prov-sra-mit': 'MIT SRA',
+  };
+  return map[providerId] ?? providerId.replace('prov-', '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function getLevelColor(level: string | null): string {
@@ -16,88 +54,84 @@ function getLevelColor(level: string | null): string {
   return 'badge-free';
 }
 
-function getContentTypeIcon(contentType: string) {
-  if (contentType === 'book') return <BookOpen size={13} />;
-  return <Layers size={13} />;
-}
-
 export default function CourseCard({ course, featured = false, compact = false }: CourseCardProps) {
   const isAlison = course.is_alison === 1;
   const isAffiliate = course.is_affiliate === 1;
-  const destination = course.affiliate_url ?? course.destination_url ?? course.official_link ?? '#';
-  const imageBg = isAlison
-    ? 'linear-gradient(135deg, #f59e0b22 0%, #fb923c22 100%)'
-    : 'linear-gradient(135deg, var(--accent-soft) 0%, var(--teal-soft) 100%)';
+  const { gradient, icon } = getCategoryStyle(course.category);
+  const providerName = formatProvider(course.provider_id);
 
   const cardClass = ['course-card', featured ? 'featured-card' : ''].filter(Boolean).join(' ');
 
-  return (
-    <Link href={`/courses/${course.slug}`} className={cardClass} aria-label={`View course: ${course.title}`}>
-      {/* Cover */}
+  // Shared inner content
+  const inner = (
+    <>
+      {/* Header band */}
       {!compact && (
-        <div className="course-card-img" style={{ background: imageBg }}>
-          {course.cover_image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={course.cover_image_url}
-              alt={course.cover_image_alt ?? course.title}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              loading="lazy"
-            />
-          ) : (
-            <div style={{
-              width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexDirection: 'column', gap: '0.5rem', color: 'var(--text-muted)',
-            }}>
-              {getContentTypeIcon(course.content_type)}
-              <span style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {course.content_type}
-              </span>
-            </div>
-          )}
-          {isAlison && (
-            <div style={{ position: 'absolute', top: 10, left: 10 }}>
-              <span className="badge badge-alison">Alison</span>
-            </div>
-          )}
-          {featured && !isAlison && (
-            <div style={{ position: 'absolute', top: 10, left: 10 }}>
-              <span className="badge badge-new">Featured</span>
-            </div>
-          )}
+        <div style={{
+          height: 80, background: gradient, position: 'relative',
+          display: 'flex', alignItems: 'center', padding: '0 1.25rem', gap: '0.875rem',
+          overflow: 'hidden',
+        }}>
+          <div style={{ position: 'absolute', inset: 0, opacity: 0.08, backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")' }} />
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, backdropFilter: 'blur(4px)' }}>
+            {icon}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              {course.category ?? 'Course'}
+            </p>
+            <p style={{ color: 'white', fontSize: '0.8125rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {providerName}
+            </p>
+          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.375rem', flexShrink: 0 }}>
+            {isAlison && <span className="badge badge-alison" style={{ fontSize: '0.65rem' }}>Alison</span>}
+            {featured && !isAlison && <span className="badge badge-new" style={{ fontSize: '0.65rem' }}>Featured</span>}
+          </div>
         </div>
       )}
 
       {/* Body */}
       <div className="course-card-body">
         <div className="course-card-badges">
-          {course.level && (
-            <span className={`badge ${getLevelColor(course.level)}`}>
-              {course.level}
-            </span>
-          )}
+          {course.level && <span className={`badge ${getLevelColor(course.level)}`}>{course.level}</span>}
           <span className="badge badge-free">Free</span>
-          {isAffiliate && (
-            <span className="badge badge-affiliate">Affiliate</span>
-          )}
+          {isAffiliate && <span className="badge badge-affiliate">Affiliate</span>}
           {course.certification_type && course.certification_type !== 'none' && (
             <span className="badge badge-cert">Certificate</span>
           )}
         </div>
-
         <p className="course-card-title">{course.title}</p>
-
-        {course.snippet && (
-          <p className="course-card-snippet">{course.snippet}</p>
+        {course.snippet && <p className="course-card-snippet">{course.snippet}</p>}
+        {course.enroll_count != null && course.enroll_count > 0 && (
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '-0.25rem' }}>
+            <Users size={11} /> {formatEnrollCount(course.enroll_count)} enrolled
+          </p>
         )}
-
         <div className="course-card-footer">
-          <span className="course-card-provider">{course.provider_id?.replace('prov-', '').replace(/-/g, ' ')}</span>
+          <span className="course-card-provider">{providerName}</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 600 }}>
-            View <ExternalLink size={11} />
+            {isAlison ? 'Open on Alison' : 'View'} <ExternalLink size={11} />
           </span>
         </div>
       </div>
+    </>
+  );
+
+  // Alison courses → open affiliate URL directly in a new tab
+  if (isAlison) {
+    const href = course.affiliate_url ?? course.official_link ?? 'https://alison.com/?utm_source=alison_user&utm_medium=affiliate&utm_campaign=27668723';
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={cardClass} aria-label={`Open on Alison: ${course.title}`}>
+        {inner}
+      </a>
+    );
+  }
+
+  // All other courses → internal detail page
+  return (
+    <Link href={`/courses/${course.slug}`} className={cardClass} aria-label={`View course: ${course.title}`}>
+      {inner}
     </Link>
   );
 }
@@ -106,7 +140,7 @@ export default function CourseCard({ course, featured = false, compact = false }
 export function CourseCardSkeleton() {
   return (
     <div className="course-card" style={{ pointerEvents: 'none' }}>
-      <div className="course-card-img skeleton" />
+      <div style={{ height: 80 }} className="skeleton" />
       <div className="course-card-body" style={{ gap: '0.75rem' }}>
         <div className="skeleton" style={{ height: 20, width: '40%', borderRadius: 4 }} />
         <div className="skeleton" style={{ height: 18, width: '90%', borderRadius: 4 }} />

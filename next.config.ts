@@ -1,10 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Cloudflare Workers/Pages compatible
-  experimental: {
-    instrumentationHook: true,
-  },
   // Keep native Node modules out of the webpack bundle
   serverExternalPackages: ['node:sqlite'],
   images: {

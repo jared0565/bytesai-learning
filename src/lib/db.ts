@@ -97,6 +97,7 @@ export interface Course {
   who_its_for: string | null;
   what_to_take_next: string | null;
   original_source_url: string | null;
+  enroll_count: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -262,11 +263,11 @@ export async function searchCourses(db: D1Database, opts: {
 
   const where = conditions.join(' AND ');
   const sortMap: Record<string, string> = {
-    popular: 'popularity_score DESC',
-    newest: 'created_at DESC',
-    title: 'title ASC',
-    featured: 'featured_priority DESC',
-    beginner: 'CASE WHEN level = "Beginner" THEN 0 ELSE 1 END, popularity_score DESC',
+    popular: 'is_alison DESC, popularity_score DESC',
+    newest: 'is_alison DESC, created_at DESC',
+    title: 'is_alison DESC, title ASC',
+    featured: 'featured_priority DESC, is_alison DESC',
+    beginner: 'is_alison DESC, CASE WHEN level = "Beginner" THEN 0 ELSE 1 END, popularity_score DESC',
   };
   const orderBy = sortMap[opts.sort ?? 'popular'] ?? 'popularity_score DESC';
   const limit = Math.min(opts.limit ?? 20, 50);

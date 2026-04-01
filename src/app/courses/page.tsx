@@ -74,8 +74,10 @@ export default async function CoursesPage({ searchParams }: PageProps) {
 
   // Build query string helpers
   function buildUrl(overrides: Record<string, string | undefined>) {
-    const merged = { ...Object.fromEntries(Object.entries({ q, category, level, sort }).filter(([, v]) => v !== undefined)), ...overrides };
-    const qs = new URLSearchParams(merged as Record<string, string>).toString();
+    const base = { q, category, level, sort };
+    const merged = { ...base, ...overrides };
+    const clean = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== undefined)) as Record<string, string>;
+    const qs = new URLSearchParams(clean).toString();
     return `/courses${qs ? `?${qs}` : ''}`;
   }
 

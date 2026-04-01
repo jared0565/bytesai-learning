@@ -4,7 +4,7 @@ import { ArrowRight, Sparkles, Zap, BookOpen, ShieldCheck, TrendingUp } from 'lu
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard, { CourseCardSkeleton } from '@/components/ui/CourseCard';
-import { getFeaturedCourses, getTrendingCourses } from '@/lib/db';
+import { getTrendingCourses } from '@/lib/db';
 import { CATEGORIES } from '@/lib/ranking';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -24,10 +24,13 @@ async function getDB() {
 
 async function getHomeData() {
   const db = await getDB();
-  if (!db) return { alison: [], dynamic: [], trending: [], courseCount: 0, providerCount: 0 };
+  if (!db) return { featured: [], trending: [], courseCount: 0, providerCount: 0 };
   try {
-    const [featured, trending, counts] = await Promise.all([
-      getFeaturedCourses(db),
+    const [featuredResult, trending, counts] = await Promise.all([
+      db.prepare(
+        `SELECT * FROM courses WHERE published_status = 'published' AND featured_priority > 0
+         ORDER BY featured_priority DESC LIMIT 8`
+      ).all<import('@/lib/db').Course>(),
       getTrendingCourses(db, 8),
       db.prepare(
         `SELECT
@@ -35,9 +38,14 @@ async function getHomeData() {
           (SELECT COUNT(DISTINCT provider_id) FROM courses WHERE published_status = 'published' AND provider_id IS NOT NULL) as providers`
       ).first<{ courses: number; providers: number }>(),
     ]);
-    return { ...featured, trending, courseCount: counts?.courses ?? 0, providerCount: counts?.providers ?? 0 };
+    return {
+      featured: featuredResult.results,
+      trending,
+      courseCount: counts?.courses ?? 0,
+      providerCount: counts?.providers ?? 0,
+    };
   } catch {
-    return { alison: [], dynamic: [], trending: [], courseCount: 0, providerCount: 0 };
+    return { featured: [], trending: [], courseCount: 0, providerCount: 0 };
   }
 }
 
@@ -54,15 +62,10 @@ const FEATURES = [
 ];
 
 export default async function HomePage() {
-  const [session, { alison, dynamic, trending, courseCount, providerCount }] = await Promise.all([
+  const [session, { featured: featuredCourses, trending, courseCount, providerCount }] = await Promise.all([
     getSession(),
     getHomeData(),
   ]);
-
-  const featuredCourses = [
-    ...(alison ?? []).slice(0, 2),
-    ...(dynamic ?? []).slice(0, 2),
-  ];
 
   const hasFeatured = featuredCourses.length > 0;
 
@@ -72,7 +75,7 @@ export default async function HomePage() {
 
       <main>
         {/* ── Hero ─────────────────────────────────────────────── */}
-        <section className="hero">
+        <section id="hero" className="hero">
           <div className="container hero-grid">
             <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 'var(--radius-full)', padding: '0.375rem 1rem', fontSize: '0.8125rem', fontWeight: 600, color: '#e0e7ff', marginBottom: '1.5rem' }}>
@@ -98,40 +101,50 @@ export default async function HomePage() {
                 )}
               </div>
 
-              {/* Alison CTA */}
-              <div style={{ marginTop: '2rem', padding: '1rem 1.25rem', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <div>
-                  <p style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fde68a' }}>🏆 Free to learn, optional paid certificates</p>
-                  <p style={{ fontSize: '0.8125rem', color: '#fbbf24', marginTop: '0.25rem' }}>
-                    Enrol on Alison — free to study, certificate is optional.{' '}
-                    <span style={{ color: '#fef3c7', fontStyle: 'italic', fontSize: '0.75rem' }}>Affiliate link.</span>
-                  </p>
-                </div>
-                <a
-                  href="https://alison.com/?utm_source=alison_user&utm_medium=affiliate&utm_campaign=27668723"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-accent btn-sm"
-                  id="hero-alison-cta"
-                >
-                  Browse Alison Courses <ArrowRight size={14} />
-                </a>
-              </div>
             </div>
 
-            {/* Floating feature pills */}
+            {/* Right column — Alison hero card + feature pills */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+              {/* Feature pills */}
               {FEATURES.map(f => (
-                <div key={f.title} className="card card-glass" style={{ padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, var(--accent), var(--teal))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white' }}>
+                <div key={f.title} className="card card-glass" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: 'linear-gradient(135deg, var(--accent), var(--teal))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white' }}>
                     {f.icon}
                   </div>
                   <div>
-                    <p style={{ fontWeight: 700, color: 'white', fontSize: '0.9375rem' }}>{f.title}</p>
-                    <p style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.25rem', lineHeight: 1.6 }}>{f.desc}</p>
+                    <p style={{ fontWeight: 700, color: 'white', fontSize: '0.875rem' }}>{f.title}</p>
+                    <p style={{ fontSize: '0.8125rem', color: '#94a3b8', marginTop: '0.2rem', lineHeight: 1.5 }}>{f.desc}</p>
                   </div>
                 </div>
               ))}
+
+              {/* Alison card — below feature pills */}
+              <a
+                href="https://alison.com/?utm_source=alison_user&utm_medium=affiliate&utm_campaign=27668723"
+                target="_blank"
+                rel="noopener noreferrer"
+                id="hero-alison-cta"
+                style={{ textDecoration: 'none' }}
+              >
+                <div className="card card-glass" style={{ padding: '1.25rem 1.5rem', background: 'linear-gradient(135deg, rgba(245,158,11,0.25), rgba(251,191,36,0.1))', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 'var(--radius-md)', cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.625rem' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 8, background: 'linear-gradient(135deg, #f59e0b, #fb923c)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ fontSize: '1.1rem' }}>🏆</span>
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: 800, color: '#fde68a', fontSize: '0.9375rem', lineHeight: 1.2 }}>Alison — Free Courses</p>
+                      <p style={{ fontSize: '0.7rem', color: 'rgba(253,230,138,0.7)', marginTop: '0.1rem', fontStyle: 'italic' }}>Affiliate link</p>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '0.8125rem', color: '#fef3c7', lineHeight: 1.55, marginBottom: '0.75rem' }}>
+                    Free to learn — earn an optional certificate. 100+ AI &amp; tech courses across every skill level.
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', fontWeight: 700, color: '#f59e0b' }}>
+                    Browse Alison courses <ArrowRight size={14} />
+                  </div>
+                </div>
+              </a>
             </div>
           </div>
         </section>

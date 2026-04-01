@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, BookOpen, ArrowLeft, CheckCircle2, Info, Calendar } from 'lucide-react';
+import { ExternalLink, BookOpen, ArrowLeft, CheckCircle2, Info, Calendar, Bookmark } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
@@ -238,7 +238,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
                   Last verified: {course.last_verified_at ?? 'Recently'}
                 </div>
                 <a
-                  href={course.official_link ?? course.destination_url ?? '#'}
+                  href={destination}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.875rem', color: 'var(--accent)', fontWeight: 600 }}

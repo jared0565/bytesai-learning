@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Loader2, CheckSquare, Square, Download, ExternalLink, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Search, Loader2, CheckSquare, Square, Download, ExternalLink, RefreshCw, AlertTriangle, CheckCircle2, Link2 } from 'lucide-react';
 import type { AlisonCourseDetail } from '@/app/api/admin/alison-import/route';
 
 const DB_CATEGORIES = [
@@ -22,6 +22,7 @@ interface DetailedCourse extends AlisonCourseDetail {
   loading: boolean;
   dbCategory: string;
   publishedStatus: 'draft' | 'published';
+  enrollCount: number | null;
 }
 
 export default function AlisonImportPage() {
@@ -32,6 +33,8 @@ export default function AlisonImportPage() {
   const [courses, setCourses] = useState<DetailedCourse[]>([]);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ imported: { slug: string; dbSlug: string }[]; skipped: { slug: string; reason: string }[] } | null>(null);
+  const [urlInput, setUrlInput] = useState('');
+  const [urlLoading, setUrlLoading] = useState(false);
 
   async function handleSearch() {
     if (!query.trim()) return;
@@ -53,6 +56,20 @@ export default function AlisonImportPage() {
     }
   }
 
+  async function handleUrlImport() {
+    const raw = urlInput.trim();
+    if (!raw) return;
+    // Extract slug from URL like https://alison.com/course/some-slug or just a slug
+    const match = raw.match(/alison\.com\/course\/([^/?#]+)/);
+    const slug = match ? match[1] : raw.replace(/^\//, '');
+    setUrlLoading(true);
+    setSearchError(null);
+    setImportResult(null);
+    await fetchDetail(slug);
+    setUrlInput('');
+    setUrlLoading(false);
+  }
+
   async function fetchDetail(slug: string) {
     // Add placeholder
     setCourses(prev => {
@@ -61,7 +78,7 @@ export default function AlisonImportPage() {
         slug, title: slug, description: null, outcomes: [], duration: null, level: null,
         coverImageUrl: null, officialLink: `https://alison.com/course/${slug}`,
         affiliateUrl: `https://alison.com/course/${slug}?utm_source=alison_user&utm_medium=affiliate&utm_campaign=27668723`,
-        category: null, certType: null,
+        category: null, certType: null, enrollCount: null,
         selected: true, loading: true,
         dbCategory: 'AI Foundations', publishedStatus: 'draft',
       }];
@@ -136,6 +153,7 @@ export default function AlisonImportPage() {
             certType: c.certType,
             dbCategory: c.dbCategory,
             publishedStatus: c.publishedStatus,
+            enrollCount: c.enrollCount,
           })),
         }),
       });
@@ -160,6 +178,32 @@ export default function AlisonImportPage() {
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
           Search Alison, preview course details, then import selected courses into your catalog as <strong>Alison affiliate</strong> entries.
         </p>
+      </div>
+
+      {/* URL paste input */}
+      <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem', background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.25)' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+          <div className="form-group" style={{ flex: 1, margin: 0 }}>
+            <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              <Link2 size={13} /> Paste Alison URL or slug
+            </label>
+            <input
+              type="text"
+              className="input"
+              placeholder="https://alison.com/course/introduction-to-ai  or  introduction-to-ai"
+              value={urlInput}
+              onChange={e => setUrlInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleUrlImport()}
+            />
+          </div>
+          <button className="btn btn-accent" onClick={handleUrlImport} disabled={urlLoading || !urlInput.trim()}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            {urlLoading
+              ? <Loader2 size={15} style={{ animation: 'spin 0.7s linear infinite' }} />
+              : <Download size={15} />}
+            Pull & stage
+          </button>
+        </div>
       </div>
 
       {/* Search bar */}

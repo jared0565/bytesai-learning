@@ -1,10 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   BookOpen, Menu, X, ChevronDown, Sparkles, LayoutDashboard, LogIn, User, LogOut,
 } from 'lucide-react';
+
+const NUDGE_MESSAGES = [
+  { emoji: '🎓', text: "Looking for free courses? I can find them in seconds!" },
+  { emoji: '🤖', text: "Need a learning plan? I'm your free course navigator." },
+  { emoji: '✨', text: "Over 100 free AI courses + Alison's full catalog — ask me anything!" },
+];
 
 interface NavProps {
   userRole?: 'learner' | 'admin' | null;
@@ -13,21 +19,42 @@ interface NavProps {
 
 const MAIN_LINKS = [
   { href: '/courses', label: 'Courses' },
-  { href: '/providers', label: 'Providers' },
-  { href: '/categories', label: 'Categories' },
+  { href: '/courses?sort=popular', label: 'Trending' },
+  { href: '/courses?sort=featured', label: 'Featured' },
+  { href: '/providers', label: 'Providers', hideAtMd: true },
+  { href: '/categories', label: 'Categories', hideAtMd: true },
   { href: '/curated', label: 'Learning Paths' },
 ];
 
 export default function Header({ userRole, displayName }: NavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
+  const [nudgeIndex, setNudgeIndex] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setNudgeIndex(i => (i + 1) % NUDGE_MESSAGES.length), 4000);
+    return () => clearInterval(t);
+  }, []);
 
   return (
-    <header>
+    <header style={{ position: 'sticky', top: 0, zIndex: 100 }}>
+      {/* Announcement bar */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)',
+        borderBottom: '1px solid rgba(79,110,247,0.3)',
+        padding: '0.45rem 1rem',
+        textAlign: 'center',
+      }}>
+        <p style={{ fontSize: '0.8rem', color: '#c7d2fe', margin: 0, lineHeight: 1.4 }}>
+          {NUDGE_MESSAGES[nudgeIndex].emoji}{' '}
+          <strong style={{ color: 'white' }}>{NUDGE_MESSAGES[nudgeIndex].text}</strong>{' '}
+          <span style={{ opacity: 0.65, fontSize: '0.75rem' }}>↘ Click the chat button below.</span>
+        </p>
+      </div>
       <nav className="nav">
         <div className="container nav-inner">
           {/* Logo */}
-          <Link href="/" className="nav-logo" style={{ color: 'var(--text-primary)' }}>
+          <Link href="/#hero" className="nav-logo" style={{ color: 'var(--text-primary)' }}>
             <span style={{
               width: 32, height: 32, borderRadius: 8,
               background: 'linear-gradient(135deg, var(--accent), var(--teal))',
@@ -41,7 +68,7 @@ export default function Header({ userRole, displayName }: NavProps) {
           {/* Desktop links */}
           <div className="nav-links" style={{ gap: '0.125rem' }}>
             {MAIN_LINKS.map(link => (
-              <Link key={link.href} href={link.href} className="nav-link">
+              <Link key={link.href} href={link.href} className={`nav-link${link.hideAtMd ? ' nav-link-hide-md' : ''}`}>
                 {link.label}
               </Link>
             ))}
