@@ -1,13 +1,7 @@
-export const runtime = 'edge';
-
+import { getDB } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
 import { signSession, getSessionCookieOptions } from '@/lib/auth';
-
-function getDB(req: NextRequest) {
-  const env = (req as unknown as { env?: { DB?: import('@/lib/db').D1Database } }).env;
-  return env?.DB ?? (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 interface GoogleUserInfo {
   sub: string;
@@ -62,7 +56,7 @@ export async function GET(req: NextRequest) {
     return fail('oauth-fetch-failed');
   }
 
-  const db = getDB(req);
+  const db = await getDB();
   if (!db) return fail('service-unavailable');
 
   // Find or create user

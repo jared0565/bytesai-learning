@@ -1,5 +1,3 @@
-export const runtime = 'edge';
-
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -7,17 +5,13 @@ import { ArrowLeft, ExternalLink, Building2, BookOpen } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
-import { getProviderBySlug, getCoursesByProvider } from '@/lib/db';
+import { getProviderBySlug, getCoursesByProvider, getDB} from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-}
-
-async function getDB() {
-  return (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

@@ -1,11 +1,9 @@
-export const runtime = 'edge';
-
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Lightbulb, Calendar } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { getPublishedCuratedPages } from '@/lib/db';
+import { getPublishedCuratedPages, getDB} from '@/lib/db';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 
@@ -13,10 +11,6 @@ export const metadata: Metadata = {
   title: 'Curated AI Insights — BytesAI Learning',
   description: 'Hand-curated pages on emerging AI topics — why they matter, what changed, and which free courses to take next.',
 };
-
-async function getDB() {
-  return (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 export default async function CuratedIndexPage() {
   const cookieStore = await cookies();

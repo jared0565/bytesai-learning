@@ -1,17 +1,13 @@
-export const runtime = 'edge';
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
-
-
 
 // Protected routes
 const LEARNER_ROUTES = ['/dashboard', '/my-learning', '/saved', '/profile', '/settings'];
 const ADMIN_ROUTES = ['/admin'];
 const AUTH_ROUTES = ['/auth/login', '/auth/register'];
 
-export async function proxy(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const isLearnerRoute = LEARNER_ROUTES.some(r => pathname.startsWith(r));

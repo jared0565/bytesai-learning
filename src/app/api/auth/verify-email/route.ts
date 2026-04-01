@@ -1,12 +1,6 @@
-export const runtime = 'edge';
-
+import { getDB } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, signSession, getSessionCookieOptions, COOKIE_NAME } from '@/lib/auth';
-
-function getDB(req: NextRequest) {
-  const env = (req as unknown as { env?: { DB?: import('@/lib/db').D1Database } }).env;
-  return env?.DB ?? (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 // GET /api/auth/verify-email?token=xxx
 export async function GET(req: NextRequest) {
@@ -15,7 +9,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login?error=invalid-token', req.url));
   }
 
-  const db = getDB(req);
+  const db = await getDB();
   if (!db) return NextResponse.redirect(new URL('/auth/login?error=service-unavailable', req.url));
 
   const row = await db.prepare(

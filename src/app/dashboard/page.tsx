@@ -1,5 +1,3 @@
-export const runtime = 'edge';
-
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -10,17 +8,13 @@ import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
-import { getUserProgress, getTrendingCourses, getCoursesByIds } from '@/lib/db';
+import { getUserProgress, getTrendingCourses, getCoursesByIds, getDB} from '@/lib/db';
 import type { Course, UserCourseProgress } from '@/lib/db';
 
 export const metadata: Metadata = {
   title: 'Your Dashboard',
   robots: { index: false, follow: false },
 };
-
-async function getDB() {
-  return (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();

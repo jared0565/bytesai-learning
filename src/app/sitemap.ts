@@ -1,8 +1,5 @@
+import { getDB } from '@/lib/db';
 import type { MetadataRoute } from 'next';
-
-async function getDB() {
-  return (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://learn.bytesai.com';

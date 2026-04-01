@@ -1,12 +1,10 @@
-export const runtime = 'edge';
-
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Search, SlidersHorizontal, ArrowRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard, { CourseCardSkeleton } from '@/components/ui/CourseCard';
-import { searchCourses } from '@/lib/db';
+import { searchCourses, getDB} from '@/lib/db';
 import { CATEGORIES, LEVELS, ACCESS_MODELS } from '@/lib/ranking';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -28,10 +26,6 @@ interface PageProps {
     provider?: string;
     page?: string;
   }>;
-}
-
-async function getDB() {
-  return (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
 }
 
 const SORT_OPTIONS = [

@@ -1,13 +1,7 @@
-export const runtime = 'edge';
-
+import { getDB } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, signSession, getSessionCookieOptions, COOKIE_NAME } from '@/lib/auth';
 import { sanitizeText } from '@/lib/security';
-
-function getDB(req: NextRequest) {
-  const env = (req as unknown as { env?: { DB?: import('@/lib/db').D1Database } }).env;
-  return env?.DB ?? (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 const VALID_FORMATS = ['video', 'article', 'mixed', 'interactive'] as const;
 
@@ -20,7 +14,7 @@ export async function PATCH(req: NextRequest) {
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid body.' }, { status: 400 }); }
 
-  const db = getDB(req);
+  const db = await getDB();
   if (!db) return NextResponse.json({ error: 'DB unavailable.' }, { status: 503 });
 
   const updates: Record<string, unknown> = {};

@@ -1,5 +1,4 @@
-export const runtime = 'edge';
-
+import { getDB } from '@/lib/db';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Building2, Search, ArrowRight, ExternalLink } from 'lucide-react';
@@ -12,10 +11,6 @@ export const metadata: Metadata = {
   title: 'AI Course Providers',
   description: 'Browse free AI courses by provider. Learn from Microsoft, Google, Anthropic, NVIDIA, Stanford, and more top institutions and tech companies.',
 };
-
-async function getDB() {
-  return (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 export default async function ProvidersPage() {
   const cookieStore = await cookies();

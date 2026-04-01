@@ -1,16 +1,9 @@
-export const runtime = 'edge';
-
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
-import { logAdminAction } from '@/lib/db';
+import { getDB, logAdminAction } from '@/lib/db';
 import { RSS_SOURCES } from '@/lib/rss-sources';
 import { fetchTrendingArticles, autoFillPageFromArticle, type ParsedArticle } from '@/lib/rss-parser';
 import { nanoid } from 'nanoid';
-
-function getDB(req: NextRequest) {
-  const env = (req as unknown as { env?: { DB?: import('@/lib/db').D1Database } }).env;
-  return env?.DB ?? (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 async function requireAdmin(req: NextRequest) {
   const token = req.cookies.get(COOKIE_NAME)?.value;
@@ -41,7 +34,7 @@ export async function POST(req: NextRequest) {
   const session = await requireAdmin(req);
   if (!session) return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 });
 
-  const db = getDB(req);
+  const db = await getDB();
   if (!db) return NextResponse.json({ error: 'DB unavailable.' }, { status: 503 });
 
   let body: { articles: ParsedArticle[] };

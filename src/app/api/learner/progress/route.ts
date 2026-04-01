@@ -1,14 +1,8 @@
-export const runtime = 'edge';
-
+import { getDB } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 import { nanoid } from 'nanoid';
-
-function getDB(req: NextRequest) {
-  const env = (req as unknown as { env?: { DB?: import('@/lib/db').D1Database } }).env;
-  return env?.DB ?? (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 const ProgressSchema = z.object({
   courseId: z.string().min(1).max(100),
@@ -27,7 +21,7 @@ export async function POST(req: NextRequest) {
   const parsed = ProgressSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input.' }, { status: 422 });
 
-  const db = getDB(req);
+  const db = await getDB();
   if (!db) return NextResponse.json({ error: 'Service unavailable.' }, { status: 503 });
 
   const { courseId, status, progressPercent = 0 } = parsed.data;
@@ -77,7 +71,7 @@ export async function DELETE(req: NextRequest) {
   const courseId = searchParams.get('courseId');
   if (!courseId) return NextResponse.json({ error: 'Missing courseId.' }, { status: 422 });
 
-  const db = getDB(req);
+  const db = await getDB();
   if (!db) return NextResponse.json({ error: 'Service unavailable.' }, { status: 503 });
 
   try {
@@ -95,7 +89,7 @@ export async function GET(req: NextRequest) {
   const session = token ? await verifySession(token) : null;
   if (!session) return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 });
 
-  const db = getDB(req);
+  const db = await getDB();
   if (!db) return NextResponse.json({ error: 'Service unavailable.' }, { status: 503 });
 
   try {

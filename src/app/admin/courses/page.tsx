@@ -1,5 +1,4 @@
-export const runtime = 'edge';
-
+import { getDB } from '@/lib/db';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BookOpen, ExternalLink } from 'lucide-react';
@@ -11,10 +10,6 @@ export const metadata: Metadata = {
   title: 'Courses — Admin',
   robots: { index: false, follow: false },
 };
-
-async function getDB() {
-  return (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 interface CourseRow {
   id: string;

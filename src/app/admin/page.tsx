@@ -1,5 +1,4 @@
-export const runtime = 'edge';
-
+import { getDB } from '@/lib/db';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Users, MousePointerClick, TrendingUp, AlertCircle } from 'lucide-react';
@@ -8,10 +7,6 @@ export const metadata: Metadata = {
   title: 'Admin Dashboard',
   robots: { index: false, follow: false },
 };
-
-async function getDB() {
-  return (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 async function getStats(db: import('@/lib/db').D1Database | null) {
   if (!db) return { totalUsers: 0, totalCourses: 0, totalEvents: 0, alisonClicks: 0 };

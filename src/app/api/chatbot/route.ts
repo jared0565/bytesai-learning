@@ -1,16 +1,9 @@
-export const runtime = 'edge';
-
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { sanitizeText, detectPromptInjection, checkRateLimit, getRateLimitKey, rateLimitResponse } from '@/lib/security';
-import { searchCourses } from '@/lib/db';
+import { getDB, searchCourses } from '@/lib/db';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 import { nanoid } from 'nanoid';
-
-function getDB(req: NextRequest) {
-  const env = (req as unknown as { env?: { DB?: import('@/lib/db').D1Database } }).env;
-  return env?.DB ?? (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 const ChatSchema = z.object({
   message: z.string().min(1).max(500),
@@ -108,7 +101,7 @@ function sortAffiliateFirst(courses: CourseResult[]): CourseResult[] {
 
 // ─── Conversation persistence ─────────────────────────────────────────────────
 async function persistMessages(
-  db: ReturnType<typeof getDB>,
+  db: import('@/lib/db').D1Database,
   sessionId: string,
   userId: string | null,
   userMessage: string,
@@ -188,12 +181,12 @@ export async function POST(req: NextRequest) {
   const offTopic = isOffTopic(rawMessage);
   if (offTopic) {
     const reply = OFF_TOPIC_REPLIES[Math.floor(Math.random() * OFF_TOPIC_REPLIES.length)];
-    const db = getDB(req);
+    const db = await getDB();
     await persistMessages(db, sessionId, userId, rawMessage, reply, [], true);
     return NextResponse.json({ reply, courses: [], sessionId, ok: true });
   }
 
-  const db = getDB(req);
+  const db = await getDB();
 
   // ─── Try LLM ────────────────────────────────────────────────────────────────
   const openaiKey = process.env.OPENAI_API_KEY;

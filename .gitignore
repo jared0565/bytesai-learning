@@ -49,3 +49,5 @@ db/prod-dump.sql
 
 # build artifacts
 build-output.txt
+.open-next/
+.wrangler/

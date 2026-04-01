@@ -1,10 +1,11 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+
+initOpenNextCloudflareForDev();
 
 const nextConfig: NextConfig = {
-  // Keep native Node modules out of the webpack bundle
   serverExternalPackages: ['node:sqlite'],
   images: {
-    // Use unoptimized for Cloudflare Pages compatibility
     unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "alison.com" },
@@ -14,7 +15,6 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "huggingface.co" },
     ],
   },
-  // Security headers
   async headers() {
     return [
       {

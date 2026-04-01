@@ -1,6 +1,6 @@
 // D1 database client — parameterized queries only, no raw string interpolation
-// In Cloudflare Workers context, DB is injected via binding
-// In local Next.js dev, proxied via wrangler dev
+// Production: uses Cloudflare D1 binding via @opennextjs/cloudflare
+// Local dev: uses node:sqlite adapter loaded via instrumentation.ts
 
 export interface D1Database {
   prepare(query: string): D1PreparedStatement;
@@ -34,11 +34,18 @@ export interface D1ExecResult {
   duration: number;
 }
 
-// Helper to get DB from Next.js request context (Cloudflare Workers)
-export function getDB(env?: { DB?: D1Database }): D1Database {
-  const db = env?.DB ?? (globalThis as Record<string, unknown>).DB as D1Database | undefined;
+// Central DB accessor — works in both production (Cloudflare) and local dev
+export async function getDB(): Promise<D1Database> {
+  // Local dev: instrumentation.ts sets globalThis.DB to the SQLite adapter
+  const localDB = (globalThis as Record<string, unknown>).DB as D1Database | undefined;
+  if (localDB) return localDB;
+
+  // Production: use OpenNext's Cloudflare context
+  const { getCloudflareContext } = await import('@opennextjs/cloudflare');
+  const { env } = await getCloudflareContext({ async: true });
+  const db = (env as Record<string, unknown>).DB as D1Database | undefined;
   if (!db) {
-    throw new Error('D1 database binding (DB) not available. Ensure wrangler is running or binding is configured.');
+    throw new Error('D1 database binding (DB) not available.');
   }
   return db;
 }

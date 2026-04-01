@@ -9,8 +9,18 @@ export interface KVNamespace {
   list(options?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ keys: { name: string }[]; list_complete: boolean; cursor?: string }>;
 }
 
-export function getKV(env?: { KV?: KVNamespace }): KVNamespace | null {
-  return env?.KV ?? (globalThis as Record<string, unknown>).KV as KVNamespace | undefined ?? null;
+export async function getKV(): Promise<KVNamespace | null> {
+  // Local dev: no KV available
+  const localKV = (globalThis as Record<string, unknown>).KV as KVNamespace | undefined;
+  if (localKV) return localKV;
+
+  try {
+    const { getCloudflareContext } = await import('@opennextjs/cloudflare');
+    const { env } = await getCloudflareContext({ async: true });
+    return (env as Record<string, unknown>).KV as KVNamespace | undefined ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // ─── Cache keys ───────────────────────────────────────────────────────

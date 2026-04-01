@@ -1,5 +1,3 @@
-export const runtime = 'edge';
-
 import type { Metadata } from 'next';
 import './globals.css';
 import Chatbot from '@/components/Chatbot/Chatbot';

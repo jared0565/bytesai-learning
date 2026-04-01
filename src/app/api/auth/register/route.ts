@@ -1,17 +1,9 @@
-export const runtime = 'edge';
-
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
 import { hashPassword, signSession, getSessionCookieOptions, COOKIE_NAME } from '@/lib/auth';
 import { sanitizeEmail, isValidEmail, checkRateLimit, getRateLimitKey, rateLimitResponse } from '@/lib/security';
-import { getUserByEmail } from '@/lib/db';
-
-function getDB(req: NextRequest) {
-  // In Workers context DB is in env, passed via request context
-  const env = (req as unknown as { env?: { DB?: import('@/lib/db').D1Database } }).env;
-  return env?.DB ?? (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
+import { getDB, getUserByEmail } from '@/lib/db';
 
 const RegisterSchema = z.object({
   email: z.string().min(5).max(320),
@@ -51,7 +43,7 @@ export async function POST(req: NextRequest) {
     if (!tData.success) return NextResponse.json({ error: 'Bot protection check failed.' }, { status: 422 });
   }
 
-  const db = getDB(req);
+  const db = await getDB();
   if (!db) return NextResponse.json({ error: 'Service unavailable.' }, { status: 503 });
 
   // Check existing user

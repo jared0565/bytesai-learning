@@ -1,9 +1,11 @@
 name = "bytesai-learning"
+main = ".open-next/worker.js"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
-# Cloudflare Pages output
-pages_build_output_dir = ".vercel/output/static"
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
 
 # Cloudflare D1 — source of truth database
 [[d1_databases]]

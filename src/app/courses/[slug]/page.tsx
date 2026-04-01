@@ -1,5 +1,3 @@
-export const runtime = 'edge';
-
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -7,7 +5,7 @@ import { ExternalLink, BookOpen, ArrowLeft, CheckCircle2, Info, Calendar, Bookma
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
-import { getCourseBySlug, getRelatedCourses, getProviderBySlug, getUserProgress } from '@/lib/db';
+import { getCourseBySlug, getRelatedCourses, getProviderBySlug, getUserProgress, getDB} from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -15,10 +13,6 @@ import CourseSidebarActions from './CourseSidebarActions';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-}
-
-async function getDB() {
-  return (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

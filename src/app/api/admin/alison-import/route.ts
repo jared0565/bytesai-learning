@@ -1,20 +1,13 @@
-export const runtime = 'edge';
-
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 import { sanitizeText, isValidSlug } from '@/lib/security';
-import { logAdminAction } from '@/lib/db';
+import { getDB, logAdminAction } from '@/lib/db';
 import { nanoid } from 'nanoid';
 
 const AFFILIATE_ID = '27668723';
 const AFFILIATE_PARAMS = `utm_source=alison_user&utm_medium=affiliate&utm_campaign=${AFFILIATE_ID}`;
 const ALISON_PROVIDER_ID = 'prov-alison';
-
-function getDB(req: NextRequest) {
-  const env = (req as unknown as { env?: { DB?: import('@/lib/db').D1Database } }).env;
-  return env?.DB ?? (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 async function requireAdmin(req: NextRequest) {
   const token = req.cookies.get(COOKIE_NAME)?.value;
@@ -254,7 +247,7 @@ export async function POST(req: NextRequest) {
   const session = await requireAdmin(req);
   if (!session) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
 
-  const db = getDB(req);
+  const db = await getDB();
   if (!db) return NextResponse.json({ error: 'DB unavailable.' }, { status: 503 });
 
   let body: unknown;

@@ -1,13 +1,7 @@
-export const runtime = 'edge';
-
+import { getDB } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
-
-function getDB(req: NextRequest) {
-  const env = (req as unknown as { env?: { DB?: import('@/lib/db').D1Database } }).env;
-  return env?.DB ?? (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
-}
 
 async function requireAdmin(req: NextRequest) {
   const cookieStore = await cookies();
@@ -22,7 +16,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const session = await requireAdmin(req);
   if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const db = getDB(req);
+  const db = await getDB();
   if (!db) return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
 
   const { id } = await params;
@@ -48,7 +42,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const session = await requireAdmin(req);
   if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const db = getDB(req);
+  const db = await getDB();
   if (!db) return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
 
   const { id } = await params;

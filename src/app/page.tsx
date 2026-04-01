@@ -1,12 +1,10 @@
-export const runtime = 'edge';
-
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Sparkles, Zap, BookOpen, ShieldCheck, TrendingUp } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard, { CourseCardSkeleton } from '@/components/ui/CourseCard';
-import { getTrendingCourses } from '@/lib/db';
+import { getTrendingCourses, getDB} from '@/lib/db';
 import { CATEGORIES } from '@/lib/ranking';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -18,11 +16,6 @@ export const metadata: Metadata = {
 };
 
 // Attempt to get DB from the runtime environment
-async function getDB() {
-  // In Cloudflare Workers context, DB is on globalThis
-  const db = (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined;
-  return db ?? null;
-}
 
 async function getHomeData() {
   const db = await getDB();
