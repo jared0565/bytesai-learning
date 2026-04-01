@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -71,9 +73,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export function generateStaticParams() {
-  return CATEGORIES.map(c => ({ slug: c.slug }));
-}
 
 async function getDB() {
   return (globalThis as Record<string, unknown>).DB as import('@/lib/db').D1Database | undefined ?? null;
