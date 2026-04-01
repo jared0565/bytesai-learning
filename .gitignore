@@ -44,6 +44,8 @@ next-env.d.ts
 .local-dev.db
 .local-dev.db-shm
 .local-dev.db-wal
+# prod dump — regenerate with `npm run db:pull`, never commit
+db/prod-dump.sql
 
 # build artifacts
 build-output.txt

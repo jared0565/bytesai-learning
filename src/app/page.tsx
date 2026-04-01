@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Sparkles, Zap, BookOpen, ShieldCheck, TrendingUp } from 'lucide-react';

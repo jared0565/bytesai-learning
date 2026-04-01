@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, signSession, getSessionCookieOptions, COOKIE_NAME } from '@/lib/auth';
 import { sanitizeText } from '@/lib/security';

@@ -1,5 +1,9 @@
 'use client';
 
+export const runtime = 'edge';
+
+
+
 import { useState, useEffect, useCallback } from 'react';
 import { MessageSquare, User, Bot, ChevronRight, ChevronLeft, AlertTriangle, RefreshCw } from 'lucide-react';
 

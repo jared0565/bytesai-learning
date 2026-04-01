@@ -1,5 +1,9 @@
 'use client';
 
+export const runtime = 'edge';
+
+
+
 import { useState } from 'react';
 import { Search, Loader2, CheckSquare, Square, Download, ExternalLink, RefreshCw, AlertTriangle, CheckCircle2, Link2 } from 'lucide-react';
 import type { AlisonCourseDetail } from '@/app/api/admin/alison-import/route';

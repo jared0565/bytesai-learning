@@ -1,5 +1,9 @@
 'use client';
 
+export const runtime = 'edge';
+
+
+
 import { useState } from 'react';
 import { RefreshCw, ExternalLink, Loader2, CheckSquare, Square, ChevronDown, ChevronUp, Rss } from 'lucide-react';
 import type { ParsedArticle } from '@/lib/rss-parser';

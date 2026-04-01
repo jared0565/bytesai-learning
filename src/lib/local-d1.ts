@@ -95,30 +95,18 @@ export async function setupLocalDB(): Promise<void> {
   db.exec('PRAGMA journal_mode = WAL');
   db.exec('PRAGMA foreign_keys = ON');
 
-  // Always apply schema (IF NOT EXISTS guards are in schema.sql)
-  if (existsSync(schemaPath)) {
-    const schema = readFileSync(schemaPath, 'utf8');
-    db.exec(schema);
-  }
-
-  // Seed providers + courses if this is a fresh DB
+  // If a prod dump exists, use it as the data source (most accurate sync).
+  // Run `npm run db:pull` to refresh it from production at any time.
+  // Falls back to schema-only if neither dump nor schema file is present.
+  const dumpPath = join(cwd, 'db', 'prod-dump.sql');
   if (isNew) {
-    const seedFiles = [
-      join(cwd, 'db', 'seed', 'providers.sql'),
-      join(cwd, 'db', 'seed', 'courses.sql'),
-      join(cwd, 'db', 'seed', 'featured.sql'),
-    ];
-    for (const f of seedFiles) {
-      if (existsSync(f)) {
-        try {
-          db.exec(readFileSync(f, 'utf8'));
-        } catch (e) {
-          // Some seed files may have conflicts on re-run — safe to ignore
-          console.warn('[local-d1] Seed warning:', (e as Error).message?.slice(0, 80));
-        }
-      }
+    if (existsSync(dumpPath)) {
+      db.exec(readFileSync(dumpPath, 'utf8'));
+      console.log('[local-d1] 🌱 Loaded from prod dump: db/prod-dump.sql');
+    } else if (existsSync(schemaPath)) {
+      db.exec(readFileSync(schemaPath, 'utf8'));
+      console.log('[local-d1] ⚠️  No prod dump found. Run `npm run db:pull` to sync from production.');
     }
-    console.log('[local-d1] 🌱 Database seeded with providers and courses');
   }
 
   const localD1 = new LocalD1Database(db);

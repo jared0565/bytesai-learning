@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import type { Metadata } from 'next';
 import { TrendingUp, MousePointerClick, BookOpen, CheckCircle2, Bookmark, Eye } from 'lucide-react';
 

@@ -1,7 +1,11 @@
+export const runtime = 'edge';
+
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BookOpen, ExternalLink } from 'lucide-react';
 import AddCourseForm from './AddCourseForm';
+import CourseActions from './CourseActions';
+import SortableHeader from './SortableHeader';
 
 export const metadata: Metadata = {
   title: 'Courses — Admin',
@@ -25,7 +29,26 @@ interface CourseRow {
   updated_at: string;
 }
 
-export default async function AdminCoursesPage() {
+const SORTABLE_COLUMNS: Record<string, string> = {
+  title: 'title',
+  category: 'category',
+  level: 'level',
+  status: 'published_status',
+  flags: 'featured_priority',
+  updated: 'updated_at',
+};
+
+export default async function AdminCoursesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string>>;
+}) {
+  const sp = await searchParams;
+  const sortKey = sp.sort && SORTABLE_COLUMNS[sp.sort] ? sp.sort : null;
+  const sortCol = sortKey ? SORTABLE_COLUMNS[sortKey] : 'updated_at';
+  const sortDir = sp.dir === 'desc' ? 'DESC' : 'ASC';
+  const orderBy = sortKey ? `${sortCol} ${sortDir}` : 'updated_at DESC';
+
   const db = await getDB();
   let courses: CourseRow[] = [];
 
@@ -33,7 +56,7 @@ export default async function AdminCoursesPage() {
     try {
       const result = await db.prepare(
         `SELECT id, slug, title, category, level, published_status, is_alison, is_affiliate, featured_priority, updated_at
-         FROM courses ORDER BY updated_at DESC LIMIT 200`
+         FROM courses ORDER BY ${orderBy} LIMIT 200`
       ).all<CourseRow>();
       courses = result.results;
     } catch { /* ignore */ }
@@ -44,6 +67,16 @@ export default async function AdminCoursesPage() {
     draft: 'var(--amber)',
     archived: 'var(--text-muted)',
   };
+
+  const HEADERS: { label: string; column: string }[] = [
+    { label: 'Title',    column: 'title' },
+    { label: 'Category', column: 'category' },
+    { label: 'Level',    column: 'level' },
+    { label: 'Status',   column: 'status' },
+    { label: 'Flags',    column: 'flags' },
+    { label: 'Updated',  column: 'updated' },
+    { label: '',         column: '' },
+  ];
 
   return (
     <div style={{ padding: '2rem', maxWidth: 1200 }}>
@@ -70,8 +103,8 @@ export default async function AdminCoursesPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>
               <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-                {['Title', 'Category', 'Level', 'Status', 'Flags', 'Updated', ''].map(h => (
-                  <th key={h} style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{h}</th>
+                {HEADERS.map(h => (
+                  <SortableHeader key={h.label} column={h.column} label={h.label} />
                 ))}
               </tr>
             </thead>
@@ -120,13 +153,16 @@ export default async function AdminCoursesPage() {
                     {new Date(c.updated_at).toLocaleDateString()}
                   </td>
                   <td style={{ padding: '0.75rem 1rem' }}>
-                    <Link
-                      href={`/courses/${c.slug}`}
-                      target="_blank"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: 'var(--accent)', fontSize: '0.8125rem', fontWeight: 600 }}
-                    >
-                      View <ExternalLink size={12} />
-                    </Link>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <Link
+                        href={`/courses/${c.slug}`}
+                        target="_blank"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: 'var(--accent)', fontSize: '0.8125rem', fontWeight: 600 }}
+                      >
+                        View <ExternalLink size={12} />
+                      </Link>
+                      <CourseActions courseId={c.id} currentStatus={c.published_status} />
+                    </div>
                   </td>
                 </tr>
               ))}
