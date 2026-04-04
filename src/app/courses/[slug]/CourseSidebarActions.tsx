@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Bookmark, BookmarkCheck, Share2, Loader2, PlayCircle, CheckCircle, RotateCcw } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Loader2, PlayCircle, CheckCircle, RotateCcw } from 'lucide-react';
+import SharePanel from '@/components/ui/SharePanel';
 
 interface Props {
   courseId: string;
@@ -19,7 +20,6 @@ export default function CourseSidebarActions({
   const [progress, setProgress] = useState(initialProgress);
   const [pendingProgress, setPendingProgress] = useState(initialProgress);
   const [saving, setSaving] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const isSaved = status !== null;
 
@@ -60,23 +60,14 @@ export default function CourseSidebarActions({
     }
   }
 
-  async function handleShare() {
-    const url = `${window.location.origin}/courses/${courseSlug}`;
-    if (navigator.share) {
-      try { await navigator.share({ title: courseTitle, url }); return; } catch {}
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
-  }
 
   if (shareOnly) {
     return (
-      <button className="btn btn-ghost btn-sm" onClick={handleShare} style={{ width: '100%', justifyContent: 'center', color: 'var(--text-muted)' }}>
-        <Share2 size={14} /> {copied ? 'Link copied!' : 'Share'}
-      </button>
+      <SharePanel
+        url={`https://learn.bytesai.uk/courses/${courseSlug}`}
+        title={courseTitle}
+        compact
+      />
     );
   }
 
@@ -178,13 +169,12 @@ export default function CourseSidebarActions({
       )}
 
       {/* Share */}
-      <button
-        className="btn btn-ghost btn-sm"
-        onClick={handleShare}
-        style={{ width: '100%', justifyContent: 'center', marginTop: '0.5rem', color: 'var(--text-muted)' }}
-      >
-        <Share2 size={14} /> {copied ? 'Link copied!' : 'Share'}
-      </button>
+      <div style={{ marginTop: '0.75rem' }}>
+        <SharePanel
+          url={`https://learn.bytesai.uk/courses/${courseSlug}`}
+          title={courseTitle}
+        />
+      </div>
     </>
   );
 }

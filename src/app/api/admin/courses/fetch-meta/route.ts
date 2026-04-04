@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const res = await fetch(url as string, {
-      headers: { 'User-Agent': 'BytesAI Learning Bot/1.0 (+https://learn.bytesai.com)' },
+      headers: { 'User-Agent': 'BytesAI Learning Bot/1.0 (+https://learn.bytesai.uk)' },
       signal: AbortSignal.timeout(8000),
     });
 

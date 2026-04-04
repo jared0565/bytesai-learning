@@ -7,8 +7,8 @@ import { verifySession, COOKIE_NAME } from '@/lib/auth';
 
 export const metadata: Metadata = {
   title: 'Accessibility — BytesAI Learning',
-  description: 'Accessibility statement for BytesAI Learning (learn.bytesai.com).',
-  alternates: { canonical: 'https://learn.bytesai.com/accessibility' },
+  description: 'Accessibility statement for BytesAI Learning (learn.bytesai.uk).',
+  alternates: { canonical: 'https://learn.bytesai.uk/accessibility' },
 };
 
 export default async function AccessibilityPage() {

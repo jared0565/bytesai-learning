@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import {
-  BookOpen, Menu, X, ChevronDown, Sparkles, LayoutDashboard, LogIn, User, LogOut,
+  BookOpen, Menu, X, ChevronDown, Sparkles, LayoutDashboard, LogIn, User, LogOut, Share2,
 } from 'lucide-react';
+import AuthModal from '@/components/ui/AuthModal';
+import SharePanel from '@/components/ui/SharePanel';
 
 const NUDGE_MESSAGES = [
   { emoji: '🎓', text: "Looking for free courses? I can find them in seconds!" },
@@ -19,8 +21,8 @@ interface NavProps {
 
 const MAIN_LINKS = [
   { href: '/courses', label: 'Courses' },
-  { href: '/courses?sort=popular', label: 'Trending' },
-  { href: '/courses?sort=featured', label: 'Featured' },
+  { href: '/#trending', label: 'Trending' },
+  { href: '/#featured', label: 'Featured' },
   { href: '/providers', label: 'Providers', hideAtMd: true },
   { href: '/categories', label: 'Categories', hideAtMd: true },
   { href: '/curated', label: 'Learning Paths' },
@@ -30,6 +32,8 @@ export default function Header({ userRole, displayName }: NavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [nudgeIndex, setNudgeIndex] = useState(0);
+  const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNudgeIndex(i => (i + 1) % NUDGE_MESSAGES.length), 4000);
@@ -39,7 +43,7 @@ export default function Header({ userRole, displayName }: NavProps) {
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 100 }}>
       {/* Announcement bar */}
-      <div style={{
+      <div className="announcement-bar" style={{
         background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)',
         borderBottom: '1px solid rgba(79,110,247,0.3)',
         padding: '0.45rem 1rem',
@@ -48,7 +52,7 @@ export default function Header({ userRole, displayName }: NavProps) {
         <p style={{ fontSize: '0.8rem', color: '#c7d2fe', margin: 0, lineHeight: 1.4 }}>
           {NUDGE_MESSAGES[nudgeIndex].emoji}{' '}
           <strong style={{ color: 'white' }}>{NUDGE_MESSAGES[nudgeIndex].text}</strong>{' '}
-          <span style={{ opacity: 0.65, fontSize: '0.75rem' }}>↘ Click the chat button below.</span>
+          <span className="hide-mobile" style={{ opacity: 0.65, fontSize: '0.75rem' }}>↘ Click the chat button below.</span>
         </p>
       </div>
       <nav className="nav">
@@ -76,6 +80,40 @@ export default function Header({ userRole, displayName }: NavProps) {
 
           {/* Right section */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Share button */}
+            <div style={{ position: 'relative' }}>
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ padding: '0.5rem', borderRadius: 'var(--radius-full)' }}
+                onClick={() => setShareOpen(!shareOpen)}
+                aria-label="Share BytesAI Learning"
+                title="Share"
+              >
+                <Share2 size={17} />
+              </button>
+              {shareOpen && (
+                <>
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={() => setShareOpen(false)} />
+                  <div style={{
+                    position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 200,
+                    background: 'var(--bg-card)', border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)',
+                    padding: '0.875rem', minWidth: 260,
+                  }}>
+                    <p style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.625rem' }}>
+                      Share with friends
+                    </p>
+                    <SharePanel
+                      url="https://learn.bytesai.uk"
+                      title="100+ Free AI Courses"
+                      description="I found this — 100+ free AI courses from Google, Microsoft, Anthropic, NVIDIA & more. All curated and verified. No sign-up walls."
+                      compact
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Alison CTA */}
             <a
               href="https://alison.com/?utm_source=alison_user&utm_medium=affiliate&utm_campaign=27668723"
@@ -140,12 +178,12 @@ export default function Header({ userRole, displayName }: NavProps) {
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Link href="/auth/login" className="btn btn-ghost btn-sm">
+                <button className="btn btn-ghost btn-sm" onClick={() => setAuthModal('login')}>
                   <LogIn size={15} /> Sign in
-                </Link>
-                <Link href="/auth/register" className="btn btn-primary btn-sm">
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={() => setAuthModal('register')}>
                   Get started
-                </Link>
+                </button>
               </div>
             )}
 
@@ -181,6 +219,18 @@ export default function Header({ userRole, displayName }: NavProps) {
                 </Link>
               ))}
               <hr style={{ margin: '0.75rem 0', border: 'none', borderTop: '1px solid var(--border)' }} />
+              <p style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', padding: '0 1rem', marginBottom: '0.375rem' }}>
+                Share with friends
+              </p>
+              <div style={{ padding: '0 1rem', marginBottom: '0.75rem' }}>
+                <SharePanel
+                  url="https://learn.bytesai.uk"
+                  title="100+ Free AI Courses"
+                  description="I found this — 100+ free AI courses from Google, Microsoft, Anthropic, NVIDIA & more. All curated and verified. No sign-up walls."
+                  compact
+                />
+              </div>
+              <hr style={{ margin: '0.75rem 0', border: 'none', borderTop: '1px solid var(--border)' }} />
               <a
                 href="https://alison.com/?utm_source=alison_user&utm_medium=affiliate&utm_campaign=27668723"
                 target="_blank"
@@ -192,14 +242,16 @@ export default function Header({ userRole, displayName }: NavProps) {
               </a>
               {!userRole && (
                 <>
-                  <Link href="/auth/login" className="btn btn-outline" onClick={() => setMenuOpen(false)}>Sign in</Link>
-                  <Link href="/auth/register" className="btn btn-primary" style={{ marginTop: '0.5rem' }} onClick={() => setMenuOpen(false)}>Get started free</Link>
+                  <button className="btn btn-outline" onClick={() => { setMenuOpen(false); setAuthModal('login'); }}>Sign in</button>
+                  <button className="btn btn-primary" style={{ marginTop: '0.5rem' }} onClick={() => { setMenuOpen(false); setAuthModal('register'); }}>Get started free</button>
                 </>
               )}
             </div>
           </nav>
         </div>
       )}
+      {/* Auth modal */}
+      {!userRole && <AuthModal open={authModal !== null} onClose={() => setAuthModal(null)} initialTab={authModal ?? 'register'} />}
     </header>
   );
 }

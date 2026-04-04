@@ -5,7 +5,7 @@ import { sanitizeEmail, isValidEmail, checkRateLimit, getRateLimitKey, rateLimit
 import { getDB, getUserByEmail, getUserProfile } from '@/lib/db';
 
 const LoginSchema = z.object({
-  email: z.string().min(5).max(320),
+  email: z.string().email().max(320),
   password: z.string().min(1).max(128),
   turnstileToken: z.string().optional(),
 });
@@ -27,17 +27,27 @@ export async function POST(req: NextRequest) {
 
   if (!isValidEmail(email)) return NextResponse.json({ error: 'Invalid email address.' }, { status: 422 });
 
-  // Turnstile check (production only)
-  if (process.env.NODE_ENV === 'production' && process.env.TURNSTILE_BYPASS !== 'true') {
-    const token = parsed.data.turnstileToken;
-    if (!token) return NextResponse.json({ error: 'Bot protection token required.' }, { status: 422 });
-    const tRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secret: process.env.TURNSTILE_SECRET_KEY, response: token }),
-    });
-    const tData = await tRes.json() as { success: boolean };
-    if (!tData.success) return NextResponse.json({ error: 'Bot protection check failed. Please try again.' }, { status: 422 });
+  // Turnstile check (production only, skip if keys not configured)
+  {
+    let turnstileSecret: string | undefined;
+    try {
+      const { getCloudflareContext } = await import('@opennextjs/cloudflare');
+      const { env } = await getCloudflareContext({ async: true });
+      turnstileSecret = String((env as Record<string, unknown>).TURNSTILE_SECRET_KEY ?? '').trim() || undefined;
+    } catch {
+      turnstileSecret = process.env.TURNSTILE_SECRET_KEY?.trim();
+    }
+    if (turnstileSecret) {
+      const token = parsed.data.turnstileToken;
+      if (!token) return NextResponse.json({ error: 'Bot protection token required.' }, { status: 422 });
+      const tRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret: turnstileSecret, response: token }),
+      });
+      const tData = await tRes.json() as { success: boolean };
+      if (!tData.success) return NextResponse.json({ error: 'Bot protection check failed. Please try again.' }, { status: 422 });
+    }
   }
 
   const db = await getDB();
@@ -73,7 +83,11 @@ export async function POST(req: NextRequest) {
     .run()
     .catch(() => null);
 
-  const redirectTo = user.role === 'admin' ? '/admin' : '/dashboard';
+  // Unverified non-admin users must verify email first
+  const isVerified = user.email_verified === 1;
+  const redirectTo = !isVerified && user.role !== 'admin'
+    ? '/auth/verify-pending'
+    : user.role === 'admin' ? '/admin' : '/dashboard';
   const res = NextResponse.json({ ok: true, redirectTo }, { status: 200 });
   res.cookies.set(name, token, options);
   return res;

@@ -83,7 +83,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
 
       <main>
         {/* Page header */}
-        <div style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '3rem 0 2rem', color: 'white' }}>
+        <div className="courses-header" style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '3rem 0 2rem', color: 'white' }}>
           <div className="container">
             <h1 className="text-display" style={{ color: 'white', marginBottom: '0.5rem' }}>Browse AI courses</h1>
             <p style={{ color: '#94a3b8', fontSize: '1rem' }}>
@@ -91,7 +91,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
             </p>
 
             {/* Search bar */}
-            <form method="GET" action="/courses" style={{ marginTop: '1.5rem', position: 'relative', maxWidth: 560 }}>
+            <form method="GET" action="/courses" style={{ marginTop: '1.5rem', position: 'relative', maxWidth: 560, width: '100%' }}>
               <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
               <input
                 id="course-search"
@@ -111,12 +111,12 @@ export default async function CoursesPage({ searchParams }: PageProps) {
           </div>
         </div>
 
-        <div className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '2rem', alignItems: 'start' }}>
+        <div className="container" style={{ paddingTop: '1.5rem', paddingBottom: '3rem' }}>
+          <div className="layout-sidebar">
 
             {/* ── Sidebar filters ── */}
             <aside>
-              <div className="card" style={{ padding: '1.25rem', position: 'sticky', top: '80px' }}>
+              <div className="card sidebar-sticky" style={{ padding: '1.25rem', position: 'sticky', top: '80px' }}>
                 <p style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <SlidersHorizontal size={15} /> Filters
                 </p>

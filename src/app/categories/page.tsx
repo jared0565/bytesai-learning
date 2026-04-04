@@ -23,13 +23,13 @@ export default async function CategoriesPage() {
 
       <main>
         {/* Header */}
-        <section style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '4rem 0 3rem', color: 'white' }}>
-          <div className="container" style={{ textAlign: 'center', maxWidth: 800 }}>
+        <section className="courses-header" style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '3rem 0 2rem', color: 'white' }}>
+          <div className="container-sm" style={{ textAlign: 'center' }}>
             <h1 className="text-display" style={{ color: 'white', marginBottom: '1rem' }}>
               Explore AI Topics
             </h1>
-            <p style={{ color: '#cbd5e1', fontSize: '1.125rem', lineHeight: 1.6, marginBottom: '2rem' }}>
-              We've hand-picked the best free courses and grouped them by topic, 
+            <p style={{ color: '#cbd5e1', fontSize: 'clamp(0.9375rem, 2.5vw, 1.125rem)', lineHeight: 1.6, marginBottom: '2rem' }}>
+              We&apos;ve hand-picked the best free courses and grouped them by topic,
               from beginner fundamentals to advanced multi-agent systems.
             </p>
           </div>
@@ -64,7 +64,7 @@ export default async function CategoriesPage() {
             </div>
 
             {/* Quick search CTA */}
-            <div className="card" style={{ marginTop: '3rem', padding: '2.5rem 2rem', textAlign: 'center', background: 'var(--bg-card)' }}>
+            <div className="card" style={{ marginTop: '2rem', textAlign: 'center', background: 'var(--bg-card)' }}>
               <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--accent-soft)', margin: '0 auto 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Search size={24} color="var(--accent)" />
               </div>

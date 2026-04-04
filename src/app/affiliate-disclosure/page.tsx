@@ -8,7 +8,7 @@ import { verifySession, COOKIE_NAME } from '@/lib/auth';
 export const metadata: Metadata = {
   title: 'Affiliate Disclosure — BytesAI Learning',
   description: 'BytesAI Learning affiliate disclosure. We may earn commissions from Alison certificate purchases.',
-  alternates: { canonical: 'https://learn.bytesai.com/affiliate-disclosure' },
+  alternates: { canonical: 'https://learn.bytesai.uk/affiliate-disclosure' },
 };
 
 export default async function AffiliateDisclosurePage() {
@@ -33,7 +33,7 @@ export default async function AffiliateDisclosurePage() {
             <div className="card" style={{ padding: '2rem 2.5rem', fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.85, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
               <p>
-                BytesAI Learning (<strong style={{ color: 'var(--text-primary)' }}>learn.bytesai.com</strong>) participates in affiliate programmes. This means we may earn a commission when you make qualifying purchases through links on this site.
+                BytesAI Learning (<strong style={{ color: 'var(--text-primary)' }}>learn.bytesai.uk</strong>) participates in affiliate programmes. This means we may earn a commission when you make qualifying purchases through links on this site.
               </p>
 
               <div>

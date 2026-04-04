@@ -7,8 +7,8 @@ import { verifySession, COOKIE_NAME } from '@/lib/auth';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy — BytesAI Learning',
-  description: 'Privacy policy for BytesAI Learning (learn.bytesai.com).',
-  alternates: { canonical: 'https://learn.bytesai.com/privacy-policy' },
+  description: 'Privacy policy for BytesAI Learning (learn.bytesai.uk).',
+  alternates: { canonical: 'https://learn.bytesai.uk/privacy-policy' },
 };
 
 export default async function PrivacyPolicyPage() {
@@ -33,7 +33,7 @@ export default async function PrivacyPolicyPage() {
             <div className="card" style={{ padding: '2rem 2.5rem', fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.85, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
               {[
-                { title: 'Who we are', body: 'BytesAI Learning is operated at learn.bytesai.com. We provide a curated catalog of free AI courses. Contact: hello@bytesai.com.' },
+                { title: 'Who we are', body: 'BytesAI Learning is operated at learn.bytesai.uk. We provide a curated catalog of free AI courses. Contact: hello@bytesai.com.' },
                 { title: 'Data we collect', body: 'When you create an account, we collect your email address and a hashed password. We record course views, saves, starts, and completions to power your dashboard and improve recommendations. We do not sell your data.' },
                 { title: 'How we use your data', body: 'Your data is used to provide your learning dashboard, track progress, and show personalised recommendations. We may use aggregate, anonymised data to improve the catalog.' },
                 { title: 'Cookies', body: 'We use a single HttpOnly session cookie (bytesai_session) to keep you signed in. We do not use tracking or advertising cookies.' },

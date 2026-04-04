@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, BookOpen, ArrowLeft, CheckCircle2, Info, Calendar, Bookmark } from 'lucide-react';
+import { ExternalLink, BookOpen, ArrowLeft, CheckCircle2, Info, Calendar, Bookmark, Lock, UserPlus, LogIn } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
@@ -21,14 +21,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!db || !isValidSlug(slug)) return { title: 'Course Not Found' };
   const course = await getCourseBySlug(db, slug).catch(() => null);
   if (!course) return { title: 'Course Not Found' };
+  const PROD_URL = 'https://learn.bytesai.uk';
+  const ogImage = course.og_image_url ?? `${PROD_URL}/og/${slug}.png`;
   return {
     title: course.meta_title ?? course.title,
     description: course.meta_description ?? course.snippet ?? undefined,
     openGraph: {
       title: course.og_title ?? course.title,
       description: course.og_description ?? course.snippet ?? undefined,
-      images: course.og_image_url ? [course.og_image_url] : undefined,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: course.title }],
       type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: course.og_title ?? course.title,
+      description: course.og_description ?? course.snippet ?? undefined,
+      images: [ogImage],
     },
     alternates: { canonical: course.canonical_url ?? `/courses/${slug}` },
   };
@@ -102,11 +110,14 @@ export default async function CourseDetailPage({ params }: PageProps) {
       name: provider?.name ?? 'Unknown',
       sameAs: provider?.website_url ?? undefined,
     },
-    url: `https://learn.bytesai.com/courses/${course.slug}`,
+    url: `https://learn.bytesai.uk/courses/${course.slug}`,
     isAccessibleForFree: true,
     educationalLevel: course.level ?? undefined,
     inLanguage: 'en',
   };
+
+  // ── Membership gate: non-Alison courses require sign-in ──
+  const requiresAuth = !isAlison && !session;
 
   return (
     <>
@@ -117,7 +128,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
       <main>
         {/* Breadcrumb */}
         <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', padding: '0.875rem 0' }}>
-          <div className="container" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+          <div className="container breadcrumb">
             <Link href="/" style={{ color: 'var(--text-muted)' }}>Home</Link>
             <span>/</span>
             <Link href="/courses" style={{ color: 'var(--text-muted)' }}>Courses</Link>
@@ -134,8 +145,8 @@ export default async function CourseDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        <div className="container" style={{ paddingTop: '2.5rem', paddingBottom: '4rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '3rem', alignItems: 'start' }}>
+        <div className="container" style={{ paddingTop: '1.5rem', paddingBottom: '3rem' }}>
+          <div className="layout-detail">
 
             {/* ── Main content ── */}
             <div>
@@ -163,89 +174,196 @@ export default async function CourseDetailPage({ params }: PageProps) {
                 </p>
               )}
 
-              {/* Quick facts */}
-              <div className="quick-facts" style={{ marginBottom: '1.75rem' }}>
-                {Object.entries(quickFacts).map(([label, value]) => (
-                  <div key={label} className="quick-fact">
-                    <span className="quick-fact-label">{label}</span>
-                    <span className="quick-fact-value">{value}</span>
+              {/* ── Membership gate notice ── */}
+              {requiresAuth ? (
+                <>
+                  {/* Snippet teaser — visible to everyone */}
+                  {course.snippet && (
+                    <div style={{ marginBottom: '1.75rem' }}>
+                      <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.625rem' }}>About this course</h2>
+                      <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>{course.snippet}</p>
+                    </div>
+                  )}
+
+                  {/* Gate card */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(79,110,247,0.08), rgba(14,165,233,0.06))',
+                    border: '1px solid rgba(79,110,247,0.25)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: 'clamp(1.5rem, 4vw, 2.5rem)',
+                    textAlign: 'center',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}>
+                    {/* Decorative lock icon */}
+                    <div style={{
+                      width: 64, height: 64, borderRadius: '50%',
+                      background: 'linear-gradient(135deg, var(--accent), var(--teal))',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      margin: '0 auto 1.25rem',
+                      boxShadow: '0 8px 24px rgba(79,110,247,0.25)',
+                    }}>
+                      <Lock size={28} color="white" />
+                    </div>
+
+                    <h2 style={{ fontSize: 'clamp(1.125rem, 3vw, 1.375rem)', fontWeight: 800, marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
+                      Create a free account to access this course
+                    </h2>
+                    <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.7, maxWidth: 480, margin: '0 auto 1.5rem' }}>
+                      Join BytesAI Learning to unlock full course details, track your progress, and get personalised recommendations. It&apos;s 100% free — no credit card needed.
+                    </p>
+
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+                      <Link
+                        href={`/auth/register?from=/courses/${course.slug}`}
+                        className="btn btn-primary btn-lg"
+                        style={{ minWidth: 200, justifyContent: 'center' }}
+                      >
+                        <UserPlus size={18} /> Sign up free
+                      </Link>
+                      <Link
+                        href={`/auth/login?from=/courses/${course.slug}`}
+                        className="btn btn-outline btn-lg"
+                        style={{ minWidth: 200, justifyContent: 'center' }}
+                      >
+                        <LogIn size={18} /> Log in
+                      </Link>
+                    </div>
+
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                      Already a member? <Link href={`/auth/login?from=/courses/${course.slug}`} style={{ color: 'var(--accent)', fontWeight: 600 }}>Sign in</Link> to continue learning.
+                    </p>
                   </div>
-                ))}
-              </div>
 
-              {/* Affiliate disclosure */}
-              {isAffiliate && (
-                <div className="affiliate-disclosure" style={{ marginBottom: '1.75rem' }}>
-                  <strong>Affiliate disclosure:</strong>{' '}
-                  {course.disclosure_label ?? provider?.affiliate_disclosure ?? 'This link is an affiliate link. We may earn a commission if you purchase a certificate or diploma. The course content is free.'}
-                </div>
-              )}
+                  {/* Blurred preview of what's behind the gate */}
+                  <div style={{
+                    marginTop: '1.75rem',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    maxHeight: 200,
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                  }}>
+                    <div style={{ filter: 'blur(6px)', opacity: 0.4 }}>
+                      {outcomes.length > 0 && (
+                        <div style={{ marginBottom: '1.75rem' }}>
+                          <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.875rem' }}>What you&apos;ll learn</h2>
+                          <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {outcomes.slice(0, 3).map((o, i) => (
+                              <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', fontSize: '0.9375rem', color: 'var(--text-secondary)' }}>
+                                <CheckCircle2 size={16} color="var(--emerald)" style={{ flexShrink: 0, marginTop: 3 }} />
+                                {o}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      <div className="quick-facts">
+                        {Object.entries(quickFacts).slice(0, 4).map(([label, value]) => (
+                          <div key={label} className="quick-fact">
+                            <span className="quick-fact-label">{label}</span>
+                            <span className="quick-fact-value">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Fade-out gradient overlay */}
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0, height: 120,
+                      background: 'linear-gradient(transparent, var(--bg))',
+                      pointerEvents: 'none',
+                    }} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* ── Full content (members + Alison courses) ── */}
 
-              {/* Snippet / Summary */}
-              {course.snippet && (
-                <div style={{ marginBottom: '1.75rem' }}>
-                  <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.625rem' }}>About this course</h2>
-                  <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>{course.snippet}</p>
-                </div>
-              )}
-
-              {/* Long description */}
-              {course.long_description && (
-                <div style={{ marginBottom: '1.75rem' }}>
-                  <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>{course.long_description}</p>
-                </div>
-              )}
-
-              {/* Learning outcomes */}
-              {outcomes.length > 0 && (
-                <div style={{ marginBottom: '1.75rem' }}>
-                  <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.875rem' }}>What you&apos;ll learn</h2>
-                  <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {outcomes.map((o, i) => (
-                      <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', fontSize: '0.9375rem', color: 'var(--text-secondary)' }}>
-                        <CheckCircle2 size={16} color="var(--emerald)" style={{ flexShrink: 0, marginTop: 3 }} />
-                        {o}
-                      </li>
+                  {/* Quick facts */}
+                  <div className="quick-facts" style={{ marginBottom: '1.75rem' }}>
+                    {Object.entries(quickFacts).map(([label, value]) => (
+                      <div key={label} className="quick-fact">
+                        <span className="quick-fact-label">{label}</span>
+                        <span className="quick-fact-value">{value}</span>
+                      </div>
                     ))}
-                  </ul>
-                </div>
-              )}
+                  </div>
 
-              {/* Who it's for */}
-              {course.who_its_for && (
-                <div style={{ marginBottom: '1.75rem' }}>
-                  <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.625rem' }}>Who this is for</h2>
-                  <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>{course.who_its_for}</p>
-                </div>
-              )}
+                  {/* Affiliate disclosure */}
+                  {isAffiliate && (
+                    <div className="affiliate-disclosure" style={{ marginBottom: '1.75rem' }}>
+                      <strong>Affiliate disclosure:</strong>{' '}
+                      {course.disclosure_label ?? provider?.affiliate_disclosure ?? 'This link is an affiliate link. We may earn a commission if you purchase a certificate or diploma. The course content is free.'}
+                    </div>
+                  )}
 
-              {/* What to take next */}
-              {course.what_to_take_next && (
-                <div style={{ marginBottom: '1.75rem' }}>
-                  <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.625rem' }}>What to take next</h2>
-                  <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>{course.what_to_take_next}</p>
-                </div>
-              )}
+                  {/* Snippet / Summary */}
+                  {course.snippet && (
+                    <div style={{ marginBottom: '1.75rem' }}>
+                      <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.625rem' }}>About this course</h2>
+                      <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>{course.snippet}</p>
+                    </div>
+                  )}
 
-              {/* Source link + last verified */}
-              <div className="card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                  <Calendar size={14} />
-                  Last verified: {course.last_verified_at ?? 'Recently'}
-                </div>
-                <a
-                  href={destination}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.875rem', color: 'var(--accent)', fontWeight: 600 }}
-                >
-                  <BookOpen size={14} /> Official source <ExternalLink size={12} />
-                </a>
-              </div>
+                  {/* Long description */}
+                  {course.long_description && (
+                    <div style={{ marginBottom: '1.75rem' }}>
+                      <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>{course.long_description}</p>
+                    </div>
+                  )}
+
+                  {/* Learning outcomes */}
+                  {outcomes.length > 0 && (
+                    <div style={{ marginBottom: '1.75rem' }}>
+                      <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.875rem' }}>What you&apos;ll learn</h2>
+                      <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {outcomes.map((o, i) => (
+                          <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', fontSize: '0.9375rem', color: 'var(--text-secondary)' }}>
+                            <CheckCircle2 size={16} color="var(--emerald)" style={{ flexShrink: 0, marginTop: 3 }} />
+                            {o}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Who it's for */}
+                  {course.who_its_for && (
+                    <div style={{ marginBottom: '1.75rem' }}>
+                      <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.625rem' }}>Who this is for</h2>
+                      <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>{course.who_its_for}</p>
+                    </div>
+                  )}
+
+                  {/* What to take next */}
+                  {course.what_to_take_next && (
+                    <div style={{ marginBottom: '1.75rem' }}>
+                      <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.625rem' }}>What to take next</h2>
+                      <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>{course.what_to_take_next}</p>
+                    </div>
+                  )}
+
+                  {/* Source link + last verified */}
+                  <div className="card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                      <Calendar size={14} />
+                      Last verified: {course.last_verified_at ?? 'Recently'}
+                    </div>
+                    <a
+                      href={destination}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.875rem', color: 'var(--accent)', fontWeight: 600 }}
+                    >
+                      <BookOpen size={14} /> Official source <ExternalLink size={12} />
+                    </a>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* ── Sidebar ── */}
-            <aside style={{ position: 'sticky', top: '80px' }}>
+            <aside className="detail-sidebar">
               <div className="card" style={{ padding: '1.5rem' }}>
                 {/* Cover */}
                 <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', aspectRatio: '16/9', background: isAlison ? 'linear-gradient(135deg, #f59e0b22, #fb923c22)' : 'linear-gradient(135deg, var(--accent-soft), var(--teal-soft))', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -257,56 +375,97 @@ export default async function CourseDetailPage({ params }: PageProps) {
                   )}
                 </div>
 
-                {/* Price note */}
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <p style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--emerald)', marginBottom: '0.25rem' }}>Free</p>
-                  {course.certification_type && course.certification_type !== 'none' && (
-                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{course.certification_type} — optional paid</p>
-                  )}
-                </div>
+                {requiresAuth ? (
+                  <>
+                    {/* Gated sidebar — sign up CTA */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                      <p style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--emerald)', marginBottom: '0.25rem' }}>Free</p>
+                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Free account required to access</p>
+                    </div>
 
-                {/* Primary CTA */}
-                <a
-                  id="course-start-cta"
-                  href={destination}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-primary"
-                  style={{ width: '100%', justifyContent: 'center', marginBottom: '0.875rem', fontSize: '1rem' }}
-                >
-                  Start learning <ExternalLink size={16} />
-                </a>
+                    <Link
+                      href={`/auth/register?from=/courses/${course.slug}`}
+                      className="btn btn-primary"
+                      style={{ width: '100%', justifyContent: 'center', marginBottom: '0.75rem', fontSize: '1rem' }}
+                    >
+                      <UserPlus size={16} /> Sign up to access
+                    </Link>
 
-                {/* Save + Share */}
-                {session ? (
-                  <CourseSidebarActions
-                    courseId={course.id}
-                    courseSlug={course.slug}
-                    courseTitle={course.title}
-                    initialStatus={initialStatus}
-                    initialProgress={initialProgress}
-                  />
+                    <Link
+                      href={`/auth/login?from=/courses/${course.slug}`}
+                      className="btn btn-outline"
+                      style={{ width: '100%', justifyContent: 'center', display: 'flex' }}
+                    >
+                      <LogIn size={16} /> Log in
+                    </Link>
+
+                    <div style={{
+                      marginTop: '1rem', padding: '0.875rem',
+                      background: 'rgba(79,110,247,0.06)', borderRadius: 'var(--radius-md)',
+                      border: '1px solid rgba(79,110,247,0.12)',
+                    }}>
+                      <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.6, textAlign: 'center' }}>
+                        <Lock size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: '-2px' }} />
+                        Sign up takes 30 seconds. No credit card. Track your progress and save courses.
+                      </p>
+                    </div>
+                  </>
                 ) : (
                   <>
-                    <Link href={`/auth/register?from=/courses/${course.slug}`} className="btn btn-outline" style={{ width: '100%', justifyContent: 'center', display: 'flex' }}>
-                      <Bookmark size={16} /> Sign in to save
-                    </Link>
-                    <CourseSidebarActions
-                      courseId={course.id}
-                      courseSlug={course.slug}
-                      courseTitle={course.title}
-                      initialStatus={null}
-                      initialProgress={0}
-                      shareOnly
-                    />
-                  </>
-                )}
+                    {/* Full sidebar — members + Alison */}
 
-                {isAffiliate && (
-                  <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.875rem', textAlign: 'center', lineHeight: 1.5 }}>
-                    <Info size={11} style={{ display: 'inline', marginRight: 3 }} />
-                    Affiliate link — we may earn a commission on certificate purchases. Free to learn.
-                  </p>
+                    {/* Price note */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                      <p style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--emerald)', marginBottom: '0.25rem' }}>Free</p>
+                      {course.certification_type && course.certification_type !== 'none' && (
+                        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{course.certification_type} — optional paid</p>
+                      )}
+                    </div>
+
+                    {/* Primary CTA */}
+                    <a
+                      id="course-start-cta"
+                      href={destination}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary"
+                      style={{ width: '100%', justifyContent: 'center', marginBottom: '0.875rem', fontSize: '1rem' }}
+                    >
+                      Start learning <ExternalLink size={16} />
+                    </a>
+
+                    {/* Save + Share */}
+                    {session ? (
+                      <CourseSidebarActions
+                        courseId={course.id}
+                        courseSlug={course.slug}
+                        courseTitle={course.title}
+                        initialStatus={initialStatus}
+                        initialProgress={initialProgress}
+                      />
+                    ) : (
+                      <>
+                        <Link href={`/auth/register?from=/courses/${course.slug}`} className="btn btn-outline" style={{ width: '100%', justifyContent: 'center', display: 'flex' }}>
+                          <Bookmark size={16} /> Sign in to save
+                        </Link>
+                        <CourseSidebarActions
+                          courseId={course.id}
+                          courseSlug={course.slug}
+                          courseTitle={course.title}
+                          initialStatus={null}
+                          initialProgress={0}
+                          shareOnly
+                        />
+                      </>
+                    )}
+
+                    {isAffiliate && (
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.875rem', textAlign: 'center', lineHeight: 1.5 }}>
+                        <Info size={11} style={{ display: 'inline', marginRight: 3 }} />
+                        Affiliate link — we may earn a commission on certificate purchases. Free to learn.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -330,7 +489,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
           {/* Related courses */}
           {related.length > 0 && (
-            <section style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border)' }}>
+            <section style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
               <div className="section-header">
                 <h2 className="section-header-title">Related courses</h2>
                 <Link href={`/courses?category=${encodeURIComponent(course.category ?? '')}`} className="section-viewall">

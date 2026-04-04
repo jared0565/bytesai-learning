@@ -4,7 +4,6 @@ import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 initOpenNextCloudflareForDev();
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['node:sqlite'],
   images: {
     unoptimized: true,
     remotePatterns: [

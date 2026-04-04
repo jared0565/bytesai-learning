@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   LayoutDashboard, BookOpen, Users, BarChart2, Sparkles, FileText,
-  MessageSquare, Download, Rss, ChevronLeft, ChevronRight,
+  MessageSquare, Download, Rss, ChevronLeft, ChevronRight, Settings,
 } from 'lucide-react';
 
 const NAV = [
@@ -17,6 +17,7 @@ const NAV = [
   { href: '/admin/analytics', icon: <BarChart2 size={18} />, label: 'Analytics' },
   { href: '/admin/users', icon: <Users size={18} />, label: 'Users' },
   { href: '/admin/chatbot-rules', icon: <MessageSquare size={18} />, label: 'Chatbot Conversations' },
+  { href: '/admin/settings', icon: <Settings size={18} />, label: 'Settings' },
 ];
 
 interface Props {

@@ -228,14 +228,14 @@ export async function getTrendingCourses(db: D1Database, limit = 8): Promise<Cou
 
 export async function getCoursesByCategory(db: D1Database, category: string, limit = 20): Promise<Course[]> {
   const result = await db.prepare(
-    'SELECT * FROM courses WHERE category = ? AND published_status = ? ORDER BY popularity_score DESC LIMIT ?'
+    'SELECT * FROM courses WHERE category = ? AND published_status = ? ORDER BY is_alison DESC, popularity_score DESC LIMIT ?'
   ).bind(category, 'published', limit).all<Course>();
   return result.results;
 }
 
 export async function getCoursesByProvider(db: D1Database, providerId: string, limit = 20): Promise<Course[]> {
   const result = await db.prepare(
-    'SELECT * FROM courses WHERE provider_id = ? AND published_status = ? ORDER BY popularity_score DESC LIMIT ?'
+    'SELECT * FROM courses WHERE provider_id = ? AND published_status = ? ORDER BY is_alison DESC, popularity_score DESC LIMIT ?'
   ).bind(providerId, 'published', limit).all<Course>();
   return result.results;
 }

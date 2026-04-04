@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       images: page.og_image_url ? [page.og_image_url] : undefined,
       type: 'article',
     },
-    alternates: { canonical: `https://learn.bytesai.com/curated/${slug}` },
+    alternates: { canonical: `https://learn.bytesai.uk/curated/${slug}` },
   };
 }
 
@@ -82,13 +82,13 @@ export default async function CuratedDetailPage({ params }: PageProps) {
     '@type': 'Article',
     headline: page.title,
     description: page.summary ?? undefined,
-    url: `https://learn.bytesai.com/curated/${page.slug}`,
+    url: `https://learn.bytesai.uk/curated/${page.slug}`,
     dateModified: page.last_verified_at ?? page.updated_at,
     datePublished: page.created_at,
     publisher: {
       '@type': 'Organization',
       name: 'BytesAI Learning',
-      url: 'https://learn.bytesai.com',
+      url: 'https://learn.bytesai.uk',
     },
   };
 
@@ -101,7 +101,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
       <main>
         {/* Breadcrumb */}
         <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', padding: '0.875rem 0' }}>
-          <div className="container" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+          <div className="container breadcrumb">
             <Link href="/" style={{ color: 'var(--text-muted)' }}>Home</Link>
             <span>/</span>
             <Link href="/curated" style={{ color: 'var(--text-muted)' }}>Insights</Link>
@@ -110,7 +110,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        <div className="container" style={{ paddingTop: '2.5rem', paddingBottom: '4rem', maxWidth: 900 }}>
+        <div className="container" style={{ paddingTop: '1.5rem', paddingBottom: '3rem', maxWidth: 900 }}>
 
           {/* Header */}
           <div style={{ marginBottom: '2.5rem' }}>
@@ -134,7 +134,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
             {page.why_it_matters && (
-              <section className="card" style={{ padding: '1.75rem 2rem' }}>
+              <section className="card" style={{ }}>
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Lightbulb size={20} color="var(--accent)" /> Why it matters
                 </h2>
@@ -145,7 +145,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
             )}
 
             {page.what_changed && (
-              <section className="card" style={{ padding: '1.75rem 2rem' }}>
+              <section className="card" style={{ }}>
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <TrendingUp size={20} color="var(--teal)" /> What changed
                 </h2>
@@ -156,7 +156,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
             )}
 
             {page.executive_implications && (
-              <section className="card" style={{ padding: '1.75rem 2rem', borderLeft: '3px solid var(--accent)' }}>
+              <section className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <AlertCircle size={20} color="var(--accent)" /> Key implications
                 </h2>
@@ -194,7 +194,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
 
             {/* Source references */}
             {sourceRefs.length > 0 && (
-              <section className="card" style={{ padding: '1.75rem 2rem' }}>
+              <section className="card" style={{ }}>
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem' }}>
                   Sources
                 </h2>

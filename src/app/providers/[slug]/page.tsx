@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${provider.name} Free AI Courses — BytesAI Learning`,
     description: `Browse free AI courses from ${provider.name}. Curated and verified on BytesAI Learning.`,
-    alternates: { canonical: `https://learn.bytesai.com/providers/${slug}` },
+    alternates: { canonical: `https://learn.bytesai.uk/providers/${slug}` },
   };
 }
 

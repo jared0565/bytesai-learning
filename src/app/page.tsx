@@ -4,7 +4,9 @@ import { ArrowRight, Sparkles, Zap, BookOpen, ShieldCheck, TrendingUp } from 'lu
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard, { CourseCardSkeleton } from '@/components/ui/CourseCard';
-import { getTrendingCourses, getDB} from '@/lib/db';
+import AuthButton from '@/components/ui/AuthButton';
+import SharePanel from '@/components/ui/SharePanel';
+import { getDB } from '@/lib/db';
 import { CATEGORIES } from '@/lib/ranking';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -17,25 +19,66 @@ export const metadata: Metadata = {
 
 // Attempt to get DB from the runtime environment
 
+/** Interleave non-Alison and Alison courses so each 4-card row has 2 of each.
+ *  Pattern: [non, alison, non, alison, non, alison, …]
+ *  If one pool runs short, remaining slots are filled from the other.
+ */
+function interleaveCourses(
+  nonAlison: import('@/lib/db').Course[],
+  alison: import('@/lib/db').Course[],
+): import('@/lib/db').Course[] {
+  const result: import('@/lib/db').Course[] = [];
+  const maxLen = Math.max(nonAlison.length, alison.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (nonAlison[i]) result.push(nonAlison[i]);
+    if (alison[i])    result.push(alison[i]);
+  }
+  return result;
+}
+
 async function getHomeData() {
   const db = await getDB();
   if (!db) return { featured: [], trending: [], courseCount: 0, providerCount: 0 };
   try {
-    const [featuredResult, trending, counts] = await Promise.all([
+    const [
+      featuredNonAlison,
+      featuredAlison,
+      trendingNonAlison,
+      trendingAlison,
+      counts,
+    ] = await Promise.all([
+      // Featured — non-Alison: by featured_priority then popularity
       db.prepare(
-        `SELECT * FROM courses WHERE published_status = 'published' AND featured_priority > 0
-         ORDER BY featured_priority DESC LIMIT 8`
+        `SELECT * FROM courses WHERE published_status = 'published' AND is_alison = 0
+         ORDER BY featured_priority DESC, popularity_score DESC LIMIT 4`
       ).all<import('@/lib/db').Course>(),
-      getTrendingCourses(db, 8),
+      // Featured — Alison: by featured_priority
+      db.prepare(
+        `SELECT * FROM courses WHERE published_status = 'published' AND is_alison = 1
+         ORDER BY featured_priority DESC, popularity_score DESC LIMIT 4`
+      ).all<import('@/lib/db').Course>(),
+      // Trending — non-Alison
+      db.prepare(
+        `SELECT * FROM courses WHERE published_status = 'published' AND is_alison = 0
+         ORDER BY (recent_views_30d * 0.45 + unique_learners_30d * 0.30 + starts_30d * 0.15 + completion_rate * 0.10) DESC
+         LIMIT 4`
+      ).all<import('@/lib/db').Course>(),
+      // Trending — Alison
+      db.prepare(
+        `SELECT * FROM courses WHERE published_status = 'published' AND is_alison = 1
+         ORDER BY (recent_views_30d * 0.45 + unique_learners_30d * 0.30 + starts_30d * 0.15 + completion_rate * 0.10) DESC
+         LIMIT 4`
+      ).all<import('@/lib/db').Course>(),
       db.prepare(
         `SELECT
           (SELECT COUNT(*) FROM courses WHERE published_status = 'published') as courses,
           (SELECT COUNT(DISTINCT provider_id) FROM courses WHERE published_status = 'published' AND provider_id IS NOT NULL) as providers`
       ).first<{ courses: number; providers: number }>(),
     ]);
+
     return {
-      featured: featuredResult.results,
-      trending,
+      featured: interleaveCourses(featuredNonAlison.results, featuredAlison.results),
+      trending: interleaveCourses(trendingNonAlison.results, trendingAlison.results),
       courseCount: counts?.courses ?? 0,
       providerCount: counts?.providers ?? 0,
     };
@@ -73,6 +116,18 @@ export default async function HomePage() {
         <section id="hero" className="hero">
           <div className="container hero-grid">
             <div>
+              {/* Share buttons — labeled for clarity */}
+              <div className="hero-share-row">
+                <span className="hero-share-label">Share this resource:</span>
+                <SharePanel
+                  url="https://learn.bytesai.uk"
+                  title="100+ Free AI Courses"
+                  description="I found this — 100+ free AI courses from Google, Microsoft, Anthropic, NVIDIA & more. All curated and verified."
+                  compact
+                  labeled
+                />
+              </div>
+
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 'var(--radius-full)', padding: '0.375rem 1rem', fontSize: '0.8125rem', fontWeight: 600, color: '#e0e7ff', marginBottom: '1.5rem' }}>
                 <Sparkles size={13} />
                 {courseCount > 0 ? courseCount : '100'}+ courses · {providerCount > 0 ? providerCount : '28'} providers · 100% free to start
@@ -81,7 +136,7 @@ export default async function HomePage() {
                 The best free AI courses,{' '}
                 <span className="gradient-text">curated for you</span>
               </h1>
-              <p style={{ fontSize: '1.125rem', color: '#cbd5e1', lineHeight: 1.75, maxWidth: 540, marginBottom: '2rem' }}>
+              <p className="hero-subtitle" style={{ fontSize: '1.125rem', color: '#cbd5e1', lineHeight: 1.75, maxWidth: 540, marginBottom: '2rem' }}>
                 Stop hunting across 20 tabs. We curate and verify the best free AI learning from
                 Microsoft, Anthropic, Google, NVIDIA, DeepLearning.AI, and more — in one place.
               </p>
@@ -90,9 +145,9 @@ export default async function HomePage() {
                   Browse all courses <ArrowRight size={18} />
                 </Link>
                 {!session && (
-                  <Link href="/auth/register" className="btn btn-outline btn-lg" style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>
+                  <AuthButton className="btn btn-outline btn-lg" style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>
                     Create free account
-                  </Link>
+                  </AuthButton>
                 )}
               </div>
 
@@ -145,7 +200,7 @@ export default async function HomePage() {
         </section>
 
         {/* ── Featured Above the Fold ───────────────────────────── */}
-        <section className="section-sm" style={{ background: 'var(--bg)' }}>
+        <section id="featured" className="section-sm" style={{ background: 'var(--bg)' }}>
           <div className="container">
             <div className="section-header">
               <h2 className="section-header-title">⭐ Featured this week</h2>
@@ -165,13 +220,13 @@ export default async function HomePage() {
               </div>
             )}
             <div style={{ marginTop: '1.25rem', padding: '0.75rem 1rem', background: 'var(--amber-soft)', borderRadius: 'var(--radius-md)', fontSize: '0.8125rem', color: '#92400e' }} className="dark-hide">
-              💡 <strong>Affiliate note:</strong> The first two cards above link to Alison courses. We may earn a commission if you purchase a certificate — the course itself is free.
+              💡 <strong>Affiliate note:</strong> Some cards above link to Alison courses (marked with an Alison badge). We may earn a commission if you purchase a certificate — the course itself is always free.
             </div>
           </div>
         </section>
 
         {/* ── Trending ──────────────────────────────────────────── */}
-        <section className="section" style={{ background: 'var(--bg-card)' }}>
+        <section id="trending" className="section" style={{ background: 'var(--bg-card)' }}>
           <div className="container">
             <div className="section-header">
               <div>
@@ -224,20 +279,39 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* ── Viral / Share CTA ──────────────────────────────────── */}
+        <section className="section-sm" style={{ background: 'var(--bg)' }}>
+          <div className="container-sm" style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🚀</p>
+            <h2 className="text-display" style={{ marginBottom: '0.5rem' }}>Know someone learning AI?</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem', marginBottom: '1.5rem', lineHeight: 1.7 }}>
+              Help a friend, colleague, or student discover 100+ free AI courses. Share BytesAI Learning — it only takes a second.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <SharePanel
+                url="https://learn.bytesai.uk"
+                title="100+ Free AI Courses"
+                description="I found this — 100+ free AI courses from Google, Microsoft, Anthropic, NVIDIA & more. All curated and verified. No sign-up walls."
+                compact
+              />
+            </div>
+          </div>
+        </section>
+
         {/* ── Sign-up CTA ───────────────────────────────────────── */}
         {!session && (
           <section className="section" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)', color: 'white' }}>
-            <div className="container" style={{ textAlign: 'center', maxWidth: 640 }}>
+            <div className="container-sm" style={{ textAlign: 'center' }}>
               <h2 className="text-display" style={{ color: 'white', marginBottom: '1rem' }}>
                 Track your progress, save courses
               </h2>
-              <p style={{ color: '#cbd5e1', fontSize: '1.0625rem', marginBottom: '2rem', lineHeight: 1.7 }}>
-                Create a free account to save courses, track what you've started, and get personalised recommendations.
+              <p style={{ color: '#cbd5e1', fontSize: 'clamp(0.9375rem, 2.5vw, 1.0625rem)', marginBottom: '2rem', lineHeight: 1.7 }}>
+                Create a free account to save courses, track what you&apos;ve started, and get personalised recommendations.
               </p>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                <Link href="/auth/register" className="btn btn-primary btn-lg">
+                <AuthButton className="btn btn-primary btn-lg">
                   Get started free <ArrowRight size={18} />
-                </Link>
+                </AuthButton>
                 <Link href="/courses" className="btn btn-outline btn-lg" style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>
                   Browse without signing in
                 </Link>

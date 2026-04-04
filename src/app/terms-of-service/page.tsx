@@ -7,8 +7,8 @@ import { verifySession, COOKIE_NAME } from '@/lib/auth';
 
 export const metadata: Metadata = {
   title: 'Terms of Service — BytesAI Learning',
-  description: 'Terms of service for BytesAI Learning (learn.bytesai.com).',
-  alternates: { canonical: 'https://learn.bytesai.com/terms-of-service' },
+  description: 'Terms of service for BytesAI Learning (learn.bytesai.uk).',
+  alternates: { canonical: 'https://learn.bytesai.uk/terms-of-service' },
 };
 
 export default async function TermsPage() {
@@ -33,7 +33,7 @@ export default async function TermsPage() {
             <div className="card" style={{ padding: '2rem 2.5rem', fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.85, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
               {[
-                { title: 'Acceptance', body: 'By using BytesAI Learning (learn.bytesai.com), you agree to these terms. If you do not agree, please do not use the service.' },
+                { title: 'Acceptance', body: 'By using BytesAI Learning (learn.bytesai.uk), you agree to these terms. If you do not agree, please do not use the service.' },
                 { title: 'The service', body: 'BytesAI Learning provides a curated index of free AI learning resources. We do not host course content — we link to third-party providers. Access to course content is subject to each provider\'s own terms.' },
                 { title: 'Your account', body: 'You are responsible for maintaining the confidentiality of your account credentials. You must provide accurate information when registering. You may not share your account or use it for commercial purposes without our consent.' },
                 { title: 'Acceptable use', body: 'You agree not to attempt to circumvent security measures, scrape the site at scale, impersonate other users, or use the service for any unlawful purpose.' },

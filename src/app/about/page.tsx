@@ -9,7 +9,7 @@ import { verifySession, COOKIE_NAME } from '@/lib/auth';
 export const metadata: Metadata = {
   title: 'About BytesAI Learning',
   description: 'BytesAI Learning curates and verifies the best free AI courses from Microsoft, Google, Anthropic, NVIDIA, and more — all in one place.',
-  alternates: { canonical: 'https://learn.bytesai.com/about' },
+  alternates: { canonical: 'https://learn.bytesai.uk/about' },
 };
 
 export default async function AboutPage() {
@@ -22,19 +22,19 @@ export default async function AboutPage() {
       <Header userRole={session?.role ?? null} displayName={session?.displayName} />
 
       <main>
-        <section style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '4rem 0 3rem', color: 'white' }}>
-          <div className="container" style={{ maxWidth: 800, textAlign: 'center' }}>
+        <section className="courses-header" style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '3rem 0 2rem', color: 'white' }}>
+          <div className="container-sm" style={{ textAlign: 'center' }}>
             <h1 className="text-display" style={{ color: 'white', marginBottom: '1rem' }}>
               About BytesAI Learning
             </h1>
-            <p style={{ color: '#cbd5e1', fontSize: '1.125rem', lineHeight: 1.7 }}>
+            <p style={{ color: '#cbd5e1', fontSize: 'clamp(0.9375rem, 2.5vw, 1.125rem)', lineHeight: 1.7 }}>
               We curate and verify the best free AI learning on the internet — so you don&apos;t have to hunt across 20 tabs.
             </p>
           </div>
         </section>
 
         <section className="section" style={{ background: 'var(--bg)' }}>
-          <div className="container" style={{ maxWidth: 760 }}>
+          <div className="container-sm">
 
             <div style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.85, display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '3rem' }}>
               <p>
@@ -48,7 +48,7 @@ export default async function AboutPage() {
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '3rem' }}>
+            <div className="grid-2" style={{ marginBottom: '3rem' }}>
               {[
                 { icon: <Zap size={20} />, title: 'Verified free', body: 'Every course is checked before it goes live. No hidden paywalls or "free with subscription" traps.' },
                 { icon: <ShieldCheck size={20} />, title: 'Trusted sources only', body: 'Courses from institutions and companies with real reputations — not random YouTube channels.' },

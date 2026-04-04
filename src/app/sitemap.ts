@@ -2,7 +2,7 @@ import { getDB } from '@/lib/db';
 import type { MetadataRoute } from 'next';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://learn.bytesai.com';
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://learn.bytesai.uk';
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: `${base}/`, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },

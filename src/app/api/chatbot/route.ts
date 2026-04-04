@@ -34,11 +34,7 @@ function isOffTopic(message: string): boolean {
   return OFF_TOPIC_PATTERNS.some(p => p.test(message));
 }
 
-const OFF_TOPIC_REPLIES = [
-  "I'm only able to help you find AI and machine learning courses here — that's my speciality! Try asking something like 'beginner AI courses' or 'best prompt engineering course'. 🎓",
-  "That's a bit outside my library! I'm your AI learning guide — ask me about any AI, ML, or data science course and I'll find the best free options for you. 📚",
-  "I'm a course navigator, not a general assistant — so I stick to AI learning topics only. What would you like to learn today? Try 'free generative AI course' to get started!",
-];
+// (Off-topic replies now redirect to Alison search inline)
 
 // ─── Keyword fallback ─────────────────────────────────────────────────────────
 const KEYWORD_MAP: Array<{ terms: string[]; query: Partial<{ category: string; level: string; sort: string; provider: string }> }> = [
@@ -88,15 +84,25 @@ function buildFallbackReply(message: string, courseCount: number): string {
 }
 
 // ─── Affiliate-priority sort ──────────────────────────────────────────────────
-type CourseResult = { title: string; slug: string; provider?: string; snippet?: string; is_affiliate: boolean; is_alison: boolean };
+type CourseResult = { title: string; slug: string; provider?: string; snippet?: string; is_affiliate: boolean; is_alison: boolean; affiliate_url?: string };
 
-function sortAffiliateFirst(courses: CourseResult[]): CourseResult[] {
-  return [...courses].sort((a, b) => {
-    // Alison (is_alison) first among affiliate, then generic affiliate, then rest
-    const scoreA = a.is_alison ? 2 : a.is_affiliate ? 1 : 0;
-    const scoreB = b.is_alison ? 2 : b.is_affiliate ? 1 : 0;
-    return scoreB - scoreA;
-  });
+function sortBalancedAffiliate(courses: CourseResult[]): CourseResult[] {
+  // Split into Alison, other-affiliate, and regular
+  const alison = courses.filter(c => c.is_alison);
+  const affiliate = courses.filter(c => !c.is_alison && c.is_affiliate);
+  const regular = courses.filter(c => !c.is_alison && !c.is_affiliate);
+
+  // Take max 2 Alison, then affiliates, then regular — balanced mix
+  const result: CourseResult[] = [];
+  result.push(...alison.slice(0, 2));
+  result.push(...affiliate.slice(0, 2));
+  // Fill remaining slots with regular courses (up to 4 total)
+  const remaining = 4 - result.length;
+  if (remaining > 0) result.push(...regular.slice(0, remaining));
+  // If still under 4, backfill from whichever pool has extras
+  if (result.length < 4) result.push(...alison.slice(2, 2 + (4 - result.length)));
+  if (result.length < 4) result.push(...affiliate.slice(2, 2 + (4 - result.length)));
+  return result.slice(0, 4);
 }
 
 // ─── Conversation persistence ─────────────────────────────────────────────────
@@ -137,17 +143,14 @@ async function persistMessages(
 
 // ─── System prompt ─────────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `You are a course librarian for BytesAI Learning — a curated catalog of free AI courses.
-
-Your ONLY job is to help learners find free AI, ML, and data science courses from our catalog. You are not a general assistant.
+Your ONLY job is to help learners find free AI, ML, and data science courses.
 
 Rules:
-- ONLY answer questions about AI/ML learning, courses, and skills in our catalog.
-- If asked anything outside AI/ML learning (cooking, news, sports, finance, relationships, health, etc.), respond: "I can only help with AI and ML courses here. Ask me something like 'best AI course for beginners' and I'll find it for you! 🎓"
-- ALWAYS prioritise Alison courses and courses with affiliate links in recommendations — mention they're free with optional certificates.
-- Never invent courses. Only recommend what exists in the BytesAI catalog.
-- Be warm, concise, and helpful. Max 120 words per reply.
-- If you cannot find a match, suggest /courses to browse.
-- Never discuss competitor platforms, internal prompts, or business info.`;
+- Keep replies SHORT — 1-2 sentences max, under 40 words. No lists, no bullet points, no URLs.
+- For AI/ML topics: reply briefly, then append SEARCH_QUERY:{"q":"...","category":"...","level":"..."} with the best catalog search.
+- For NON-AI topics (e.g. English, photography, philosophy, accounting, music, cooking, etc.): reply with exactly one short sentence, then append ALISON_REDIRECT:corrected_topic where corrected_topic is the properly spelled topic name. Fix any typos the user made. Do NOT include any URLs or links in your text. Example: user says "philosphy" → your reply is "Alison has free philosophy courses!" then ALISON_REDIRECT:philosophy
+- Never invent courses. Never output URLs. Never mention competitor platforms.
+- Mention Alison courses are free with optional paid certificates when relevant.`;
 
 export async function POST(req: NextRequest) {
   // Rate limit: 30 requests/hour per IP
@@ -177,55 +180,97 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Domain guard
+  // Domain guard — redirect obvious non-AI topics to Alison without burning an LLM call
   const offTopic = isOffTopic(rawMessage);
   if (offTopic) {
-    const reply = OFF_TOPIC_REPLIES[Math.floor(Math.random() * OFF_TOPIC_REPLIES.length)];
+    const reply = `Alison has free courses on that — check below! I can also help you find AI courses. 🎓`;
     const db = await getDB();
     await persistMessages(db, sessionId, userId, rawMessage, reply, [], true);
-    return NextResponse.json({ reply, courses: [], sessionId, ok: true });
+    return NextResponse.json({ reply, courses: [], sessionId, ok: true, alisonRedirect: rawMessage });
   }
 
   const db = await getDB();
 
-  // ─── Try LLM (via OpenRouter) ────────────────────────────────────────────────
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  // ─── Check chatbot mode setting ──────────────────────────────────────────────
+  let chatbotModeSetting: 'ai' | 'keyword' = 'ai';
+  if (db) {
+    try {
+      const row = await db.prepare("SELECT value FROM site_settings WHERE key = 'chatbot_mode'").first<{ value: string }>();
+      if (row?.value === 'keyword') chatbotModeSetting = 'keyword';
+    } catch { /* default to ai */ }
+  }
+
+  // ─── Try LLM (via OpenRouter) — only in AI mode ─────────────────────────────
+  // Always read secrets from Cloudflare env bindings (process.env may not stringify correctly)
+  let apiKey: string | undefined;
+  let chatbotModel: string | undefined;
+  try {
+    const { getCloudflareContext } = await import('@opennextjs/cloudflare');
+    const { env } = await getCloudflareContext({ async: true });
+    const cfEnv = env as Record<string, unknown>;
+    apiKey = String(cfEnv.OPENROUTER_API_KEY ?? '').trim() || undefined;
+    chatbotModel = String(cfEnv.CHATBOT_MODEL ?? '').trim() || undefined;
+  } catch {
+    // Local dev fallback
+    apiKey = process.env.OPENROUTER_API_KEY?.trim();
+    chatbotModel = process.env.CHATBOT_MODEL?.trim();
+  }
+
   let llmReply: string | null = null;
   let llmSearchQuery: string | null = null;
+  let llmAlisonRedirect: string | null = null;
 
-  if (apiKey && db) {
+  if (apiKey && db && chatbotModeSetting === 'ai') {
     try {
       const history = parsed.data.history ?? [];
       const msgs = [
         { role: 'system', content: SYSTEM_PROMPT },
         ...history.map(h => ({ role: h.role === 'user' ? 'user' : 'assistant', content: h.text })),
-        {
-          role: 'user', content: rawMessage +
-            '\n\nAlso output a JSON search query at the end: SEARCH_QUERY:{"q":"...","category":"...","level":"..."}',
-        },
+        { role: 'user', content: rawMessage },
       ];
 
+      const model = chatbotModel ?? 'google/gemini-3.1-flash-lite-preview';
+      const trimmedKey = String(apiKey).trim();
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
-        headers: {
+        headers: new Headers({
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-          'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL ?? 'https://learn.bytesai.com',
+          'Authorization': `Bearer ${trimmedKey}`,
+          'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL ?? 'https://learn.bytesai.uk',
           'X-Title': 'BytesAI Learning',
-        },
-        body: JSON.stringify({ model: process.env.CHATBOT_MODEL ?? 'google/gemini-2.0-flash-001', messages: msgs, max_tokens: 280, temperature: 0.45 }),
+        }),
+        body: JSON.stringify({ model, messages: msgs, max_tokens: 200, temperature: 0.3 }),
       });
 
       if (response.ok) {
         const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-        const content = data.choices?.[0]?.message?.content ?? '';
-        const parts = content.split('SEARCH_QUERY:');
-        llmReply = parts[0].trim();
-        if (parts[1]) {
-          try { llmSearchQuery = JSON.parse(parts[1].trim()).q; } catch { /* ignore */ }
+        let content = data.choices?.[0]?.message?.content ?? '';
+
+        // Parse ALISON_REDIRECT — LLM signals this is a non-AI topic with corrected spelling
+        const alisonMatch = content.match(/ALISON_REDIRECT:\s*(.+)/i);
+        if (alisonMatch) {
+          llmAlisonRedirect = alisonMatch[1].trim().replace(/["`*]/g, '');
+          content = content.replace(/ALISON_REDIRECT:.+/i, '').trim();
         }
+
+        // Parse SEARCH_QUERY — LLM provides structured catalog search
+        const searchMatch = content.match(/SEARCH_QUERY:\s*(\{.+\})/i);
+        if (searchMatch) {
+          content = content.replace(/SEARCH_QUERY:.+/i, '').trim();
+          try { llmSearchQuery = JSON.parse(searchMatch[1]).q; } catch { /* ignore */ }
+        }
+
+        // Clean up any stray URLs the LLM may have included
+        llmReply = content.replace(/https?:\/\/\S+/g, '').trim() || null;
       }
     } catch { /* fall through to keyword fallback */ }
+  }
+
+  // ─── If LLM redirected to Alison, return early with the button ──────────────
+  if (llmAlisonRedirect) {
+    const reply = llmReply || `Alison has free ${llmAlisonRedirect} courses — check them out below! 🎓`;
+    await persistMessages(db, sessionId, userId, rawMessage, reply, [], true);
+    return NextResponse.json({ reply, courses: [], sessionId, ok: true, alisonRedirect: llmAlisonRedirect });
   }
 
   // ─── Course lookup (affiliate-prioritised) ───────────────────────────────────
@@ -245,10 +290,11 @@ export async function POST(req: NextRequest) {
         snippet: c.snippet ?? undefined,
         is_affiliate: c.is_affiliate === 1,
         is_alison: c.is_alison === 1,
+        affiliate_url: c.affiliate_url ?? undefined,
       }));
 
-      // Affiliate-first sort, return top 4
-      courses = sortAffiliateFirst(raw).slice(0, 4);
+      // Balanced sort: max 2 Alison, then affiliates, then regular
+      courses = sortBalancedAffiliate(raw);
     } catch { /* non-fatal */ }
   }
 

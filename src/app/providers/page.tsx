@@ -37,12 +37,12 @@ export default async function ProvidersPage() {
 
       <main>
         {/* Header */}
-        <section style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '4rem 0 3rem', color: 'white' }}>
-          <div className="container" style={{ textAlign: 'center', maxWidth: 800 }}>
+        <section className="courses-header" style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '3rem 0 2rem', color: 'white' }}>
+          <div className="container-sm" style={{ textAlign: 'center' }}>
             <h1 className="text-display" style={{ color: 'white', marginBottom: '1rem' }}>
               Learn from the best
             </h1>
-            <p style={{ color: '#cbd5e1', fontSize: '1.125rem', lineHeight: 1.6, marginBottom: '2rem' }}>
+            <p style={{ color: '#cbd5e1', fontSize: 'clamp(0.9375rem, 2.5vw, 1.125rem)', lineHeight: 1.6, marginBottom: '2rem' }}>
               Browse our curated collection of free AI courses from top technology companies, universities, and platforms.
             </p>
           </div>
@@ -51,7 +51,7 @@ export default async function ProvidersPage() {
         <section className="section" style={{ minHeight: '50vh', background: 'var(--bg)' }}>
           <div className="container">
             {providers.length === 0 ? (
-              <div className="card" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+              <div className="card" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
                 <Building2 size={48} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem' }} />
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>No providers found</h2>
                 <p style={{ color: 'var(--text-secondary)' }}>We couldn't load the list of providers at this time.</p>

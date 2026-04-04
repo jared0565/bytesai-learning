@@ -22,10 +22,12 @@ preview_id = "e8906bbacee64e21a17cdc9822f2c1a7"
 
 [vars]
 NEXT_PUBLIC_SITE_NAME = "BytesAI Learning"
-NEXT_PUBLIC_SITE_URL = "https://learn.bytesai.com"
+NEXT_PUBLIC_SITE_URL = "https://learn.bytesai.uk"
 NODE_ENV = "production"
+CHATBOT_MODEL = "google/gemini-3.1-flash-lite-preview"
 # Set these as Cloudflare secrets (never in source):
 # JWT_SECRET
+# OPENROUTER_API_KEY
 # SEED_ADMIN_EMAIL
 # SEED_ADMIN_PASSWORD
 # SEED_ADMIN_NAME
@@ -33,6 +35,5 @@ NODE_ENV = "production"
 # GOOGLE_CLIENT_SECRET
 # LINKEDIN_CLIENT_ID
 # LINKEDIN_CLIENT_SECRET
-# OPENAI_API_KEY
 # TURNSTILE_SITE_KEY
 # TURNSTILE_SECRET_KEY

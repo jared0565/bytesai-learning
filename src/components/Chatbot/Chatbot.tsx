@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2, BookOpen, Sparkles, ExternalLink, Search } from 'lucide-react';
+import { MessageCircle, X, ChevronLeft, Send, Loader2, BookOpen, Sparkles, ExternalLink, Search } from 'lucide-react';
 import { nanoid } from 'nanoid';
 
 const ALISON_AFFILIATE_ID = '27668723';
@@ -17,6 +17,7 @@ interface AiCourse {
   snippet?: string;
   is_affiliate: boolean;
   is_alison: boolean;
+  affiliate_url?: string;
 }
 
 interface Message {
@@ -61,6 +62,8 @@ export default function Chatbot() {
   const [loading, setLoading] = useState(false);
   const [unread, setUnread] = useState(0);
   const [nudge, setNudge] = useState<null | { emoji: string; text: string }>(null);
+  const [nudgeIndex, setNudgeIndex] = useState(0);
+  const [nudgeTyped, setNudgeTyped] = useState('');
 
   // Alison (non-AI) mode state
   const [alisonMode, setAlisonMode] = useState(false);
@@ -80,18 +83,45 @@ export default function Chatbot() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Nudge after 4s if not yet opened
+  // Nudge after 3s if not yet opened, then cycle messages
   useEffect(() => {
     nudgeTimer.current = setTimeout(() => {
       if (!hasOpened) {
-        setNudge(NUDGE_MESSAGES[Math.floor(Math.random() * NUDGE_MESSAGES.length)]);
+        setNudge(NUDGE_MESSAGES[0]);
+        setNudgeIndex(0);
+        setNudgeTyped('');
       }
-    }, 4000);
+    }, 3000);
     return () => { if (nudgeTimer.current) clearTimeout(nudgeTimer.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Typewriter effect for nudge text
+  useEffect(() => {
+    if (!nudge || open) return;
+    const fullText = nudge.text;
+    if (nudgeTyped.length >= fullText.length) return;
+    const t = setTimeout(() => {
+      setNudgeTyped(fullText.slice(0, nudgeTyped.length + 1));
+    }, 30);
+    return () => clearTimeout(t);
+  }, [nudge, nudgeTyped, open]);
+
+  // Cycle to next nudge message every 6s after typewriter finishes
+  useEffect(() => {
+    if (!nudge || open || hasOpened) return;
+    if (nudgeTyped.length < nudge.text.length) return;
+    const t = setTimeout(() => {
+      const next = (nudgeIndex + 1) % NUDGE_MESSAGES.length;
+      setNudgeIndex(next);
+      setNudge(NUDGE_MESSAGES[next]);
+      setNudgeTyped('');
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [nudge, nudgeTyped, nudgeIndex, open, hasOpened]);
 
   // Re-nudge when bot replies while closed
   useEffect(() => {
@@ -116,6 +146,64 @@ export default function Chatbot() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Broadcast unread count to BottomNav via custom event
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('bytesai:unread', { detail: unread }));
+  }, [unread]);
+
+  // Listen for BottomNav chat button trigger
+  useEffect(() => {
+    function handleOpenChat() {
+      setOpen(true);
+      setNudge(null);
+    }
+    window.addEventListener('bytesai:openchat', handleOpenChat);
+    return () => window.removeEventListener('bytesai:openchat', handleOpenChat);
+  }, []);
+
+  // visualViewport API: keep chat panel above software keyboard on mobile.
+  // When the virtual keyboard appears, window.visualViewport.height shrinks
+  // to the visible area. We update the panel height inline so the input
+  // row always stays above the keyboard — exactly like Telegram/WhatsApp.
+  useEffect(() => {
+    if (!open || typeof window === 'undefined') return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    function updatePanelForKeyboard() {
+      const panel = panelRef.current;
+      if (!panel) return;
+      // Only apply the dynamic height on mobile widths
+      if (window.innerWidth > 768) {
+        panel.style.height = '';
+        panel.style.top = '';
+        return;
+      }
+      // Only apply offsetTop when keyboard is actually visible (height shrank by >100px).
+      // Without this check, vv.offsetTop in some browsers/previews is non-zero even with
+      // no keyboard, which pushes the fullscreen panel down incorrectly.
+      const keyboardVisible = vv!.height < window.innerHeight - 100;
+      if (keyboardVisible) {
+        panel.style.height = `${vv!.height}px`;
+        panel.style.top = `${vv!.offsetTop}px`;
+      } else {
+        panel.style.height = '';
+        panel.style.top = '';
+      }
+    }
+
+    vv.addEventListener('resize', updatePanelForKeyboard);
+    vv.addEventListener('scroll', updatePanelForKeyboard);
+    updatePanelForKeyboard(); // run immediately
+
+    return () => {
+      vv.removeEventListener('resize', updatePanelForKeyboard);
+      vv.removeEventListener('scroll', updatePanelForKeyboard);
+      const panel = panelRef.current;
+      if (panel) { panel.style.height = ''; panel.style.top = ''; }
+    };
+  }, [open]);
 
   // ─── Handle "Other Non-AI Courses" chip ──────────────────────────────────
   function handleAlisonChip() {
@@ -169,6 +257,7 @@ export default function Chatbot() {
         reply?: string;
         courses?: AiCourse[];
         error?: string;
+        alisonRedirect?: string;
       };
 
       const botMsg: Message = {
@@ -176,6 +265,11 @@ export default function Chatbot() {
         role: 'bot',
         text: data.reply ?? data.error ?? 'Sorry, something went wrong.',
         courses: data.courses,
+        // If API flagged this as a non-AI topic, show Alison search link
+        ...(data.alisonRedirect ? {
+          alisonSearchUrl: buildAlisonSearchUrl(data.alisonRedirect),
+          alisonQuery: data.alisonRedirect,
+        } : {}),
       };
       setMessages(prev => [...prev, botMsg]);
       if (!open) setUnread(n => n + 1);
@@ -219,9 +313,11 @@ export default function Chatbot() {
     <>
       {/* Nudge tooltip */}
       {nudge && !open && (
-        <div className="chatbot-nudge" role="status">
+        <div className="chatbot-nudge" role="status" key={nudgeIndex}>
           <button className="chatbot-nudge-close" onClick={() => setNudge(null)} aria-label="Dismiss">×</button>
-          <span style={{ marginRight: '0.25rem' }}>{nudge.emoji}</span> {nudge.text}
+          <span style={{ marginRight: '0.25rem' }}>{nudge.emoji}</span>{' '}
+          {nudgeTyped}
+          <span className="nudge-cursor" />
           <div className="chatbot-nudge-arrow" />
         </div>
       )}
@@ -247,7 +343,7 @@ export default function Chatbot() {
 
       {/* Panel */}
       {open && (
-        <div className="chatbot-panel" role="dialog" aria-label="Course Navigator" aria-modal="true">
+        <div className="chatbot-panel" ref={panelRef} role="dialog" aria-label="Course Navigator" aria-modal="true">
 
           {/* Header */}
           <div className="chatbot-header">
@@ -271,15 +367,12 @@ export default function Chatbot() {
             </div>
             <button
               onClick={() => setOpen(false)}
-              style={{
-                background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white',
-                width: 32, height: 32, borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', transition: 'background 0.15s', flexShrink: 0,
-              }}
-              aria-label="Close"
+              className="chatbot-close-btn"
+              aria-label="Close chat"
             >
-              <X size={16} />
+              {/* Back chevron on mobile (fullscreen), X on desktop (panel) */}
+              <span className="chatbot-close-icon-back"><ChevronLeft size={22} /></span>
+              <span className="chatbot-close-icon-x"><X size={16} /></span>
             </button>
           </div>
 
@@ -295,33 +388,44 @@ export default function Chatbot() {
                   </div>
                 )}
 
-                {/* Internal catalog course cards */}
+                {/* Course cards — Alison courses link directly to affiliate URL, others go to internal detail page */}
                 {msg.courses && msg.courses.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: msg.text ? '0.5rem' : 0, maxWidth: '88%' }}>
-                    {msg.courses.map(c => (
-                      <a
-                        key={c.slug}
-                        href={`/courses/${c.slug}`}
-                        style={{
-                          display: 'block', padding: '0.75rem 0.875rem',
-                          background: 'var(--bg-card)',
-                          border: `1px solid ${c.is_alison ? 'rgba(245,158,11,0.35)' : c.is_affiliate ? 'rgba(16,185,129,0.3)' : 'var(--border)'}`,
-                          borderRadius: 12, textDecoration: 'none', color: 'var(--text-primary)',
-                        }}
-                      >
-                        <p style={{ fontSize: '0.8125rem', fontWeight: 700, marginBottom: '0.125rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.25rem' }}>
-                          {c.title}
-                          {c.is_alison && <span className="chatbot-badge chatbot-badge-alison">Alison</span>}
-                          {!c.is_alison && c.is_affiliate && <span className="chatbot-badge chatbot-badge-affiliate">Certificate</span>}
-                        </p>
-                        {c.provider && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{c.provider}</p>}
-                        {c.snippet && (
-                          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                            {c.snippet}
+                    {msg.courses.map(c => {
+                      const isAlison = c.is_alison;
+                      const href = isAlison && c.affiliate_url
+                        ? c.affiliate_url
+                        : isAlison
+                          ? `https://alison.com/course/${c.slug}?utm_source=alison_user&utm_medium=affiliate&utm_campaign=${ALISON_AFFILIATE_ID}`
+                          : `/courses/${c.slug}`;
+                      return (
+                        <a
+                          key={c.slug}
+                          href={href}
+                          target={isAlison ? '_blank' : undefined}
+                          rel={isAlison ? 'noopener noreferrer' : undefined}
+                          style={{
+                            display: 'block', padding: '0.75rem 0.875rem',
+                            background: 'var(--bg-card)',
+                            border: `1px solid ${isAlison ? 'rgba(245,158,11,0.35)' : c.is_affiliate ? 'rgba(16,185,129,0.3)' : 'var(--border)'}`,
+                            borderRadius: 12, textDecoration: 'none', color: 'var(--text-primary)',
+                          }}
+                        >
+                          <p style={{ fontSize: '0.8125rem', fontWeight: 700, marginBottom: '0.125rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.25rem' }}>
+                            {c.title}
+                            {isAlison && <span className="chatbot-badge chatbot-badge-alison">Alison</span>}
+                            {!isAlison && c.is_affiliate && <span className="chatbot-badge chatbot-badge-affiliate">Certificate</span>}
+                            {isAlison && <ExternalLink size={11} style={{ opacity: 0.5 }} />}
                           </p>
-                        )}
-                      </a>
-                    ))}
+                          {c.provider && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{c.provider}</p>}
+                          {c.snippet && (
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                              {c.snippet}
+                            </p>
+                          )}
+                        </a>
+                      );
+                    })}
                   </div>
                 )}
 
