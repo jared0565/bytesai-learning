@@ -114,6 +114,69 @@ function splitSegments(xml: string, tag: string): string[] {
 
 // ── Article full-text extraction ──────────────────────────────────────────────
 
+/**
+ * Remove site chrome that gets pulled in alongside the article body:
+ * - "Follow" / topic pill sections
+ * - Author bio blocks
+ * - Newsletter sign-up CTAs
+ * - "Most Popular" / related articles lists
+ * - Advertiser / native ad labels
+ */
+const BOILERPLATE_PATTERNS: RegExp[] = [
+  // "Posts from this topic/author will be added to your daily email digest…"
+  /Posts from this (?:topic|author) will be added to your[^.]+\./gi,
+  // "Follow Follow See All [Topic]"
+  /Follow\s+Follow\s+See All[^\n]*/gi,
+  // "Close [Topic] Close [Topic]" pill dismissals
+  /Close\s+\w[\w\s]{0,40}?\s+Close\s+\w[\w\s]{0,40}?Posts from/gi,
+  // "Follow topics and authors from this story to see more…"
+  /Follow topics and authors from this story[\s\S]{0,300}?(?=\n\n|\. )/gi,
+  // Newsletter sign-up blocks
+  /(?:A free daily digest|Sign Up By submitting your email|By submitting your email)[^]*?(?:apply\.|Notice\.)/gi,
+  // "Most Popular" heading and its trailing items
+  /Most Popular[\s\S]{0,800}?(?=\n\n[A-Z]|\n\nAdvertiser|$)/g,
+  // "Advertiser Content From …"
+  /Advertiser Content From[\s\S]*/gi,
+  // "More in: …" section headers
+  /More in:\s*[\w\s:,]+\n/gi,
+  // Byline repeated ("by Jay Peters Apr 3, 2026…")
+  /by [\w\s]+ (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}[^.\n]*/gi,
+  // "Part Of …" labels
+  /Part Of\s+[\s\S]{0,120}?see all updates/gi,
+  // Whitespace normalisation handled separately
+];
+
+/**
+ * Strip exact duplicate sentences from extracted text.
+ * Splits on sentence boundaries, lower-cases for comparison,
+ * and keeps only the first occurrence of each sentence.
+ */
+function deduplicateSentences(text: string): string {
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  const seen = new Set<string>();
+  return sentences
+    .filter(s => {
+      const key = s.trim().toLowerCase().replace(/\s+/g, ' ');
+      if (key.length < 20 || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .join(' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function cleanArticleText(raw: string): string {
+  let text = stripHtml(raw);
+  for (const pattern of BOILERPLATE_PATTERNS) {
+    text = text.replace(pattern, ' ');
+  }
+  // Collapse extra whitespace introduced by removals
+  text = text.replace(/\s{3,}/g, '\n\n').trim();
+  // Deduplicate sentences
+  return deduplicateSentences(text);
+}
+
 async function fetchArticleText(url: string): Promise<string> {
   try {
     const res = await fetch(url, {
@@ -124,17 +187,33 @@ async function fetchArticleText(url: string): Promise<string> {
     if (!res.ok) return '';
     const html = await res.text();
 
-    // Try containers in priority order
-    const containers = [
-      html.match(/<article[^>]*>([\s\S]*?)<\/article>/i)?.[1],
+    // Priority order: specific content body classes first, then semantic tags.
+    // We stop at the FIRST match that yields enough text to avoid grabbing
+    // sidebars / related-article lists that follow the main body.
+    const candidates: (string | undefined)[] = [
+      // The Verge, Vox Media: c-entry-content, article__body
+      html.match(/class="[^"]*(?:c-entry-content|article__body|entry-content__body)[^"]*"[^>]*>([\s\S]+?)<\/(?:div|section)>/i)?.[1],
+      // Medium, Substack, Ghost: post-content, article-content
+      html.match(/class="[^"]*(?:post-content|article-content|gh-content|entry-content)[^"]*"[^>]*>([\s\S]+?)<\/(?:div|section|article)>/i)?.[1],
+      // Ars Technica, Wired: article-body, story-body
+      html.match(/class="[^"]*(?:article-body|story-body|article__content)[^"]*"[^>]*>([\s\S]+?)<\/(?:div|section)>/i)?.[1],
+      // Generic: first <article> tag — but stop before any <aside>, <footer>, or nav inside it
+      (() => {
+        const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i)?.[1];
+        if (!articleMatch) return undefined;
+        // Trim everything from the first <aside>, <footer>, or nav-ish section
+        return articleMatch
+          .replace(/<aside[\s\S]*?<\/aside>/gi, '')
+          .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+          .replace(/<nav[\s\S]*?<\/nav>/gi, '');
+      })(),
+      // Last resort: <main>
       html.match(/<main[^>]*>([\s\S]*?)<\/main>/i)?.[1],
-      // Common class fragments: article-body, post-content, entry-content
-      html.match(/class="[^"]*(?:article-body|post-content|entry-content|article__body|story-body)[^"]*"[^>]*>([\s\S]{600,}?)<\/(?:div|section)>/i)?.[1],
     ];
 
-    for (const raw of containers) {
+    for (const raw of candidates) {
       if (!raw) continue;
-      const text = stripHtml(raw);
+      const text = cleanArticleText(raw);
       if (text.length >= MIN_ACCEPTABLE_CHARS) return text;
     }
     return '';
@@ -209,7 +288,7 @@ async function parseFeed(source: RssSource): Promise<ParsedArticle[]> {
       getFirstTag(seg, 'content') ||
       getFirstTag(seg, 'description') ||
       getFirstTag(seg, 'summary');
-    let contentText = rawContent ? stripHtml(rawContent) : '';
+    let contentText = rawContent ? cleanArticleText(rawContent) : '';
 
     const article: ParsedArticle = {
       sourceId: source.id,
