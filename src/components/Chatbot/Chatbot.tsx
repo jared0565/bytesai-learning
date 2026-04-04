@@ -139,7 +139,8 @@ export default function Chatbot() {
       setUnread(0);
       setNudge(null);
       setHasOpened(true);
-      setTimeout(() => inputRef.current?.focus(), 150);
+      // Only auto-focus on desktop — on mobile this would immediately pop the keyboard
+      if (window.innerWidth > 768) setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [open]);
 
@@ -215,7 +216,7 @@ export default function Chatbot() {
     setMessages(prev => [...prev, askMsg]);
     setAlisonMode(true);
     setAlisonAwaitingQuery(true);
-    setTimeout(() => inputRef.current?.focus(), 100);
+    if (window.innerWidth > 768) setTimeout(() => inputRef.current?.focus(), 100);
   }
 
   // ─── Build Alison affiliate search link directly ─────────────────────────
