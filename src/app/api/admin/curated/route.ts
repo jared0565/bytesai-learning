@@ -13,7 +13,9 @@ async function requireAdmin(req: NextRequest) {
 const VALID_EDITORIAL = ['draft', 'in_review', 'approved', 'rejected'] as const;
 const VALID_PUBLISHED = ['draft', 'published', 'archived'] as const;
 
-// GET /api/admin/curated — list all curated pages
+// ── GET /api/admin/curated ────────────────────────────────────────────────────
+// ?id=xxx  → single page (all fields)
+// (no id)  → list (summary fields)
 export async function GET(req: NextRequest) {
   const session = await requireAdmin(req);
   if (!session) return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 });
@@ -21,9 +23,24 @@ export async function GET(req: NextRequest) {
   const db = await getDB();
   if (!db) return NextResponse.json({ error: 'DB unavailable.' }, { status: 503 });
 
+  const id = new URL(req.url).searchParams.get('id');
+
   try {
+    if (id) {
+      const page = await db.prepare(
+        `SELECT id, slug, title, summary, why_it_matters, what_changed, executive_implications,
+                primary_course_slug, related_course_slugs_json, source_references_json,
+                meta_title, meta_description, og_title, og_description, og_image_url,
+                editorial_review_status, published_status, last_verified_at, created_at, updated_at
+         FROM curated_pages WHERE id = ?`
+      ).bind(id).first<import('@/lib/db').CuratedPage>();
+      if (!page) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+      return NextResponse.json({ page });
+    }
+
     const result = await db.prepare(
-      `SELECT id, slug, title, editorial_review_status, published_status, last_verified_at, created_at, updated_at
+      `SELECT id, slug, title, summary, editorial_review_status, published_status,
+              primary_course_slug, last_verified_at, created_at, updated_at
        FROM curated_pages ORDER BY updated_at DESC LIMIT 200`
     ).all<import('@/lib/db').CuratedPage>();
     return NextResponse.json({ pages: result.results });
@@ -32,7 +49,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/admin/curated — create a new curated page
+// ── POST /api/admin/curated — create a new curated page ──────────────────────
 export async function POST(req: NextRequest) {
   const session = await requireAdmin(req);
   if (!session) return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 });
@@ -59,8 +76,9 @@ export async function POST(req: NextRequest) {
       INSERT INTO curated_pages (
         id, slug, title, summary, why_it_matters, what_changed, executive_implications,
         primary_course_slug, related_course_slugs_json, source_references_json,
+        meta_title, meta_description,
         editorial_review_status, published_status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 'draft', ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 'draft', ?, ?)
     `).bind(
       id, slug, title,
       (body.summary as string | undefined)?.trim() || null,
@@ -70,6 +88,8 @@ export async function POST(req: NextRequest) {
       (body.primary_course_slug as string | undefined)?.trim() || null,
       relatedSlugs.length ? JSON.stringify(relatedSlugs) : null,
       sourceRefs.length ? JSON.stringify(sourceRefs) : null,
+      (body.meta_title as string | undefined)?.trim() || null,
+      (body.meta_description as string | undefined)?.trim() || null,
       now, now
     ).run();
 
@@ -91,7 +111,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH /api/admin/curated?id=xxx — update editorial_review_status or published_status
+// ── PATCH /api/admin/curated?id=xxx — update status and/or full content ───────
 export async function PATCH(req: NextRequest) {
   const session = await requireAdmin(req);
   if (!session) return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 });
@@ -108,13 +128,13 @@ export async function PATCH(req: NextRequest) {
 
   const updates: Record<string, unknown> = {};
 
+  // Status fields
   if (body.editorial_review_status !== undefined) {
     if (!VALID_EDITORIAL.includes(body.editorial_review_status as typeof VALID_EDITORIAL[number])) {
       return NextResponse.json({ error: 'Invalid editorial_review_status.' }, { status: 422 });
     }
     updates.editorial_review_status = body.editorial_review_status;
   }
-
   if (body.published_status !== undefined) {
     if (!VALID_PUBLISHED.includes(body.published_status as typeof VALID_PUBLISHED[number])) {
       return NextResponse.json({ error: 'Invalid published_status.' }, { status: 422 });
@@ -122,11 +142,40 @@ export async function PATCH(req: NextRequest) {
     updates.published_status = body.published_status;
   }
 
+  // Content fields
+  const contentFields = ['title', 'slug', 'summary', 'why_it_matters', 'what_changed',
+    'executive_implications', 'primary_course_slug', 'meta_title', 'meta_description',
+    'og_title', 'og_description', 'og_image_url'] as const;
+
+  for (const field of contentFields) {
+    if (field in body) {
+      updates[field] = (body[field] as string | undefined)?.trim() || null;
+    }
+  }
+
+  // Array fields — stringify for storage
+  if ('related_course_slugs' in body) {
+    const arr = Array.isArray(body.related_course_slugs) ? body.related_course_slugs : [];
+    updates.related_course_slugs_json = arr.length ? JSON.stringify(arr) : null;
+  }
+  if ('source_references' in body) {
+    const arr = Array.isArray(body.source_references) ? body.source_references : [];
+    updates.source_references_json = arr.length ? JSON.stringify(arr) : null;
+  }
+
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'Nothing to update.' }, { status: 422 });
   }
 
   updates.updated_at = new Date().toISOString();
+
+  // Validate slug uniqueness if slug is being changed
+  if (updates.slug) {
+    const existing = await db.prepare(
+      'SELECT id FROM curated_pages WHERE slug = ? AND id != ?'
+    ).bind(updates.slug, pageId).first<{ id: string }>();
+    if (existing) return NextResponse.json({ error: 'A page with that slug already exists.' }, { status: 409 });
+  }
 
   try {
     const before = await db.prepare('SELECT * FROM curated_pages WHERE id = ?').bind(pageId).first();
@@ -146,5 +195,37 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Update failed.' }, { status: 500 });
+  }
+}
+
+// ── DELETE /api/admin/curated?id=xxx — permanently delete a page ──────────────
+export async function DELETE(req: NextRequest) {
+  const session = await requireAdmin(req);
+  if (!session) return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 });
+
+  const pageId = new URL(req.url).searchParams.get('id');
+  if (!pageId) return NextResponse.json({ error: 'Missing page ID.' }, { status: 400 });
+
+  const db = await getDB();
+  if (!db) return NextResponse.json({ error: 'DB unavailable.' }, { status: 503 });
+
+  try {
+    const before = await db.prepare('SELECT * FROM curated_pages WHERE id = ?').bind(pageId).first();
+    if (!before) return NextResponse.json({ error: 'Page not found.' }, { status: 404 });
+
+    await db.prepare('DELETE FROM curated_pages WHERE id = ?').bind(pageId).run();
+
+    await logAdminAction(db, {
+      adminUserId: session.userId,
+      actionType: 'DELETE',
+      entityType: 'curated_page',
+      entityId: pageId,
+      before,
+      after: null,
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: 'Delete failed.' }, { status: 500 });
   }
 }
