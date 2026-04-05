@@ -21,9 +21,27 @@ interface CuratedRow {
   published_status: string;
   view_count: number;
   last_viewed_at: string | null;
+  referrer_counts_json: string | null;
   last_verified_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+const REFERRER_LABELS: Record<string, string> = {
+  twitter: 'X', linkedin: 'LinkedIn', facebook: 'FB', whatsapp: 'WA',
+  reddit: 'Reddit', hackernews: 'HN', google: 'Google', bing: 'Bing',
+  internal: 'Internal', other: 'Other', direct: 'Direct',
+};
+
+function getTopReferrers(json: string | null, topN = 3): { key: string; label: string; count: number }[] {
+  if (!json) return [];
+  try {
+    const counts: Record<string, number> = JSON.parse(json);
+    return Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, topN)
+      .map(([key, count]) => ({ key, label: REFERRER_LABELS[key] ?? key, count }));
+  } catch { return []; }
 }
 
 // ── Improvement tips (rule-based, instant) ────────────────────────────────────
@@ -31,9 +49,13 @@ interface Tip { level: 'error' | 'warn' | 'info'; text: string }
 
 function getTips(p: CuratedRow): Tip[] {
   const tips: Tip[] = [];
+
+  // ── Content errors (blocking) ────────────────────────────────────────────
   if (!p.why_it_matters) tips.push({ level: 'error', text: '"Why it matters" is empty — readers need this section most.' });
   if (!p.what_changed)   tips.push({ level: 'error', text: '"What changed" is empty — the key facts are missing.' });
   if (!p.executive_implications) tips.push({ level: 'error', text: '"Key implications" is empty — no actionable takeaway for readers.' });
+
+  // ── SEO / monetisation warnings ──────────────────────────────────────────
   if (!p.primary_course_slug) tips.push({ level: 'warn', text: 'No course linked — add a primary course slug to monetise this article.' });
   if (!p.meta_description) tips.push({ level: 'warn', text: 'No meta description — add one to improve search ranking.' });
   if (p.summary && p.summary.length > 400) tips.push({ level: 'warn', text: 'Summary is too long — aim for 2–3 sentences max.' });
@@ -41,12 +63,35 @@ function getTips(p: CuratedRow): Tip[] {
   if (p.published_status === 'published' && p.editorial_review_status !== 'approved') {
     tips.push({ level: 'warn', text: 'Published but not approved — set editorial status to "approved".' });
   }
+
+  // ── Status nudges ────────────────────────────────────────────────────────
   if (p.published_status === 'draft' && p.editorial_review_status === 'approved') {
     tips.push({ level: 'info', text: 'Approved but still draft — ready to publish!' });
   }
-  if (p.view_count === 0 && p.published_status === 'published') {
-    tips.push({ level: 'info', text: 'No views yet — share the link to get initial traffic.' });
+
+  // ── Growth tips (only for published articles) ────────────────────────────
+  if (p.published_status === 'published') {
+    if (p.view_count === 0) {
+      tips.push({ level: 'info', text: 'No views yet — share to X and LinkedIn within the hour for fastest initial reach.' });
+    } else if (p.view_count < 10) {
+      tips.push({ level: 'info', text: `${p.view_count} view${p.view_count !== 1 ? 's' : ''} — submit to Hacker News (Show HN) or r/artificial to accelerate growth.` });
+    }
+
+    // Check if traffic is all from one source (no diversity)
+    const referrers = getTopReferrers(p.referrer_counts_json, 5);
+    const totalViews = referrers.reduce((s, r) => s + r.count, 0);
+    if (totalViews > 5 && referrers.length === 1) {
+      tips.push({ level: 'info', text: `All traffic from ${referrers[0].label} — cross-post to other platforms to diversify reach.` });
+    }
+
+    // No social traffic at all
+    const socialKeys = ['twitter', 'linkedin', 'facebook', 'whatsapp', 'reddit', 'hackernews'];
+    const hasSocial = referrers.some(r => socialKeys.includes(r.key));
+    if (p.view_count >= 5 && !hasSocial) {
+      tips.push({ level: 'info', text: 'No social traffic detected — use the Share button on the article to post platform-optimised copy.' });
+    }
   }
+
   return tips;
 }
 
@@ -146,6 +191,7 @@ export default function AdminCuratedPage() {
       published_status: 'draft',
       view_count: 0,
       last_viewed_at: null,
+      referrer_counts_json: null,
       last_verified_at: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -351,6 +397,22 @@ export default function AdminCuratedPage() {
                         )}
                       </span>
                     )}
+                    {/* Top referrer sources */}
+                    {p.published_status === 'published' && p.view_count > 0 && (() => {
+                      const refs = getTopReferrers(p.referrer_counts_json, 3);
+                      if (!refs.length) return null;
+                      return (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                          padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)',
+                          fontSize: '0.7rem', fontWeight: 600,
+                          color: 'var(--text-muted)', background: 'var(--bg)',
+                          border: '1px solid var(--border)',
+                        }}>
+                          🔗 {refs.map(r => `${r.label} ${r.count}`).join(' · ')}
+                        </span>
+                      );
+                    })()}
                     {/* Tips indicator */}
                     {tips.length > 0 && (
                       <span style={{

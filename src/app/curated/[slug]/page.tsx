@@ -6,7 +6,8 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
 import CuratedViewTracker from '@/components/ui/CuratedViewTracker';
-import { getCuratedPageBySlug, getCourseBySlug, getDB} from '@/lib/db';
+import CuratedSharePanel from '@/components/ui/CuratedSharePanel';
+import { getCuratedPageBySlug, getCourseBySlug, getDB } from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -21,14 +22,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!db || !isValidSlug(slug)) return { title: 'Insight Not Found' };
   const page = await getCuratedPageBySlug(db, slug).catch(() => null);
   if (!page) return { title: 'Insight Not Found' };
+
+  const ogImageUrl = page.og_image_url ?? `/api/og?slug=${slug}&type=article`;
+
   return {
     title: page.meta_title ?? page.title,
     description: page.meta_description ?? page.summary ?? undefined,
     openGraph: {
       title: page.og_title ?? page.title,
       description: page.og_description ?? page.summary ?? undefined,
-      images: page.og_image_url ? [page.og_image_url] : undefined,
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
       type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: page.og_title ?? page.title,
+      description: page.og_description ?? page.summary ?? undefined,
+      images: [ogImageUrl],
     },
     alternates: { canonical: `https://learn.bytesai.uk/curated/${slug}` },
   };
@@ -84,6 +94,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
     headline: page.title,
     description: page.summary ?? undefined,
     url: `https://learn.bytesai.uk/curated/${page.slug}`,
+    image: page.og_image_url ?? `https://learn.bytesai.uk/api/og?slug=${slug}&type=article`,
     dateModified: page.last_verified_at ?? page.updated_at,
     datePublished: page.created_at,
     publisher: {
@@ -101,6 +112,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
 
       <main>
         <CuratedViewTracker slug={page.slug} />
+
         {/* Breadcrumb */}
         <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', padding: '0.875rem 0' }}>
           <div className="container breadcrumb">
@@ -124,19 +136,23 @@ export default async function CuratedDetailPage({ params }: PageProps) {
                 {page.summary}
               </p>
             )}
-            {page.last_verified_at && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                <Calendar size={13} />
-                Last verified {new Date(page.last_verified_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </div>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              {page.last_verified_at && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                  <Calendar size={13} />
+                  Last verified {new Date(page.last_verified_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </div>
+              )}
+              {/* Share button — sits next to the date */}
+              <CuratedSharePanel slug={page.slug} title={page.title} />
+            </div>
           </div>
 
           {/* Content sections */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
             {page.why_it_matters && (
-              <section className="card" style={{ }}>
+              <section className="card">
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Lightbulb size={20} color="var(--accent)" /> Why it matters
                 </h2>
@@ -147,7 +163,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
             )}
 
             {page.what_changed && (
-              <section className="card" style={{ }}>
+              <section className="card">
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <TrendingUp size={20} color="var(--teal)" /> What changed
                 </h2>
@@ -157,7 +173,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
               </section>
             )}
 
-            {/* Primary recommended course — embedded mid-article after "what changed" */}
+            {/* Primary recommended course — embedded mid-article after "What changed" */}
             {primaryCourse && (
               <section style={{
                 padding: '1.25rem 1.5rem',
@@ -201,7 +217,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
 
             {/* Source references */}
             {sourceRefs.length > 0 && (
-              <section className="card" style={{ }}>
+              <section className="card">
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem' }}>
                   Sources
                 </h2>
@@ -222,6 +238,26 @@ export default async function CuratedDetailPage({ params }: PageProps) {
                 </ul>
               </section>
             )}
+
+            {/* Bottom share nudge */}
+            <section style={{
+              padding: '1.25rem 1.5rem',
+              background: 'rgba(79,110,247,0.04)',
+              border: '1px solid rgba(79,110,247,0.12)',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
+            }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.25rem' }}>
+                  Found this useful?
+                </p>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                  Share it with your team — AI generates platform-optimised copy for you.
+                </p>
+              </div>
+              <CuratedSharePanel slug={page.slug} title={page.title} />
+            </section>
+
           </div>
 
           {/* Back link */}

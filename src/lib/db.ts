@@ -180,6 +180,7 @@ export interface CuratedPage {
   last_verified_at: string | null;
   view_count: number;
   last_viewed_at: string | null;
+  referrer_counts_json: string | null;
   created_at: string;
   updated_at: string;
 }
