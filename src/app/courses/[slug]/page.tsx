@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, BookOpen, ArrowLeft, CheckCircle2, Info, Calendar, Bookmark, Lock, UserPlus, LogIn } from 'lucide-react';
+import { ExternalLink, BookOpen, ArrowLeft, CheckCircle2, Info, Calendar, Bookmark, Lock, UserPlus, LogIn, MonitorPlay } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
@@ -429,10 +429,26 @@ export default async function CourseDetailPage({ params }: PageProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-primary"
-                      style={{ width: '100%', justifyContent: 'center', marginBottom: '0.875rem', fontSize: '1rem' }}
+                      style={{ width: '100%', justifyContent: 'center', marginBottom: isAlison ? '0.875rem' : '0.5rem', fontSize: '1rem' }}
                     >
                       Start learning <ExternalLink size={16} />
                     </a>
+
+                    {/* Study mode — non-Alison courses only */}
+                    {!isAlison && (
+                      <Link
+                        href={`/learn/${course.slug}`}
+                        className="btn btn-outline"
+                        style={{
+                          width: '100%', justifyContent: 'center',
+                          marginBottom: '0.875rem', display: 'flex',
+                          alignItems: 'center', gap: '0.375rem',
+                          fontSize: '0.875rem',
+                        }}
+                      >
+                        <MonitorPlay size={15} /> Study in BytesAI
+                      </Link>
+                    )}
 
                     {/* Save + Share */}
                     {session ? (
