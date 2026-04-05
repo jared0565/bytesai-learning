@@ -161,6 +161,8 @@ CREATE TABLE IF NOT EXISTS curated_pages (
   og_image_url TEXT,
   share_image_prompt TEXT,
   last_verified_at TEXT,
+  view_count INTEGER NOT NULL DEFAULT 0,
+  last_viewed_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );

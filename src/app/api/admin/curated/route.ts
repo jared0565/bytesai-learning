@@ -40,7 +40,9 @@ export async function GET(req: NextRequest) {
 
     const result = await db.prepare(
       `SELECT id, slug, title, summary, editorial_review_status, published_status,
-              primary_course_slug, last_verified_at, created_at, updated_at
+              primary_course_slug, why_it_matters, what_changed, executive_implications,
+              meta_description, last_verified_at, view_count, last_viewed_at,
+              created_at, updated_at
        FROM curated_pages ORDER BY updated_at DESC LIMIT 200`
     ).all<import('@/lib/db').CuratedPage>();
     return NextResponse.json({ pages: result.results });

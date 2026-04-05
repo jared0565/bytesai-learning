@@ -5,6 +5,7 @@ import { ArrowLeft, Calendar, ExternalLink, Lightbulb, TrendingUp, AlertCircle, 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
+import CuratedViewTracker from '@/components/ui/CuratedViewTracker';
 import { getCuratedPageBySlug, getCourseBySlug, getDB} from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
@@ -99,6 +100,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <main>
+        <CuratedViewTracker slug={page.slug} />
         {/* Breadcrumb */}
         <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', padding: '0.875rem 0' }}>
           <div className="container breadcrumb">

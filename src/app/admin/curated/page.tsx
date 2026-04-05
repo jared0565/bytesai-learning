@@ -12,12 +12,42 @@ interface CuratedRow {
   slug: string;
   title: string;
   summary: string | null;
+  why_it_matters: string | null;
+  what_changed: string | null;
+  executive_implications: string | null;
+  meta_description: string | null;
   primary_course_slug: string | null;
   editorial_review_status: string;
   published_status: string;
+  view_count: number;
+  last_viewed_at: string | null;
   last_verified_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// ── Improvement tips (rule-based, instant) ────────────────────────────────────
+interface Tip { level: 'error' | 'warn' | 'info'; text: string }
+
+function getTips(p: CuratedRow): Tip[] {
+  const tips: Tip[] = [];
+  if (!p.why_it_matters) tips.push({ level: 'error', text: '"Why it matters" is empty — readers need this section most.' });
+  if (!p.what_changed)   tips.push({ level: 'error', text: '"What changed" is empty — the key facts are missing.' });
+  if (!p.executive_implications) tips.push({ level: 'error', text: '"Key implications" is empty — no actionable takeaway for readers.' });
+  if (!p.primary_course_slug) tips.push({ level: 'warn', text: 'No course linked — add a primary course slug to monetise this article.' });
+  if (!p.meta_description) tips.push({ level: 'warn', text: 'No meta description — add one to improve search ranking.' });
+  if (p.summary && p.summary.length > 400) tips.push({ level: 'warn', text: 'Summary is too long — aim for 2–3 sentences max.' });
+  if (p.meta_description && p.meta_description.length > 155) tips.push({ level: 'warn', text: `Meta description is ${p.meta_description.length} chars — trim to under 155.` });
+  if (p.published_status === 'published' && p.editorial_review_status !== 'approved') {
+    tips.push({ level: 'warn', text: 'Published but not approved — set editorial status to "approved".' });
+  }
+  if (p.published_status === 'draft' && p.editorial_review_status === 'approved') {
+    tips.push({ level: 'info', text: 'Approved but still draft — ready to publish!' });
+  }
+  if (p.view_count === 0 && p.published_status === 'published') {
+    tips.push({ level: 'info', text: 'No views yet — share the link to get initial traffic.' });
+  }
+  return tips;
 }
 
 const editorialColor: Record<string, string> = {
@@ -107,9 +137,15 @@ export default function AdminCuratedPage() {
       slug: page.slug,
       title: page.title,
       summary: null,
+      why_it_matters: null,
+      what_changed: null,
+      executive_implications: null,
+      meta_description: null,
       primary_course_slug: null,
       editorial_review_status: 'draft',
       published_status: 'draft',
+      view_count: 0,
+      last_viewed_at: null,
       last_verified_at: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -262,7 +298,14 @@ export default function AdminCuratedPage() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-          {pages.map(p => (
+          {pages.map(p => {
+            const tips = getTips(p);
+            const errorTips = tips.filter(t => t.level === 'error');
+            const warnTips = tips.filter(t => t.level === 'warn');
+            const infoTips = tips.filter(t => t.level === 'info');
+            const topTip = errorTips[0] ?? warnTips[0] ?? infoTips[0] ?? null;
+
+            return (
             <div
               key={p.id}
               className="card"
@@ -270,10 +313,10 @@ export default function AdminCuratedPage() {
             >
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
-                {/* Left: title + summary + meta */}
+                {/* Left: title + summary + meta + analytics + tip */}
                 <div style={{ flex: 1, minWidth: 220 }}>
+                  {/* Status badges */}
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
-                    {/* Editorial badge */}
                     <span style={{
                       display: 'inline-block', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)',
                       fontSize: '0.7rem', fontWeight: 700,
@@ -282,7 +325,6 @@ export default function AdminCuratedPage() {
                     }}>
                       {p.editorial_review_status}
                     </span>
-                    {/* Published badge */}
                     <span style={{
                       display: 'inline-block', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)',
                       fontSize: '0.7rem', fontWeight: 700,
@@ -291,6 +333,36 @@ export default function AdminCuratedPage() {
                     }}>
                       {p.published_status}
                     </span>
+                    {/* View count badge */}
+                    {p.published_status === 'published' && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                        padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)',
+                        fontSize: '0.7rem', fontWeight: 700,
+                        color: p.view_count > 0 ? 'var(--accent)' : 'var(--text-muted)',
+                        background: p.view_count > 0 ? 'rgba(79,110,247,0.1)' : 'var(--bg)',
+                        border: '1px solid var(--border)',
+                      }}>
+                        👁 {p.view_count.toLocaleString()} view{p.view_count !== 1 ? 's' : ''}
+                        {p.last_viewed_at && (
+                          <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>
+                            · last {new Date(p.last_viewed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                    {/* Tips indicator */}
+                    {tips.length > 0 && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                        padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)',
+                        fontSize: '0.7rem', fontWeight: 700,
+                        color: errorTips.length > 0 ? 'var(--rose)' : warnTips.length > 0 ? 'var(--amber)' : 'var(--teal)',
+                        background: errorTips.length > 0 ? 'rgba(239,68,68,0.1)' : warnTips.length > 0 ? 'rgba(245,158,11,0.1)' : 'rgba(20,184,166,0.1)',
+                      }}>
+                        {errorTips.length > 0 ? '⚠' : warnTips.length > 0 ? '💡' : '✓'} {tips.length} tip{tips.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
 
                   <p style={{ fontWeight: 700, fontSize: '0.9375rem', lineHeight: 1.4, marginBottom: '0.25rem' }}>
@@ -308,7 +380,8 @@ export default function AdminCuratedPage() {
                     </p>
                   )}
 
-                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Meta row */}
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: topTip ? '0.5rem' : 0 }}>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
                       /curated/{p.slug}
                     </span>
@@ -321,6 +394,36 @@ export default function AdminCuratedPage() {
                       Updated {new Date(p.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
+
+                  {/* Top improvement tip */}
+                  {topTip && (
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'flex-start', gap: '0.375rem',
+                      padding: '0.375rem 0.625rem',
+                      background: topTip.level === 'error' ? 'rgba(239,68,68,0.06)'
+                        : topTip.level === 'warn' ? 'rgba(245,158,11,0.06)'
+                        : 'rgba(20,184,166,0.06)',
+                      border: `1px solid ${topTip.level === 'error' ? 'rgba(239,68,68,0.2)'
+                        : topTip.level === 'warn' ? 'rgba(245,158,11,0.2)'
+                        : 'rgba(20,184,166,0.2)'}`,
+                      borderRadius: 'var(--radius)',
+                      maxWidth: '100%',
+                    }}>
+                      <AlertCircle size={12} style={{ flexShrink: 0, marginTop: 1 }}
+                        color={topTip.level === 'error' ? 'var(--rose)' : topTip.level === 'warn' ? 'var(--amber)' : 'var(--teal)'} />
+                      <p style={{
+                        fontSize: '0.72rem', lineHeight: 1.5,
+                        color: topTip.level === 'error' ? 'var(--rose)' : topTip.level === 'warn' ? 'var(--amber)' : 'var(--teal)',
+                      }}>
+                        {topTip.text}
+                        {tips.length > 1 && (
+                          <span style={{ opacity: 0.7, marginLeft: '0.25rem' }}>
+                            (+{tips.length - 1} more — click Edit)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Right: actions */}
@@ -337,7 +440,8 @@ export default function AdminCuratedPage() {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

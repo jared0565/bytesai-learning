@@ -178,6 +178,8 @@ export interface CuratedPage {
   og_image_url: string | null;
   share_image_prompt: string | null;
   last_verified_at: string | null;
+  view_count: number;
+  last_viewed_at: string | null;
   created_at: string;
   updated_at: string;
 }
