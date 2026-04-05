@@ -155,6 +155,23 @@ export default async function CuratedDetailPage({ params }: PageProps) {
               </section>
             )}
 
+            {/* Primary recommended course — embedded mid-article after "what changed" */}
+            {primaryCourse && (
+              <section style={{
+                padding: '1.25rem 1.5rem',
+                background: 'linear-gradient(135deg, rgba(79,110,247,0.06) 0%, rgba(20,184,166,0.04) 100%)',
+                border: '1px solid rgba(79,110,247,0.15)',
+                borderRadius: 'var(--radius-md)',
+              }}>
+                <p style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--accent)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <BookOpen size={13} /> Free course to get started
+                </p>
+                <div style={{ maxWidth: 380 }}>
+                  <CourseCard course={primaryCourse} featured />
+                </div>
+              </section>
+            )}
+
             {page.executive_implications && (
               <section className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -163,18 +180,6 @@ export default async function CuratedDetailPage({ params }: PageProps) {
                 <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
                   {page.executive_implications}
                 </p>
-              </section>
-            )}
-
-            {/* Primary recommended course */}
-            {primaryCourse && (
-              <section>
-                <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <BookOpen size={20} color="var(--accent)" /> Recommended course
-                </h2>
-                <div style={{ maxWidth: 360 }}>
-                  <CourseCard course={primaryCourse} featured />
-                </div>
               </section>
             )}
 

@@ -39,7 +39,7 @@ export async function PATCH(req: NextRequest) {
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid body.' }, { status: 400 }); }
 
   // Only allow known setting keys
-  const ALLOWED_KEYS = ['chatbot_mode', 'tracking_codes'];
+  const ALLOWED_KEYS = ['chatbot_mode', 'tracking_codes', 'article_gen_mode', 'article_gen_frequency'];
   const now = new Date().toISOString();
 
   try {
