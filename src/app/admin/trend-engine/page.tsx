@@ -16,10 +16,10 @@ const TIER_COLOR: Record<number, string> = {
 };
 
 const FREQ_LABELS: Record<string, string> = {
-  hourly: 'Every hour',
-  daily: 'Once a day',
-  twice_daily: 'Twice a day',
-  weekly: 'Once a week',
+  hourly: 'Hourly',
+  twice_daily: '2× Daily',
+  daily: 'Daily',
+  paused: 'Pause auto-posting',
 };
 
 type TrendStatus = 'idle' | 'fetching' | 'loaded' | 'error';
@@ -40,12 +40,13 @@ export default function TrendEnginePage() {
   // ── Article Generator state ─────────────────────────────────────────────────
   const [genMode, setGenMode] = useState<'manual' | 'auto'>('manual');
   const [genFreq, setGenFreq] = useState<string>('daily');
+  const [autoApprove, setAutoApprove] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [lastRun, setLastRun] = useState<string | null>(null);
   const [genStatus, setGenStatus] = useState<GenStatus>('idle');
-  const [genResult, setGenResult] = useState<GenResult | null>(null);
+  const [genResult, setGenResult] = useState<GenResult & { published?: boolean } | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
 
   // ── Trend Engine state ──────────────────────────────────────────────────────
@@ -65,6 +66,7 @@ export default function TrendEnginePage() {
       const data = await res.json();
       setGenMode(data.mode ?? 'manual');
       setGenFreq(data.frequency ?? 'daily');
+      setAutoApprove(data.autoApprove ?? false);
       setLastRun(data.lastRun ?? null);
     } finally {
       setSettingsLoaded(true);
@@ -81,7 +83,7 @@ export default function TrendEnginePage() {
       await fetch('/api/admin/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ article_gen_mode: genMode, article_gen_frequency: genFreq }),
+        body: JSON.stringify({ article_gen_mode: genMode, article_gen_frequency: genFreq, article_gen_auto_approve: String(autoApprove) }),
       });
       setSettingsSaved(true);
       setTimeout(() => setSettingsSaved(false), 3000);
@@ -106,7 +108,7 @@ export default function TrendEnginePage() {
         setGenError(data.error ?? 'Generation failed.');
         setGenStatus('error');
       } else {
-        setGenResult({ slug: data.slug, title: data.title, courseTitle: data.courseTitle });
+        setGenResult({ slug: data.slug, title: data.title, courseTitle: data.courseTitle, published: data.published });
         setLastRun(new Date().toISOString());
         setGenStatus('done');
       }
@@ -262,6 +264,66 @@ export default function TrendEnginePage() {
             </div>
           )}
 
+          {/* Auto-approve publishing toggle */}
+          <div style={{
+            marginBottom: '1.25rem', padding: '0.875rem 1rem',
+            background: autoApprove ? 'rgba(239,68,68,0.05)' : 'var(--bg)',
+            border: `1px solid ${autoApprove ? 'rgba(239,68,68,0.25)' : 'var(--border)'}`,
+            borderRadius: 'var(--radius-md)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: '0.2rem' }}>
+                  Auto-approve &amp; publish
+                </p>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  {autoApprove
+                    ? 'Generated articles are published immediately without review.'
+                    : 'Generated articles are saved as drafts. You review and publish manually.'}
+                </p>
+              </div>
+              {/* Toggle switch */}
+              <button
+                role="switch"
+                aria-checked={autoApprove}
+                onClick={() => setAutoApprove(v => !v)}
+                style={{
+                  flexShrink: 0,
+                  width: 44, height: 24,
+                  borderRadius: 12,
+                  border: 'none',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  background: autoApprove ? 'var(--rose)' : 'var(--border)',
+                  transition: 'background 0.2s',
+                  padding: 0,
+                }}
+              >
+                <span style={{
+                  position: 'absolute',
+                  top: 3, left: autoApprove ? 23 : 3,
+                  width: 18, height: 18,
+                  borderRadius: '50%',
+                  background: 'white',
+                  transition: 'left 0.2s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                }} />
+              </button>
+            </div>
+            {autoApprove && (
+              <div style={{
+                marginTop: '0.75rem', padding: '0.5rem 0.75rem',
+                background: 'rgba(239,68,68,0.07)', borderRadius: 'var(--radius)',
+                display: 'flex', gap: '0.375rem', alignItems: 'flex-start',
+              }}>
+                <AlertCircle size={13} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
+                <p style={{ fontSize: '0.72rem', color: 'var(--rose)', lineHeight: 1.5 }}>
+                  <strong>Caution:</strong> Articles will go live on the public site immediately upon generation with no human review. Recommended only once you have verified the article quality consistently meets your standard.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Last run info */}
           {lastRun && (
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
@@ -311,26 +373,29 @@ export default function TrendEnginePage() {
           {genStatus === 'done' && genResult && (
             <div style={{
               marginTop: '1rem', padding: '0.875rem 1rem',
-              background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.25)',
+              background: genResult.published ? 'rgba(79,110,247,0.06)' : 'rgba(16,185,129,0.06)',
+              border: `1px solid ${genResult.published ? 'rgba(79,110,247,0.2)' : 'rgba(16,185,129,0.25)'}`,
               borderRadius: 'var(--radius-md)',
             }}>
-              <p style={{ fontWeight: 700, color: 'var(--emerald)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <CheckCircle2 size={16} /> Article created as draft
+              <p style={{ fontWeight: 700, color: genResult.published ? 'var(--accent)' : 'var(--emerald)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <CheckCircle2 size={16} />
+                {genResult.published ? 'Article published live' : 'Article saved as draft'}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
                 <strong>{genResult.title}</strong>
               </p>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
                 Based on Alison course: <em>{genResult.courseTitle}</em>
+                {genResult.published
+                  ? ' · Now visible on the public site.'
+                  : ' · Review and publish from Curated Pages.'}
               </p>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <a
-                  href={`/admin/curated`}
-                  className="btn btn-outline btn-sm"
-                  style={{ fontSize: '0.78rem' }}
-                >
-                  Review in Curated Pages →
-                </a>
+                {!genResult.published && (
+                  <a href="/admin/curated" className="btn btn-outline btn-sm" style={{ fontSize: '0.78rem' }}>
+                    Review in Curated Pages →
+                  </a>
+                )}
                 <a
                   href={`/curated/${genResult.slug}`}
                   target="_blank"
@@ -338,13 +403,9 @@ export default function TrendEnginePage() {
                   className="btn btn-outline btn-sm"
                   style={{ fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
                 >
-                  Preview article <ExternalLink size={11} />
+                  {genResult.published ? 'View live article' : 'Preview draft'} <ExternalLink size={11} />
                 </a>
-                <button
-                  className="btn btn-outline btn-sm"
-                  onClick={generateNow}
-                  style={{ fontSize: '0.78rem' }}
-                >
+                <button className="btn btn-outline btn-sm" onClick={generateNow} style={{ fontSize: '0.78rem' }}>
                   Generate another
                 </button>
               </div>

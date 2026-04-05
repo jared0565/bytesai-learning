@@ -157,7 +157,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const rows = await db.prepare(
-      "SELECT key, value FROM site_settings WHERE key IN ('article_gen_mode','article_gen_frequency','article_gen_last_run')"
+      "SELECT key, value FROM site_settings WHERE key IN ('article_gen_mode','article_gen_frequency','article_gen_last_run','article_gen_auto_approve')"
     ).all<{ key: string; value: string }>();
     const map: Record<string, string> = {};
     for (const r of rows.results) map[r.key] = r.value;
@@ -165,6 +165,7 @@ export async function GET(req: NextRequest) {
       mode: map['article_gen_mode'] ?? 'manual',
       frequency: map['article_gen_frequency'] ?? 'daily',
       lastRun: map['article_gen_last_run'] ?? null,
+      autoApprove: map['article_gen_auto_approve'] === 'true',
     });
   } catch {
     return NextResponse.json({ error: 'Failed to load settings.' }, { status: 500 });
@@ -220,6 +221,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No Alison courses found in the database.' }, { status: 404 });
   }
 
+  // ── Read auto-approve setting ───────────────────────────────────────────────
+  const autoApproveSetting = await db.prepare(
+    "SELECT value FROM site_settings WHERE key = 'article_gen_auto_approve'"
+  ).first<{ value: string }>();
+  const autoApprove = autoApproveSetting?.value === 'true';
+
   // ── Web search for reference content ───────────────────────────────────────
   const query = `${course.title} artificial intelligence`;
   const articleUrls = await searchDDG(query);
@@ -262,13 +269,16 @@ export async function POST(req: NextRequest) {
   });
 
   // ── Insert into curated_pages ───────────────────────────────────────────────
+  const editorialStatus = autoApprove ? 'approved' : 'draft';
+  const publishedStatus = autoApprove ? 'published' : 'draft';
+
   try {
     await db.prepare(`
       INSERT INTO curated_pages (
         id, slug, title, summary, why_it_matters, what_changed, executive_implications,
         primary_course_slug, source_references_json, meta_description,
         editorial_review_status, published_status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 'draft', ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       id,
       slug,
@@ -280,6 +290,8 @@ export async function POST(req: NextRequest) {
       course.slug,
       JSON.stringify(sourceRefs),
       generated.meta_description,
+      editorialStatus,
+      publishedStatus,
       now,
       now,
     ).run();
@@ -305,6 +317,7 @@ export async function POST(req: NextRequest) {
       title: generated.title,
       courseSlug: course.slug,
       courseTitle: course.title,
+      published: autoApprove,
     });
   } catch (e: unknown) {
     const msg = (e as { message?: string }).message ?? '';
