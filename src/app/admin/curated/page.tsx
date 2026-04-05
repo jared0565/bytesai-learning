@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { FileText, ExternalLink, Plus, BookOpen } from 'lucide-react';
+import { FileText, ExternalLink, Plus, BookOpen, Sparkles, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import CuratedActions from './CuratedActions';
 import NewCuratedPageModal from './NewCuratedPageModal';
 import EditCuratedPageModal from './EditCuratedPageModal';
@@ -39,12 +39,62 @@ export default function AdminCuratedPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // ── Regenerate state ────────────────────────────────────────────────────────
+  const [regenStats, setRegenStats] = useState<{ total: number; needsRegen: number } | null>(null);
+  const [regenRunning, setRegenRunning] = useState(false);
+  const [regenDone, setRegenDone] = useState(false);
+  const [regenProcessed, setRegenProcessed] = useState(0);
+  const [regenFailed, setRegenFailed] = useState(0);
+
   useEffect(() => {
     fetch('/api/admin/curated')
       .then(r => r.json())
       .then(d => { if (d.pages) setPages(d.pages); })
       .finally(() => setLoading(false));
+    // Load regen stats
+    fetch('/api/admin/curated/regenerate')
+      .then(r => r.json())
+      .then(d => { if (d.total !== undefined) setRegenStats(d); })
+      .catch(() => {});
   }, []);
+
+  // Run one batch of regeneration, loop until done
+  const runRegen = useCallback(async () => {
+    setRegenRunning(true);
+    setRegenDone(false);
+    setRegenProcessed(0);
+    setRegenFailed(0);
+    let remaining = regenStats?.needsRegen ?? 1;
+    let processed = 0;
+    let failed = 0;
+
+    while (remaining > 0) {
+      try {
+        const res = await fetch('/api/admin/curated/regenerate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        const data = await res.json();
+        if (!res.ok) break;
+        processed += data.processed ?? 0;
+        failed += data.failed ?? 0;
+        remaining = data.remaining ?? 0;
+        setRegenProcessed(processed);
+        setRegenFailed(failed);
+        if (data.processed === 0) break; // nothing left to process
+      } catch {
+        break;
+      }
+    }
+
+    setRegenRunning(false);
+    setRegenDone(true);
+    // Refresh stats
+    fetch('/api/admin/curated/regenerate').then(r => r.json()).then(d => { if (d.total !== undefined) setRegenStats(d); });
+    // Refresh page list
+    fetch('/api/admin/curated').then(r => r.json()).then(d => { if (d.pages) setPages(d.pages); });
+  }, [regenStats]);
 
   function handleUpdate(id: string, updates: Record<string, string | null>) {
     setPages(prev => prev.map(p => p.id === id ? { ...p, ...updates } as CuratedRow : p));
@@ -132,6 +182,67 @@ export default function AdminCuratedPage() {
           </Link>
         </div>
       </div>
+
+      {/* ── Regenerate panel — shown when articles have missing fields ── */}
+      {regenStats && regenStats.needsRegen > 0 && !regenDone && (
+        <div style={{
+          marginBottom: '1.25rem', padding: '1rem 1.25rem',
+          background: 'rgba(79,110,247,0.06)', border: '1px solid rgba(79,110,247,0.2)',
+          borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem',
+          alignItems: 'center', flexWrap: 'wrap',
+        }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              <Sparkles size={15} color="var(--accent)" />
+              {regenStats.needsRegen} article{regenStats.needsRegen !== 1 ? 's' : ''} need{regenStats.needsRegen === 1 ? 's' : ''} AI restructuring
+            </p>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              These articles have empty fields (Why it matters, What changed, Key implications). Click to re-fetch each source and use AI to properly fill all fields.
+            </p>
+            {regenRunning && (
+              <p style={{ fontSize: '0.78rem', color: 'var(--accent)', marginTop: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                Processed {regenProcessed} so far{regenFailed > 0 ? ` · ${regenFailed} failed` : ''} — working through the batch…
+              </p>
+            )}
+          </div>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={runRegen}
+            disabled={regenRunning}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', whiteSpace: 'nowrap' }}
+          >
+            {regenRunning
+              ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Regenerating…</>
+              : <><Sparkles size={13} /> Regenerate all</>}
+          </button>
+        </div>
+      )}
+
+      {/* Success banner after regen */}
+      {regenDone && (
+        <div style={{
+          marginBottom: '1.25rem', padding: '0.875rem 1.25rem',
+          background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.25)',
+          borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.75rem', alignItems: 'center',
+        }}>
+          <CheckCircle2 size={16} color="var(--emerald)" style={{ flexShrink: 0 }} />
+          <div>
+            <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--emerald)' }}>
+              Regeneration complete — {regenProcessed} article{regenProcessed !== 1 ? 's' : ''} restructured
+              {regenFailed > 0 && <span style={{ color: 'var(--amber)', fontWeight: 400, marginLeft: '0.5rem' }}>({regenFailed} failed — open each to check source content)</span>}
+            </p>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.125rem' }}>
+              All fields are now populated. Review each article using the Edit button before publishing.
+            </p>
+          </div>
+          {regenStats && regenStats.needsRegen > 0 && (
+            <button className="btn btn-outline btn-sm" onClick={runRegen} style={{ flexShrink: 0, fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <AlertCircle size={12} /> {regenStats.needsRegen} remaining
+            </button>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div className="card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
