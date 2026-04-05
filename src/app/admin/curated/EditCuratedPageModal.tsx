@@ -1,7 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  X, Loader2, ExternalLink, AlertCircle, Sparkles,
+  Printer, Copy, CheckCircle2, Maximize2, Minimize2,
+  BookOpen, Save,
+} from 'lucide-react';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface PageData {
   id: string;
@@ -26,6 +32,25 @@ interface Props {
   onSaved: (id: string, updates: Record<string, string | null>) => void;
 }
 
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const EDITORIAL_OPTIONS = ['draft', 'in_review', 'approved', 'rejected'] as const;
+const PUBLISHED_OPTIONS = ['draft', 'published', 'archived'] as const;
+
+const REWRITE_OPTIONS = [
+  { key: 'clarity',  icon: '✨', label: 'Improve clarity & flow' },
+  { key: 'concise',  icon: '✂️', label: 'Make more concise' },
+  { key: 'engaging', icon: '🔥', label: 'Make more engaging' },
+  { key: 'seo',      icon: '📈', label: 'SEO-optimise' },
+  { key: 'grammar',  icon: '🔧', label: 'Fix grammar & tone' },
+  { key: 'expand',   icon: '📝', label: 'Expand with detail' },
+  { key: 'simplify', icon: '💬', label: 'Simplify language' },
+] as const;
+
+function wordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
 function toSlug(title: string): string {
   return title
     .toLowerCase()
@@ -36,8 +61,216 @@ function toSlug(title: string): string {
     .slice(0, 90);
 }
 
-const EDITORIAL_OPTIONS = ['draft', 'in_review', 'approved', 'rejected'] as const;
-const PUBLISHED_OPTIONS = ['draft', 'published', 'archived'] as const;
+// ── SmartTextarea ─────────────────────────────────────────────────────────────
+// Self-contained textarea with per-field AI rewrite + selection awareness
+
+interface SmartTextareaProps {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  rows?: number;
+  placeholder?: string;
+  hint?: string;
+  articleTitle: string;
+  required?: boolean;
+  mono?: boolean;
+}
+
+function SmartTextarea({
+  label, value, onChange, rows = 4, placeholder, hint,
+  articleTitle, required, mono,
+}: SmartTextareaProps) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [selection, setSelection] = useState<{ start: number; end: number } | null>(null);
+  const [dropOpen, setDropOpen] = useState(false);
+  const [rewriting, setRewriting] = useState(false);
+  const [rewriteType, setRewriteType] = useState('');
+  const [history, setHistory] = useState<string[]>([]);
+
+  function handleSelect() {
+    const el = ref.current;
+    if (!el) return;
+    if (el.selectionStart !== el.selectionEnd) {
+      setSelection({ start: el.selectionStart, end: el.selectionEnd });
+    } else {
+      setSelection(null);
+    }
+  }
+
+  async function rewrite(instruction: string) {
+    const el = ref.current;
+    if (!el) return;
+    const targetText = selection
+      ? value.slice(selection.start, selection.end)
+      : value;
+    if (!targetText.trim()) return;
+
+    setRewriteType(instruction);
+    setRewriting(true);
+    setDropOpen(false);
+
+    // Save undo snapshot
+    setHistory(h => [...h.slice(-9), value]);
+
+    try {
+      const res = await fetch('/api/admin/article-rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: targetText, instruction, context: articleTitle }),
+      });
+      const data = await res.json();
+      if (data.rewritten) {
+        if (selection) {
+          onChange(value.slice(0, selection.start) + data.rewritten + value.slice(selection.end));
+        } else {
+          onChange(data.rewritten);
+        }
+        setSelection(null);
+      }
+    } finally {
+      setRewriting(false);
+      setRewriteType('');
+    }
+  }
+
+  function undoRewrite() {
+    if (history.length === 0) return;
+    onChange(history[history.length - 1]);
+    setHistory(h => h.slice(0, -1));
+  }
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!dropOpen) return;
+    function handler(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [dropOpen]);
+
+  const selLen = selection ? selection.end - selection.start : 0;
+  const wc = wordCount(value);
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)',
+  };
+  const hintStyle: React.CSSProperties = {
+    fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'block',
+  };
+
+  return (
+    <div style={{ marginBottom: '1.125rem' }}>
+      {/* Label row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem', gap: '0.5rem' }}>
+        <label style={labelStyle}>{label}{required && <span style={{ color: 'var(--rose)', marginLeft: 2 }}>*</span>}</label>
+
+        <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center', flexShrink: 0 }}>
+          {/* Selection / word count chip */}
+          {selLen > 0 ? (
+            <span style={{ fontSize: '0.68rem', color: 'var(--accent)', fontWeight: 600, background: 'rgba(79,110,247,0.1)', padding: '0.1rem 0.4rem', borderRadius: 'var(--radius-full)' }}>
+              {selLen} chars selected
+            </span>
+          ) : (
+            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+              {wc} {wc === 1 ? 'word' : 'words'}
+            </span>
+          )}
+
+          {/* Undo after rewrite */}
+          {history.length > 0 && (
+            <button
+              type="button"
+              onClick={undoRewrite}
+              title="Undo last AI rewrite"
+              className="btn btn-outline btn-sm"
+              style={{ padding: '0.15rem 0.4rem', height: 'auto', fontSize: '0.7rem' }}
+            >
+              ↩ Undo
+            </button>
+          )}
+
+          {/* AI Rewrite dropdown */}
+          <div ref={dropdownRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setDropOpen(v => !v)}
+              disabled={rewriting}
+              className="btn btn-outline btn-sm"
+              style={{ padding: '0.15rem 0.5rem', height: 'auto', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: 'var(--accent)', borderColor: 'rgba(79,110,247,0.35)' }}
+            >
+              {rewriting
+                ? <><Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> {REWRITE_OPTIONS.find(o => o.key === rewriteType)?.label ?? 'Rewriting…'}</>
+                : <><Sparkles size={11} />{selLen > 0 ? 'Rewrite selection' : 'AI Rewrite'}</>
+              }
+            </button>
+
+            {dropOpen && (
+              <div style={{
+                position: 'absolute', right: 0, top: 'calc(100% + 4px)',
+                background: 'var(--bg-card)', border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)', padding: '0.3rem',
+                zIndex: 200, minWidth: 200,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+              }}>
+                {selLen > 0 && (
+                  <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', padding: '0.2rem 0.5rem 0.4rem', borderBottom: '1px solid var(--border)', marginBottom: '0.25rem' }}>
+                    Rewriting {selLen} selected characters
+                  </p>
+                )}
+                {REWRITE_OPTIONS.map(opt => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => rewrite(opt.key)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.5rem',
+                      width: '100%', textAlign: 'left',
+                      padding: '0.45rem 0.625rem', fontSize: '0.8rem',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      borderRadius: 'var(--radius)', color: 'var(--text-primary)',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(79,110,247,0.07)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                  >
+                    <span style={{ width: 18, textAlign: 'center' }}>{opt.icon}</span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <textarea
+        ref={ref}
+        className="input"
+        rows={rows}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onSelect={handleSelect}
+        onMouseUp={handleSelect}
+        onKeyUp={handleSelect}
+        placeholder={placeholder}
+        style={{
+          resize: 'vertical', width: '100%',
+          fontFamily: mono ? 'monospace' : undefined,
+          fontSize: mono ? '0.875rem' : undefined,
+          opacity: rewriting ? 0.5 : 1,
+          transition: 'opacity 0.2s',
+        }}
+      />
+      {hint && <span style={hintStyle}>{hint}</span>}
+    </div>
+  );
+}
+
+// ── Main modal ────────────────────────────────────────────────────────────────
 
 export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props) {
   const [page, setPage] = useState<PageData | null>(null);
@@ -45,9 +278,12 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   const [loadError, setLoadError] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [slugEdited, setSlugEdited] = useState(false);
 
-  // Form fields
+  // Form state
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [summary, setSummary] = useState('');
@@ -61,9 +297,8 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   const [editorialStatus, setEditorialStatus] = useState('draft');
   const [publishedStatus, setPublishedStatus] = useState('draft');
 
-  // Load existing page
+  // Load
   useEffect(() => {
-    setLoading(true);
     fetch(`/api/admin/curated?id=${pageId}`)
       .then(r => r.json())
       .then(d => {
@@ -81,40 +316,83 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         setPublishedStatus(p.published_status ?? 'draft');
         setMetaTitle(p.meta_title ?? '');
         setMetaDescription(p.meta_description ?? '');
-
-        // Related slugs
         const relSlugs: string[] = p.related_course_slugs_json
-          ? JSON.parse(p.related_course_slugs_json)
-          : [];
+          ? JSON.parse(p.related_course_slugs_json) : [];
         setRelatedCourses(relSlugs.join(', '));
       })
-      .catch(() => setLoadError('Failed to load page data.'))
+      .catch(() => setLoadError('Failed to load article.'))
       .finally(() => setLoading(false));
   }, [pageId]);
 
-  // Auto-derive slug only if user hasn't manually edited it AND slug was empty
+  // Auto slug only if untouched & page had no slug
   useEffect(() => {
     if (!slugEdited && page && !page.slug) setSlug(toSlug(title));
   }, [title, slugEdited, page]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  // ── Toolbar actions ─────────────────────────────────────────────────────────
+
+  const totalWords = wordCount([summary, whyItMatters, whatChanged, executiveImplications].join(' '));
+
+  function copyArticle() {
+    const parts = [
+      `# ${title}`,
+      summary && `\n${summary}`,
+      whyItMatters && `\n## Why it matters\n${whyItMatters}`,
+      whatChanged && `\n## What changed\n${whatChanged}`,
+      primaryCourse && `\n[Free course: ${primaryCourse}]`,
+      executiveImplications && `\n## Key implications\n${executiveImplications}`,
+      metaDescription && `\n---\nMeta: ${metaDescription}`,
+    ].filter(Boolean).join('\n');
+    navigator.clipboard.writeText(parts).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }
+
+  function printArticle() {
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
+<style>
+  body { font-family: Georgia, 'Times New Roman', serif; max-width: 680px; margin: 48px auto; color: #1a1a1a; line-height: 1.85; font-size: 16px; }
+  h1 { font-size: 1.85rem; line-height: 1.25; margin-bottom: 0.5rem; }
+  h2 { font-size: 1.15rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.6rem; color: #333; }
+  p { margin-bottom: 1.1rem; }
+  .summary { font-size: 1.05rem; color: #444; border-left: 3px solid #4f6ef7; padding-left: 1rem; margin-bottom: 2rem; }
+  .course-box { border: 1px solid #e5e7eb; padding: 0.875rem 1.125rem; border-radius: 8px; margin: 2rem 0; background: #f9fafb; font-size: 0.9rem; }
+  .course-box strong { display: block; margin-bottom: 0.25rem; color: #4f6ef7; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .meta-box { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; font-size: 0.8rem; color: #9ca3af; }
+  @media print { body { margin: 0; } }
+</style></head><body>
+  <h1>${title}</h1>
+  ${summary ? `<p class="summary">${summary}</p>` : ''}
+  ${whyItMatters ? `<h2>Why it matters</h2><p>${whyItMatters}</p>` : ''}
+  ${whatChanged ? `<h2>What changed</h2><p>${whatChanged}</p>` : ''}
+  ${primaryCourse ? `<div class="course-box"><strong>Free course</strong>${primaryCourse}</div>` : ''}
+  ${executiveImplications ? `<h2>Key implications</h2><p>${executiveImplications}</p>` : ''}
+  <div class="meta-box">
+    <p>Slug: /curated/${slug} · Status: ${publishedStatus} · Editorial: ${editorialStatus}</p>
+    ${metaDescription ? `<p>Meta: ${metaDescription}</p>` : ''}
+    <p>Printed from BytesAI Learning Admin · ${new Date().toLocaleDateString('en-GB', { dateStyle: 'long' })}</p>
+  </div>
+</body></html>`;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 300); }
+  }
+
+  // ── Save ───────────────────────────────────────────────────────────────────
+
+  const handleSave = useCallback(async () => {
     setSaveError('');
+    setSaveSuccess(false);
     if (!title.trim() || !slug.trim()) { setSaveError('Title and slug are required.'); return; }
 
-    const relatedArr = relatedCourses
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean);
-
+    const relatedArr = relatedCourses.split(',').map(s => s.trim()).filter(Boolean);
     setSaving(true);
     try {
       const res = await fetch(`/api/admin/curated?id=${pageId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: title.trim(),
-          slug: slug.trim(),
+          title: title.trim(), slug: slug.trim(),
           summary: summary.trim() || null,
           why_it_matters: whyItMatters.trim() || null,
           what_changed: whatChanged.trim() || null,
@@ -129,10 +407,10 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
       });
       const data = await res.json();
       if (!res.ok) { setSaveError(data.error ?? 'Save failed.'); return; }
-
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
       onSaved(pageId, {
-        title: title.trim(),
-        slug: slug.trim(),
+        title: title.trim(), slug: slug.trim(),
         summary: summary.trim() || null,
         editorial_review_status: editorialStatus,
         published_status: publishedStatus,
@@ -141,272 +419,359 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
     } finally {
       setSaving(false);
     }
-  }
+  }, [pageId, title, slug, summary, whyItMatters, whatChanged, executiveImplications, primaryCourse, relatedCourses, metaTitle, metaDescription, editorialStatus, publishedStatus, onSaved]);
 
-  function handleSlugChange(v: string) {
-    setSlugEdited(true);
-    setSlug(v.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'));
-  }
+  // Ctrl/Cmd+S to save
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [handleSave]);
 
-  const labelStyle: React.CSSProperties = {
-    fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem',
-    display: 'block', color: 'var(--text-secondary)',
+  // ── Styles ──────────────────────────────────────────────────────────────────
+
+  const sectionLabel: React.CSSProperties = {
+    fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase',
+    letterSpacing: '0.07em', color: 'var(--text-muted)',
+    marginBottom: '0.875rem', display: 'block',
   };
-  const fieldStyle: React.CSSProperties = { marginBottom: '1rem' };
-  const hintStyle: React.CSSProperties = {
-    fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'block',
+  const divider: React.CSSProperties = {
+    borderBottom: '1px solid var(--border)', marginBottom: '1.25rem', paddingBottom: '0.125rem',
+  };
+  const inputSm: React.CSSProperties = {
+    fontSize: '0.875rem', fontFamily: 'monospace',
   };
 
   return (
     <div
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 1000, padding: '1rem',
+        position: 'fixed', inset: 0,
+        background: fullscreen ? 'var(--bg)' : 'rgba(0,0,0,0.65)',
+        display: 'flex', alignItems: fullscreen ? 'stretch' : 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: fullscreen ? 0 : '1rem',
       }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={e => { if (!fullscreen && e.target === e.currentTarget) onClose(); }}
     >
-      <div className="card" style={{
-        width: '100%', maxWidth: 700, maxHeight: '92vh',
-        overflowY: 'auto', padding: '2rem', position: 'relative',
-      }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-          <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.25rem' }}>Edit Article</h2>
+      <div
+        className="card"
+        style={{
+          width: '100%',
+          maxWidth: fullscreen ? '100%' : 740,
+          maxHeight: fullscreen ? '100%' : '95vh',
+          height: fullscreen ? '100%' : undefined,
+          borderRadius: fullscreen ? 0 : undefined,
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+          padding: 0,
+        }}
+      >
+        {/* ── Sticky toolbar ───────────────────────────────────────────── */}
+        <div style={{
+          padding: '0.625rem 1.25rem',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--bg-card)',
+          display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
+          flexShrink: 0,
+        }}>
+          {/* Save */}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className={saveSuccess ? 'btn btn-sm' : 'btn btn-primary btn-sm'}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+              background: saveSuccess ? 'var(--emerald)' : undefined,
+              fontSize: '0.8rem',
+            }}
+          >
+            {saving
+              ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Saving…</>
+              : saveSuccess
+                ? <><CheckCircle2 size={13} /> Saved</>
+                : <><Save size={13} /> Save</>}
+          </button>
+
+          <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
+
+          {/* Copy */}
+          <button
+            type="button"
+            onClick={copyArticle}
+            title="Copy full article as plain text"
+            className="btn btn-outline btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem' }}
+          >
+            {copied ? <><CheckCircle2 size={13} color="var(--emerald)" /> Copied</> : <><Copy size={13} /> Copy</>}
+          </button>
+
+          {/* Print */}
+          <button
+            type="button"
+            onClick={printArticle}
+            title="Print article"
+            className="btn btn-outline btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem' }}
+          >
+            <Printer size={13} /> Print
+          </button>
+
+          <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
+
+          {/* Word count */}
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            {totalWords.toLocaleString()} words
+          </span>
+
+          {/* Shortcut hint */}
+          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginLeft: '0.125rem' }}>
+            · <kbd style={{ fontFamily: 'monospace', fontSize: '0.67rem', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 3, padding: '0 3px' }}>Ctrl+S</kbd> to save
+          </span>
+
+          {/* Right side: preview link, fullscreen, close */}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             {page && (
               <a
                 href={`/curated/${page.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ fontSize: '0.78rem', color: 'var(--teal)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                className="btn btn-outline btn-sm"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.78rem' }}
               >
-                Preview live page <ExternalLink size={11} />
+                Preview <ExternalLink size={11} />
               </a>
             )}
+            <button
+              type="button"
+              onClick={() => setFullscreen(v => !v)}
+              title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              className="btn btn-outline btn-sm"
+              style={{ padding: '0.25rem 0.45rem', height: 'auto' }}
+            >
+              {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              title="Close"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: 4 }}
+            >
+              <X size={16} />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', flexShrink: 0 }}
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
         </div>
 
-        {/* Loading state */}
-        {loading && (
-          <div style={{ padding: '3rem 0', textAlign: 'center' }}>
-            <Loader2 size={28} style={{ animation: 'spin 1s linear infinite', color: 'var(--text-muted)', margin: '0 auto 0.75rem' }} />
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Loading article…</p>
-          </div>
-        )}
+        {/* ── Scrollable body ──────────────────────────────────────────── */}
+        <div style={{ overflowY: 'auto', flex: 1, padding: '1.5rem 1.5rem 2rem' }}>
 
-        {/* Load error */}
-        {loadError && !loading && (
-          <div style={{
-            padding: '1rem', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
-            borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.5rem', alignItems: 'center',
-          }}>
-            <AlertCircle size={15} color="var(--rose)" />
-            <p style={{ fontSize: '0.875rem', color: 'var(--rose)' }}>{loadError}</p>
-          </div>
-        )}
-
-        {/* Form */}
-        {!loading && !loadError && (
-          <form onSubmit={handleSubmit}>
-
-            {/* Save error */}
-            {saveError && (
-              <div style={{
-                background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
-                color: 'var(--rose)', borderRadius: 'var(--radius)', padding: '0.625rem 0.875rem',
-                fontSize: '0.875rem', marginBottom: '1rem',
-              }}>
-                {saveError}
-              </div>
-            )}
-
-            {/* ── Status row ── */}
-            <div style={{
-              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem',
-              marginBottom: '1.25rem', padding: '0.875rem 1rem',
-              background: 'var(--bg)', borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border)',
-            }}>
-              <div>
-                <label style={labelStyle}>Editorial status</label>
-                <select
-                  className="input"
-                  value={editorialStatus}
-                  onChange={e => setEditorialStatus(e.target.value)}
-                  style={{ fontSize: '0.875rem' }}
-                >
-                  {EDITORIAL_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={labelStyle}>Publish status</label>
-                <select
-                  className="input"
-                  value={publishedStatus}
-                  onChange={e => setPublishedStatus(e.target.value)}
-                  style={{ fontSize: '0.875rem' }}
-                >
-                  {PUBLISHED_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </div>
+          {/* Load states */}
+          {loading && (
+            <div style={{ padding: '4rem 0', textAlign: 'center' }}>
+              <Loader2 size={28} style={{ animation: 'spin 1s linear infinite', color: 'var(--text-muted)', margin: '0 auto 0.75rem' }} />
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Loading article…</p>
             </div>
+          )}
+          {loadError && !loading && (
+            <div style={{ padding: '1rem', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.5rem' }}>
+              <AlertCircle size={15} color="var(--rose)" />
+              <p style={{ fontSize: '0.875rem', color: 'var(--rose)' }}>{loadError}</p>
+            </div>
+          )}
 
-            {/* ── Core content ── */}
-            <div style={{ borderBottom: '1px solid var(--border)', marginBottom: '1.25rem', paddingBottom: '1.25rem' }}>
-              <p style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: '0.875rem' }}>Article content</p>
+          {!loading && !loadError && (
+            <>
+              {/* Save error */}
+              {saveError && (
+                <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--rose)', borderRadius: 'var(--radius)', padding: '0.625rem 0.875rem', fontSize: '0.875rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <AlertCircle size={14} /> {saveError}
+                </div>
+              )}
 
-              <div style={fieldStyle}>
-                <label style={labelStyle}>Title *</label>
+              {/* ── Status ── */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem', padding: '0.875rem 1rem', background: 'var(--bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>Editorial status</label>
+                  <select className="input" value={editorialStatus} onChange={e => setEditorialStatus(e.target.value)} style={{ fontSize: '0.875rem' }}>
+                    {EDITORIAL_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>Publish status</label>
+                  <select className="input" value={publishedStatus} onChange={e => setPublishedStatus(e.target.value)} style={{ fontSize: '0.875rem' }}>
+                    {PUBLISHED_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* ── Article meta ── */}
+              <span style={sectionLabel}>Article</span>
+
+              <div style={{ marginBottom: '1.125rem' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                  Title <span style={{ color: 'var(--rose)' }}>*</span>
+                </label>
                 <input
                   className="input"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   placeholder="e.g. Why Generative AI Is Reshaping Content Creation"
-                  required
                 />
               </div>
 
-              <div style={fieldStyle}>
-                <label style={labelStyle}>Slug *</label>
+              <div style={{ marginBottom: '1.125rem' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                  Slug <span style={{ color: 'var(--rose)' }}>*</span>
+                </label>
                 <input
                   className="input"
                   value={slug}
-                  onChange={e => handleSlugChange(e.target.value)}
-                  placeholder="e.g. generative-ai-content-creation"
-                  style={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
-                  required
+                  onChange={e => {
+                    setSlugEdited(true);
+                    setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'));
+                  }}
+                  style={inputSm}
                 />
-                <span style={hintStyle}>
-                  Public URL: learn.bytesai.uk/curated/<strong>{slug || '…'}</strong>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
+                  learn.bytesai.uk/curated/<strong>{slug || '…'}</strong>
                 </span>
               </div>
 
-              <div style={fieldStyle}>
-                <label style={labelStyle}>Summary</label>
-                <textarea
-                  className="input" rows={2}
-                  value={summary}
-                  onChange={e => setSummary(e.target.value)}
-                  placeholder="A 1–2 sentence hook that explains why this topic matters right now."
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
+              <div style={divider} />
 
-              <div style={fieldStyle}>
-                <label style={labelStyle}>Why it matters</label>
-                <textarea
-                  className="input" rows={4}
-                  value={whyItMatters}
-                  onChange={e => setWhyItMatters(e.target.value)}
-                  placeholder="3–5 sentences on the real-world significance. Naturally mention the free course here."
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
+              {/* ── Content fields (AI-enabled) ── */}
+              <span style={sectionLabel}>Content</span>
 
-              <div style={fieldStyle}>
-                <label style={labelStyle}>What changed</label>
-                <textarea
-                  className="input" rows={4}
-                  value={whatChanged}
-                  onChange={e => setWhatChanged(e.target.value)}
-                  placeholder="3–5 sentences on current developments, recent releases, or breakthroughs."
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
+              <SmartTextarea
+                label="Summary"
+                value={summary}
+                onChange={setSummary}
+                rows={3}
+                placeholder="A 1–2 sentence hook that explains why this topic matters right now."
+                articleTitle={title}
+              />
 
-              <div style={fieldStyle}>
-                <label style={labelStyle}>Key implications</label>
-                <textarea
-                  className="input" rows={4}
-                  value={executiveImplications}
-                  onChange={e => setExecutiveImplications(e.target.value)}
-                  placeholder="3–5 sentences on practical takeaways for learners and organisations."
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
-            </div>
+              <SmartTextarea
+                label="Why it matters"
+                value={whyItMatters}
+                onChange={setWhyItMatters}
+                rows={5}
+                placeholder="3–5 sentences on real-world significance. Naturally mention the free course here."
+                articleTitle={title}
+              />
 
-            {/* ── Course linking ── */}
-            <div style={{ borderBottom: '1px solid var(--border)', marginBottom: '1.25rem', paddingBottom: '1.25rem' }}>
-              <p style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: '0.875rem' }}>Course links</p>
+              <SmartTextarea
+                label="What changed"
+                value={whatChanged}
+                onChange={setWhatChanged}
+                rows={5}
+                placeholder="3–5 sentences on current developments and recent breakthroughs."
+                articleTitle={title}
+              />
 
-              <div style={fieldStyle}>
-                <label style={labelStyle}>Primary course slug</label>
+              <SmartTextarea
+                label="Key implications"
+                value={executiveImplications}
+                onChange={setExecutiveImplications}
+                rows={5}
+                placeholder="3–5 sentences on practical takeaways for learners and organisations."
+                articleTitle={title}
+              />
+
+              <div style={divider} />
+
+              {/* ── Course linking ── */}
+              <span style={sectionLabel}>Course links</span>
+
+              <div style={{ marginBottom: '1.125rem' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.3rem' }}>
+                  <BookOpen size={13} /> Primary course slug
+                </label>
                 <input
                   className="input"
                   value={primaryCourse}
                   onChange={e => setPrimaryCourse(e.target.value)}
-                  placeholder="e.g. introduction-to-artificial-intelligence-alison"
-                  style={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+                  placeholder="e.g. introduction-to-ai-alison"
+                  style={inputSm}
                 />
-                <span style={hintStyle}>Embedded mid-article as "Free course to get started"</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
+                  Embedded mid-article as "Free course to get started"
+                </span>
               </div>
 
-              <div style={fieldStyle}>
-                <label style={labelStyle}>Related course slugs</label>
+              <div style={{ marginBottom: '1.125rem' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                  Related course slugs
+                </label>
                 <input
                   className="input"
                   value={relatedCourses}
                   onChange={e => setRelatedCourses(e.target.value)}
                   placeholder="slug-one, slug-two, slug-three"
-                  style={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+                  style={inputSm}
                 />
-                <span style={hintStyle}>Comma-separated — shown as a grid after the article</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
+                  Comma-separated — shown as a grid after the article
+                </span>
               </div>
-            </div>
 
-            {/* ── SEO ── */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <p style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: '0.875rem' }}>SEO (optional)</p>
+              <div style={divider} />
 
-              <div style={fieldStyle}>
-                <label style={labelStyle}>Meta title</label>
+              {/* ── SEO ── */}
+              <span style={sectionLabel}>SEO</span>
+
+              <div style={{ marginBottom: '1.125rem' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Meta title</label>
                 <input
                   className="input"
                   value={metaTitle}
                   onChange={e => setMetaTitle(e.target.value)}
                   placeholder="Overrides article title in search results (under 60 chars)"
                 />
-                <span style={hintStyle}>{metaTitle.length}/60 chars</span>
+                <span style={{ fontSize: '0.72rem', color: metaTitle.length > 60 ? 'var(--rose)' : 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
+                  {metaTitle.length}/60 chars
+                </span>
               </div>
 
-              <div style={fieldStyle}>
-                <label style={labelStyle}>Meta description</label>
-                <textarea
-                  className="input" rows={2}
-                  value={metaDescription}
-                  onChange={e => setMetaDescription(e.target.value)}
-                  placeholder="SEO description shown in search results (under 155 chars)"
-                  style={{ resize: 'vertical' }}
-                />
-                <span style={hintStyle}>{metaDescription.length}/155 chars</span>
-              </div>
-            </div>
+              <SmartTextarea
+                label="Meta description"
+                value={metaDescription}
+                onChange={setMetaDescription}
+                rows={2}
+                placeholder="SEO description shown in search results (under 155 chars)"
+                hint={`${metaDescription.length}/155 chars`}
+                articleTitle={title}
+              />
+            </>
+          )}
+        </div>
 
-            {/* Buttons */}
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-outline" onClick={onClose} disabled={saving}>
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={saving}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
-              >
-                {saving && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
-                Save changes
-              </button>
-            </div>
-          </form>
+        {/* ── Footer save bar ──────────────────────────────────────────── */}
+        {!loading && !loadError && (
+          <div style={{ padding: '0.875rem 1.5rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', flexShrink: 0, background: 'var(--bg-card)' }}>
+            <button type="button" className="btn btn-outline" onClick={onClose} disabled={saving}>
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="btn btn-primary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+            >
+              {saving
+                ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Saving…</>
+                : saveSuccess
+                  ? <><CheckCircle2 size={14} /> Saved</>
+                  : <><Save size={14} /> Save changes</>}
+            </button>
+          </div>
         )}
       </div>
     </div>
