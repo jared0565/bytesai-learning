@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
 import CuratedViewTracker from '@/components/ui/CuratedViewTracker';
 import CuratedSharePanel from '@/components/ui/CuratedSharePanel';
+import ArticleHelpfulness from '@/components/ui/ArticleHelpfulness';
 import { getCuratedPageBySlug, getCourseBySlug, getDB } from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
@@ -238,6 +239,9 @@ export default async function CuratedDetailPage({ params }: PageProps) {
                 </ul>
               </section>
             )}
+
+            {/* Article helpfulness — Layer 1: visible after scrolling to bottom */}
+            <ArticleHelpfulness slug={page.slug} pageUrl={`https://learn.bytesai.uk/curated/${page.slug}`} />
 
             {/* Bottom share nudge */}
             <section style={{

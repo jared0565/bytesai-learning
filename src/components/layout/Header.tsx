@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import AuthModal from '@/components/ui/AuthModal';
 import SharePanel from '@/components/ui/SharePanel';
+import FeedbackTab from '@/components/ui/FeedbackTab';
 
 const NUDGE_MESSAGES = [
   { emoji: '🎓', text: "Looking for free courses? I can find them in seconds!" },
@@ -41,6 +42,7 @@ export default function Header({ userRole, displayName }: NavProps) {
   }, []);
 
   return (
+    <>
     <header style={{ position: 'sticky', top: 0, zIndex: 100 }}>
       {/* Announcement bar */}
       <div className="announcement-bar" style={{
@@ -253,5 +255,9 @@ export default function Header({ userRole, displayName }: NavProps) {
       {/* Auth modal */}
       {!userRole && <AuthModal open={authModal !== null} onClose={() => setAuthModal(null)} initialTab={authModal ?? 'register'} />}
     </header>
+
+    {/* Global feedback tab — appears after 15s, fixed to right edge */}
+    <FeedbackTab />
+    </>
   );
 }

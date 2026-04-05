@@ -215,6 +215,19 @@ CREATE TABLE IF NOT EXISTS admin_audit_logs (
   FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS feedback (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL DEFAULT 'general',   -- 'general' | 'article'
+  slug TEXT,                               -- article slug if type = 'article'
+  page_url TEXT,
+  sentiment TEXT,                          -- 'positive' | 'neutral' | 'negative'
+  message TEXT,
+  email TEXT,
+  user_id TEXT,
+  reviewed INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
