@@ -51,3 +51,9 @@ db/prod-dump.sql
 build-output.txt
 .open-next/
 .wrangler/
+
+# vim undo files
+*.un~
+
+# Claude Code config
+.claude/
