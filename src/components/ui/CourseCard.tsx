@@ -3,9 +3,7 @@ import { ExternalLink, BookOpen, Layers, Brain, Cpu, MessageSquare, Shield, Data
 import type { Course } from '@/lib/db';
 
 function formatEnrollCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`;
-  return n.toLocaleString();
+  return n.toLocaleString('en-US');
 }
 
 interface CourseCardProps {
@@ -104,8 +102,9 @@ export default function CourseCard({ course, featured = false, compact = false }
         <p className="course-card-title">{course.title}</p>
         {course.snippet && <p className="course-card-snippet">{course.snippet}</p>}
         {course.enroll_count != null && course.enroll_count > 0 && (
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '-0.25rem' }}>
-            <Users size={11} /> {formatEnrollCount(course.enroll_count)} enrolled
+          <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '-0.125rem' }}>
+            <Users size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+            <span>{formatEnrollCount(course.enroll_count)}<span style={{ fontWeight: 400, color: 'var(--text-muted)' }}> enrolled</span></span>
           </p>
         )}
         <div className="course-card-footer">

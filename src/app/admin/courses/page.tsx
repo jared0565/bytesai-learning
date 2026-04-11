@@ -5,6 +5,7 @@ import { BookOpen, ExternalLink } from 'lucide-react';
 import AddCourseForm from './AddCourseForm';
 import CourseActions from './CourseActions';
 import SortableHeader from './SortableHeader';
+import EnrollRefresh from './EnrollRefresh';
 
 export const metadata: Metadata = {
   title: 'Courses — Admin',
@@ -21,6 +22,7 @@ interface CourseRow {
   is_alison: number;
   is_affiliate: number;
   featured_priority: number;
+  enroll_count: number | null;
   updated_at: string;
 }
 
@@ -50,7 +52,7 @@ export default async function AdminCoursesPage({
   if (db) {
     try {
       const result = await db.prepare(
-        `SELECT id, slug, title, category, level, published_status, is_alison, is_affiliate, featured_priority, updated_at
+        `SELECT id, slug, title, category, level, published_status, is_alison, is_affiliate, featured_priority, enroll_count, updated_at
          FROM courses ORDER BY ${orderBy} LIMIT 200`
       ).all<CourseRow>();
       courses = result.results;
@@ -69,6 +71,7 @@ export default async function AdminCoursesPage({
     { label: 'Level',    column: 'level' },
     { label: 'Status',   column: 'status' },
     { label: 'Flags',    column: 'flags' },
+    { label: 'Enrolled', column: '' },
     { label: 'Updated',  column: 'updated' },
     { label: '',         column: '' },
   ];
@@ -143,6 +146,12 @@ export default async function AdminCoursesPage({
                         <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.15rem 0.45rem', borderRadius: 4, background: 'rgba(16,185,129,0.1)', color: 'var(--emerald)' }}>P{c.featured_priority}</span>
                       )}
                     </div>
+                  </td>
+                  <td style={{ padding: '0.75rem 1rem' }}>
+                    {c.is_alison === 1
+                      ? <EnrollRefresh slug={c.slug} initialCount={c.enroll_count ?? null} />
+                      : <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>—</span>
+                    }
                   </td>
                   <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: '0.8125rem' }}>
                     {new Date(c.updated_at).toLocaleDateString()}

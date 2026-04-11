@@ -115,3 +115,41 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ results, updated: results.filter(r => r.updated).length });
 }
+
+// POST /api/admin/alison-enroll — refresh enroll_count for a single course by slug
+export async function POST(req: NextRequest) {
+  const session = await requireAdmin(req);
+  if (!session) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
+
+  const db = await getDB();
+  if (!db) return NextResponse.json({ error: 'DB unavailable.' }, { status: 503 });
+
+  const { slug } = await req.json() as { slug?: string };
+  if (!slug) return NextResponse.json({ error: 'slug required.' }, { status: 400 });
+
+  const course = await db.prepare(
+    `SELECT id, slug FROM courses WHERE slug = ? AND is_alison = 1`
+  ).first<{ id: string; slug: string }>(slug);
+  if (!course) return NextResponse.json({ error: 'Alison course not found.' }, { status: 404 });
+
+  try {
+    const res = await fetch(`https://alison.com/course/${course.slug}`, {
+      headers: FETCH_HEADERS,
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!res.ok) return NextResponse.json({ error: `Alison returned ${res.status}.` }, { status: 502 });
+
+    const html = await res.text();
+    const enrollCount = extractEnrollCount(html);
+    if (enrollCount == null || enrollCount <= 0) {
+      return NextResponse.json({ slug, enrollCount: null, updated: false, error: 'Could not extract count.' });
+    }
+
+    await db.prepare('UPDATE courses SET enroll_count = ?, updated_at = datetime(\'now\') WHERE id = ?')
+      .bind(enrollCount, course.id).run();
+
+    return NextResponse.json({ slug, enrollCount, updated: true });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}
