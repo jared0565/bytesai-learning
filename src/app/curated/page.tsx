@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Lightbulb, Calendar } from 'lucide-react';
+import { ArrowRight, Lightbulb, Calendar, Sparkles } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { getPublishedCuratedPages, getDB} from '@/lib/db';
@@ -65,11 +65,23 @@ export default async function CuratedIndexPage() {
                             {page.summary}
                           </p>
                         )}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                           {page.last_verified_at && (
                             <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
                               <Calendar size={13} />
                               Verified {new Date(page.last_verified_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                            </span>
+                          )}
+                          {page.ai_generated === 1 && (
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                              fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase',
+                              letterSpacing: '0.05em', padding: '0.15rem 0.5rem',
+                              borderRadius: 'var(--radius-full)',
+                              background: 'rgba(139,92,246,0.1)', color: '#8b5cf6',
+                              border: '1px solid rgba(139,92,246,0.2)',
+                            }}>
+                              <Sparkles size={10} /> AI-assisted
                             </span>
                           )}
                         </div>

@@ -13,7 +13,7 @@ const FOOTER_LINKS = {
   ],
   Discover: [
     { label: 'All Providers', href: '/providers' },
-    { label: 'Learning Paths', href: '/curated' },
+    { label: 'AI Insights', href: '/curated' },
     { label: 'Lectures & Talks', href: '/lectures' },
     { label: 'Trending Now', href: '/courses?sort=popular' },
   ],
@@ -116,6 +116,7 @@ export default function Footer() {
 
         <div className="footer-bottom">
           <p>© {year} BytesAI Learning. All rights reserved.</p>
+          <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>London, UK, N22 6ET</p>
           <p style={{ fontSize: '0.75rem', color: '#6b7280', maxWidth: 480, textAlign: 'right' }}>
             Some links on this site are affiliate links. We may earn a commission at no extra cost to you.
             Course content from third-party providers is free unless stated otherwise.

@@ -139,6 +139,7 @@ export interface UserProfile {
   timezone: string;
   learning_goal: string | null;
   preferred_format: string | null;
+  marketing_consent: number; // 0 = no, 1 = yes
   created_at: string;
   updated_at: string;
 }
@@ -181,6 +182,9 @@ export interface CuratedPage {
   view_count: number;
   last_viewed_at: string | null;
   referrer_counts_json: string | null;
+  ai_generated: number; // 0 = human, 1 = AI-generated
+  generated_model: string | null; // e.g. "google/gemini-flash-1.5"
+  generated_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -364,10 +368,34 @@ export async function getCuratedPageBySlug(db: D1Database, slug: string): Promis
   ).bind(slug, 'published').first<CuratedPage>();
 }
 
+export async function getCuratedPageBySlugAnyStatus(db: D1Database, slug: string): Promise<CuratedPage | null> {
+  return db.prepare(
+    'SELECT * FROM curated_pages WHERE slug = ?'
+  ).bind(slug).first<CuratedPage>();
+}
+
 export async function getPublishedCuratedPages(db: D1Database): Promise<CuratedPage[]> {
   const result = await db.prepare(
     'SELECT * FROM curated_pages WHERE published_status = ? ORDER BY created_at DESC'
   ).bind('published').all<CuratedPage>();
+  return result.results;
+}
+
+export async function getRecentPublishedCuratedPages(db: D1Database, limit = 3): Promise<CuratedPage[]> {
+  const result = await db.prepare(
+    'SELECT id, slug, title, summary, last_verified_at, view_count FROM curated_pages WHERE published_status = ? ORDER BY created_at DESC LIMIT ?'
+  ).bind('published', limit).all<CuratedPage>();
+  return result.results;
+}
+
+/** Find published curated pages that reference a given course slug */
+export async function getCuratedPagesForCourse(db: D1Database, courseSlug: string): Promise<CuratedPage[]> {
+  const result = await db.prepare(
+    `SELECT id, slug, title, summary FROM curated_pages
+     WHERE published_status = 'published'
+       AND (primary_course_slug = ? OR related_course_slugs_json LIKE ?)
+     ORDER BY view_count DESC LIMIT 3`
+  ).bind(courseSlug, `%"${courseSlug}"%`).all<CuratedPage>();
   return result.results;
 }
 
@@ -394,4 +422,16 @@ export async function logAdminAction(db: D1Database, opts: {
     opts.after ? JSON.stringify(opts.after) : null,
     new Date().toISOString()
   ).run();
+}
+
+/**
+ * Purge admin audit log entries older than 24 months.
+ * Run periodically to enforce the data retention policy stated in the Privacy Policy.
+ * Safe to call on every admin login — the DELETE is a no-op when no rows qualify.
+ */
+export async function purgeOldAuditLogs(db: D1Database): Promise<void> {
+  const cutoff = new Date(Date.now() - 24 * 30 * 24 * 60 * 60 * 1000).toISOString(); // ~24 months
+  await db.prepare(
+    'DELETE FROM admin_audit_logs WHERE created_at < ?'
+  ).bind(cutoff).run().catch(() => null);
 }

@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, BookOpen, ArrowLeft, CheckCircle2, Info, Calendar, Bookmark, Lock, UserPlus, LogIn, MonitorPlay } from 'lucide-react';
+import { ExternalLink, BookOpen, ArrowLeft, CheckCircle2, Info, Calendar, Bookmark, Lock, UserPlus, LogIn, MonitorPlay, Lightbulb } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
-import { getCourseBySlug, getRelatedCourses, getProviderBySlug, getUserProgress, getDB} from '@/lib/db';
+import { getCourseBySlug, getRelatedCourses, getProviderBySlug, getUserProgress, getCuratedPagesForCourse, getDB} from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -70,10 +70,11 @@ export default async function CourseDetailPage({ params }: PageProps) {
   const token = cookieStore.get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
 
-  const [related, provider, userProgress] = await Promise.all([
+  const [related, provider, userProgress, relatedInsights] = await Promise.all([
     getRelatedCourses(db, course.id, course.category ?? '', 4).catch(() => []),
     course.provider_id ? getProviderBySlug(db, course.provider_id.replace('prov-', '')).catch(() => null) : null,
     session ? getUserProgress(db, session.userId).catch(() => []) : Promise.resolve([]),
+    getCuratedPagesForCourse(db, course.slug).catch(() => []),
   ]);
 
   const userProgressRecord = userProgress.find(p => p.course_id === course.id);
@@ -515,6 +516,51 @@ export default async function CourseDetailPage({ params }: PageProps) {
               <div className="grid-4">
                 {related.map(c => (
                   <CourseCard key={c.id} course={c} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Related insights */}
+          {relatedInsights.length > 0 && (
+            <section style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+              <h2 className="section-header-title" style={{ marginBottom: '1rem' }}>
+                <Lightbulb size={18} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: '-3px', color: 'var(--accent)' }} />
+                Related AI insights
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {relatedInsights.map(insight => (
+                  <Link
+                    key={insight.id}
+                    href={`/curated/${insight.slug}`}
+                    className="card"
+                    style={{
+                      display: 'flex', alignItems: 'flex-start', gap: '1rem',
+                      textDecoration: 'none', padding: '1rem 1.25rem',
+                      borderLeft: '3px solid var(--accent)',
+                    }}
+                  >
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                      background: 'rgba(79,110,247,0.1)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Lightbulb size={15} color="var(--accent)" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                        {insight.title}
+                      </p>
+                      {insight.summary && (
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {insight.summary}
+                        </p>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--accent)', flexShrink: 0, alignSelf: 'center' }}>
+                      Read →
+                    </span>
+                  </Link>
                 ))}
               </div>
             </section>

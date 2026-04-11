@@ -144,7 +144,8 @@ export default function ArticleHelpfulness({ slug, pageUrl }: Props) {
         </div>
       ) : (
         /* ── Default: thumbs up / down ── */
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
             Was this article helpful?
           </p>
@@ -204,6 +205,11 @@ export default function ArticleHelpfulness({ slug, pageUrl }: Props) {
               <ThumbsDown size={14} /> Could be better
             </button>
           </div>
+          </div>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: 1.4 }}>
+            Your rating is stored anonymously and used to improve article quality. No personal data is required. See our{' '}
+            <a href="/privacy-policy" style={{ color: 'var(--accent)' }}>Privacy Policy</a>.
+          </p>
         </div>
       )}
     </div>

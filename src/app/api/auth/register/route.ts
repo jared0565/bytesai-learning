@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import { hashPassword, signSession, getSessionCookieOptions, COOKIE_NAME } from '@/lib/auth';
 import { sanitizeEmail, isValidEmail, checkRateLimit, getRateLimitKey, rateLimitResponse } from '@/lib/security';
 import { getDB, getUserByEmail } from '@/lib/db';
+import { sendEmail, buildVerificationEmail } from '@/lib/email';
 
 const RegisterSchema = z.object({
   email: z.string().email('Please enter a valid email address.').max(320),
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
   const parsed = RegisterSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input.', details: parsed.error.flatten() }, { status: 422 });
 
-  const { email: rawEmail, password, displayName } = parsed.data;
+  const { email: rawEmail, password, displayName, marketingConsent } = parsed.data;
   const email = sanitizeEmail(rawEmail);
 
   if (!isValidEmail(email)) return NextResponse.json({ error: 'Invalid email address.' }, { status: 422 });
@@ -77,8 +78,8 @@ export async function POST(req: NextRequest) {
         'INSERT INTO auth_identities (id, user_id, provider, provider_user_id, created_at) VALUES (?, ?, ?, ?, ?)'
       ).bind(nanoid(), userId, 'email', email, now),
       db.prepare(
-        'INSERT INTO user_profiles (user_id, display_name, dark_mode, timezone, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
-      ).bind(userId, displayName ?? email.split('@')[0], 0, 'Europe/London', now, now),
+        'INSERT INTO user_profiles (user_id, display_name, dark_mode, timezone, marketing_consent, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      ).bind(userId, displayName ?? email.split('@')[0], 0, 'Europe/London', marketingConsent ? 1 : 0, now, now),
       db.prepare(
         'INSERT INTO email_verification_tokens (id, user_id, token, expires_at, created_at) VALUES (?, ?, ?, ?, ?)'
       ).bind(nanoid(), userId, verificationToken, verificationExpires, now),
@@ -89,7 +90,13 @@ export async function POST(req: NextRequest) {
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-  console.log(`[verify-email] Verification link for ${email}: ${siteUrl}/api/auth/verify-email?token=${verificationToken}`);
+  const verificationUrl = `${siteUrl}/api/auth/verify-email?token=${verificationToken}`;
+  const { subject, html, text } = buildVerificationEmail({
+    displayName: displayName ?? email.split('@')[0],
+    verificationUrl,
+    siteUrl,
+  });
+  await sendEmail({ to: email, subject, html, text });
 
   // Issue session (unverified — middleware will gate dashboard access)
   const token = await signSession({ userId, email, role: 'learner', displayName: displayName ?? email.split('@')[0], emailVerified: false });

@@ -277,8 +277,10 @@ export async function POST(req: NextRequest) {
       INSERT INTO curated_pages (
         id, slug, title, summary, why_it_matters, what_changed, executive_implications,
         primary_course_slug, source_references_json, meta_description,
-        editorial_review_status, published_status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        editorial_review_status, published_status,
+        ai_generated, generated_model, generated_at,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
     `).bind(
       id,
       slug,
@@ -292,6 +294,8 @@ export async function POST(req: NextRequest) {
       generated.meta_description,
       editorialStatus,
       publishedStatus,
+      model,
+      now,
       now,
       now,
     ).run();

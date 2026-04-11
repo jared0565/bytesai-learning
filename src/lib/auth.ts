@@ -65,6 +65,27 @@ function parseDuration(d: string): number {
   return n * multipliers[unit];
 }
 
+// ─── Unsubscribe tokens (1-year JWT, purpose: 'unsubscribe') ─────────
+
+export async function signUnsubscribeToken(userId: string): Promise<string> {
+  const expiry = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60; // 1 year
+  return new SignJWT({ userId, purpose: 'unsubscribe' } as JWTPayload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(expiry)
+    .sign(getSecret());
+}
+
+export async function verifyUnsubscribeToken(token: string): Promise<string | null> {
+  try {
+    const { payload } = await jwtVerify(token, getSecret());
+    if ((payload as Record<string, unknown>).purpose !== 'unsubscribe') return null;
+    return (payload as Record<string, unknown>).userId as string ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Password hashing (Web Crypto — Cloudflare compatible) ────────────
 
 export async function hashPassword(password: string): Promise<string> {

@@ -5,6 +5,32 @@ import { sanitizeText } from '@/lib/security';
 
 const VALID_FORMATS = ['video', 'article', 'mixed', 'interactive'] as const;
 
+// GET /api/learner/profile
+export async function GET(req: NextRequest) {
+  const token = req.cookies.get(COOKIE_NAME)?.value;
+  const session = token ? await verifySession(token) : null;
+  if (!session) return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 });
+
+  const db = await getDB();
+  if (!db) return NextResponse.json({ error: 'DB unavailable.' }, { status: 503 });
+
+  try {
+    const profile = await db.prepare(
+      `SELECT display_name, bio, avatar_url, dark_mode, timezone,
+              learning_goal, preferred_format, marketing_consent, created_at, updated_at
+       FROM user_profiles WHERE user_id = ?`
+    ).bind(session.userId).first<{
+      display_name: string | null; bio: string | null; avatar_url: string | null;
+      dark_mode: number; timezone: string | null; learning_goal: string | null;
+      preferred_format: string | null; marketing_consent: number;
+      created_at: string; updated_at: string;
+    }>();
+    return NextResponse.json({ profile: profile ?? null });
+  } catch {
+    return NextResponse.json({ error: 'Failed to load profile.' }, { status: 500 });
+  }
+}
+
 // PATCH /api/learner/profile
 export async function PATCH(req: NextRequest) {
   const token = req.cookies.get(COOKIE_NAME)?.value;
@@ -42,6 +68,10 @@ export async function PATCH(req: NextRequest) {
 
   if (body.dark_mode !== undefined) {
     updates.dark_mode = body.dark_mode ? 1 : 0;
+  }
+
+  if (body.marketing_consent !== undefined) {
+    updates.marketing_consent = body.marketing_consent ? 1 : 0;
   }
 
   if (Object.keys(updates).length === 0) {

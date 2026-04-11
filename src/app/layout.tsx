@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import Chatbot from '@/components/Chatbot/Chatbot';
 import BottomNav from '@/components/layout/BottomNav';
 import CookieConsent, { type TrackingCode } from '@/components/CookieConsent/CookieConsent';
+import Starfield from '@/components/Starfield/Starfield';
 import { getDB } from '@/lib/db';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 
@@ -89,6 +90,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
+        {/* Starfield — fixed canvas, z-index:-1, paints its own dark background */}
+        <Starfield />
+
         {/*
           App Shell: on mobile (≤768px) → position:fixed, 100dvh flex column
                      on desktop → transparent block passthrough (no layout effect)

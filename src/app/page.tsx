@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Zap, BookOpen, ShieldCheck, TrendingUp } from 'lucide-react';
+import { ArrowRight, Sparkles, Zap, BookOpen, ShieldCheck, TrendingUp, Lightbulb } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard, { CourseCardSkeleton } from '@/components/ui/CourseCard';
 import AuthButton from '@/components/ui/AuthButton';
 import SharePanel from '@/components/ui/SharePanel';
-import { getDB } from '@/lib/db';
+import { getDB, getRecentPublishedCuratedPages } from '@/lib/db';
 import { CATEGORIES } from '@/lib/ranking';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -38,7 +38,7 @@ function interleaveCourses(
 
 async function getHomeData() {
   const db = await getDB();
-  if (!db) return { featured: [], trending: [], courseCount: 0, providerCount: 0 };
+  if (!db) return { featured: [], trending: [], insights: [], courseCount: 0, providerCount: 0 };
   try {
     const [
       featuredNonAlison,
@@ -46,6 +46,7 @@ async function getHomeData() {
       trendingNonAlison,
       trendingAlison,
       counts,
+      insights,
     ] = await Promise.all([
       // Featured — non-Alison: by featured_priority then popularity
       db.prepare(
@@ -74,16 +75,18 @@ async function getHomeData() {
           (SELECT COUNT(*) FROM courses WHERE published_status = 'published') as courses,
           (SELECT COUNT(DISTINCT provider_id) FROM courses WHERE published_status = 'published' AND provider_id IS NOT NULL) as providers`
       ).first<{ courses: number; providers: number }>(),
+      getRecentPublishedCuratedPages(db, 3),
     ]);
 
     return {
       featured: interleaveCourses(featuredNonAlison.results, featuredAlison.results),
       trending: interleaveCourses(trendingNonAlison.results, trendingAlison.results),
+      insights,
       courseCount: counts?.courses ?? 0,
       providerCount: counts?.providers ?? 0,
     };
   } catch {
-    return { featured: [], trending: [], courseCount: 0, providerCount: 0 };
+    return { featured: [], trending: [], insights: [], courseCount: 0, providerCount: 0 };
   }
 }
 
@@ -100,7 +103,7 @@ const FEATURES = [
 ];
 
 export default async function HomePage() {
-  const [session, { featured: featuredCourses, trending, courseCount, providerCount }] = await Promise.all([
+  const [session, { featured: featuredCourses, trending, insights, courseCount, providerCount }] = await Promise.all([
     getSession(),
     getHomeData(),
   ]);
@@ -250,6 +253,57 @@ export default async function HomePage() {
             )}
           </div>
         </section>
+
+        {/* ── AI Insights ───────────────────────────────────────── */}
+        {insights.length > 0 && (
+          <section className="section-sm" style={{ background: 'var(--bg)' }}>
+            <div className="container">
+              <div className="section-header">
+                <div>
+                  <h2 className="section-header-title">💡 AI Insights</h2>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                    What&apos;s changing in AI — why it matters &amp; which courses to take
+                  </p>
+                </div>
+                <Link href="/curated" className="section-viewall">
+                  All insights <ArrowRight size={14} />
+                </Link>
+              </div>
+              <div className="grid-3">
+                {insights.map(insight => (
+                  <Link
+                    key={insight.id}
+                    href={`/curated/${insight.slug}`}
+                    className="card"
+                    style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', textDecoration: 'none', padding: '1.25rem' }}
+                  >
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+                      background: 'linear-gradient(135deg, rgba(79,110,247,0.15), rgba(20,184,166,0.1))',
+                      border: '1px solid rgba(79,110,247,0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Lightbulb size={17} color="var(--accent)" />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: '0.5rem' }}>
+                        {insight.title}
+                      </p>
+                      {insight.summary && (
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {insight.summary}
+                        </p>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.78rem', fontWeight: 600, color: 'var(--accent)', marginTop: 'auto' }}>
+                      Read insight <ArrowRight size={12} />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ── Category Grid ─────────────────────────────────────── */}
         <section className="section">

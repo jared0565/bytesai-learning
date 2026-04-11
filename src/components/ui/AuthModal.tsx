@@ -198,7 +198,7 @@ export default function AuthModal({ open, onClose, initialTab = 'register' }: Au
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', marginBottom: '1.25rem', cursor: 'pointer' }}>
                   <input type="checkbox" checked={regMarketing} onChange={e => setRegMarketing(e.target.checked)} style={{ marginTop: 2, flexShrink: 0, width: 15, height: 15 }} />
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    Send me weekly AI course recommendations. Unsubscribe any time.
+                    Email me weekly AI course recommendations and learning tips. You can unsubscribe at any time via the link in any email we send.
                   </span>
                 </label>
 

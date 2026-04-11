@@ -86,7 +86,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         </div>
 
         {/* Provider hero */}
-        <section style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '3.5rem 0 2.5rem', color: 'white' }}>
+        <section style={{ background: 'transparent', padding: '3.5rem 0 2.5rem', color: 'white' }}>
           <div className="container">
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', flexWrap: 'wrap' }}>
               <div style={{ width: 64, height: 64, borderRadius: 16, background: isAlison ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

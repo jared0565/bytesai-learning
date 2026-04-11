@@ -265,7 +265,8 @@ export default function FeedbackTab() {
               </button>
 
               <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.625rem', lineHeight: 1.4 }}>
-                Your feedback is private and only seen by the BytesAI team.
+                Your feedback is stored securely and only seen by the BytesAI team. If you provide an email address it may be used to follow up. Retained for up to 24 months — see our{' '}
+                <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>Privacy Policy</a>.
               </p>
             </form>
           )}

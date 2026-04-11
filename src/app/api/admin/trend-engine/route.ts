@@ -166,8 +166,9 @@ export async function POST(req: NextRequest) {
 
   for (const article of body.articles) {
     // Try AI structuring first, fall back to naive split
-    let filled = apiKey ? await aiStructureArticle(article, apiKey, model) : null;
-    if (!filled) filled = naiveFill(article);
+    const aiResult = apiKey ? await aiStructureArticle(article, apiKey, model) : null;
+    const usedAi = !!aiResult;
+    const filled = aiResult ?? naiveFill(article);
 
     if (!filled.slug) {
       skipped.push({ title: article.title, reason: 'Could not generate slug' });
@@ -182,8 +183,10 @@ export async function POST(req: NextRequest) {
         INSERT INTO curated_pages (
           id, slug, title, summary, why_it_matters, what_changed, executive_implications,
           meta_description, source_references_json,
-          editorial_review_status, published_status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 'draft', ?, ?)
+          editorial_review_status, published_status,
+          ai_generated, generated_model, generated_at,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 'draft', ?, ?, ?, ?, ?)
       `).bind(
         id, filled.slug, filled.title,
         filled.summary || null,
@@ -192,6 +195,9 @@ export async function POST(req: NextRequest) {
         filled.executiveImplications || null,
         filled.metaDescription || null,
         JSON.stringify(sourceRefs),
+        usedAi ? 1 : 0,
+        usedAi ? model : null,
+        usedAi ? now : null,
         now, now,
       ).run();
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyPassword, signSession, getSessionCookieOptions } from '@/lib/auth';
 import { sanitizeEmail, isValidEmail, checkRateLimit, getRateLimitKey, rateLimitResponse } from '@/lib/security';
-import { getDB, getUserByEmail, getUserProfile } from '@/lib/db';
+import { getDB, getUserByEmail, getUserProfile, purgeOldAuditLogs } from '@/lib/db';
 
 const LoginSchema = z.object({
   email: z.string().email().max(320),
@@ -82,6 +82,11 @@ export async function POST(req: NextRequest) {
     .bind(new Date().toISOString(), user.id)
     .run()
     .catch(() => null);
+
+  // Admin login: purge audit logs older than 24 months (fire-and-forget)
+  if (user.role === 'admin') {
+    purgeOldAuditLogs(db).catch(() => null);
+  }
 
   // Unverified non-admin users must verify email first
   const isVerified = user.email_verified === 1;

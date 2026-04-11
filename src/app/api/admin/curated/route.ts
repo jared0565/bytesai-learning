@@ -42,7 +42,8 @@ export async function GET(req: NextRequest) {
       `SELECT id, slug, title, summary, editorial_review_status, published_status,
               primary_course_slug, why_it_matters, what_changed, executive_implications,
               meta_description, last_verified_at, view_count, last_viewed_at,
-              referrer_counts_json, created_at, updated_at
+              referrer_counts_json, ai_generated, generated_model, generated_at,
+              created_at, updated_at
        FROM curated_pages ORDER BY updated_at DESC LIMIT 200`
     ).all<import('@/lib/db').CuratedPage>();
     return NextResponse.json({ pages: result.results });

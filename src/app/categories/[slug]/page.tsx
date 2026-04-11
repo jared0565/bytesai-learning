@@ -107,7 +107,7 @@ export default async function CategoryPage({ params }: PageProps) {
 
       <main>
         {/* Hero */}
-        <section style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '3.5rem 0 2.5rem', color: 'white' }}>
+        <section style={{ background: 'transparent', padding: '3.5rem 0 2.5rem', color: 'white' }}>
           <div className="container">
             <div style={{ marginBottom: '1rem' }}>
               <Link href="/categories" style={{ color: '#94a3b8', fontSize: '0.875rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>

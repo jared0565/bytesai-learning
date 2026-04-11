@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import {
-  BookOpen, Menu, X, ChevronDown, Sparkles, LayoutDashboard, LogIn, User, LogOut, Share2,
+  BookOpen, Menu, X, ChevronDown, Sparkles, LayoutDashboard, LogIn, User, LogOut, Share2, Settings,
 } from 'lucide-react';
 import AuthModal from '@/components/ui/AuthModal';
 import SharePanel from '@/components/ui/SharePanel';
@@ -26,7 +26,7 @@ const MAIN_LINKS = [
   { href: '/#featured', label: 'Featured' },
   { href: '/providers', label: 'Providers', hideAtMd: true },
   { href: '/categories', label: 'Categories', hideAtMd: true },
-  { href: '/curated', label: 'Learning Paths' },
+  { href: '/curated', label: 'Insights' },
 ];
 
 export default function Header({ userRole, displayName }: NavProps) {
@@ -35,11 +35,21 @@ export default function Header({ userRole, displayName }: NavProps) {
   const [nudgeIndex, setNudgeIndex] = useState(0);
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setNudgeIndex(i => (i + 1) % NUDGE_MESSAGES.length), 4000);
     return () => clearInterval(t);
   }, []);
+
+  // Fetch avatar when logged in
+  useEffect(() => {
+    if (!userRole) return;
+    fetch('/api/learner/profile')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.profile?.avatar_url) setAvatarUrl(d.profile.avatar_url); })
+      .catch(() => null);
+  }, [userRole]);
 
   return (
     <>
@@ -138,13 +148,22 @@ export default function Header({ userRole, displayName }: NavProps) {
                   aria-expanded={userOpen}
                   aria-label="User menu"
                 >
-                  <span style={{
-                    width: 28, height: 28, borderRadius: '50%',
-                    background: 'linear-gradient(135deg, var(--accent), var(--teal))',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  }}>
-                    <User size={14} color="white" />
-                  </span>
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={avatarUrl}
+                      alt="Avatar"
+                      style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border)' }}
+                    />
+                  ) : (
+                    <span style={{
+                      width: 28, height: 28, borderRadius: '50%',
+                      background: 'linear-gradient(135deg, var(--accent), var(--teal))',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}>
+                      <User size={14} color="white" />
+                    </span>
+                  )}
                   <span className="text-sm" style={{ fontWeight: 600, maxWidth: 100 }} title={displayName ?? undefined}>
                     {displayName?.split(' ')[0] ?? 'Account'}
                   </span>
@@ -163,6 +182,9 @@ export default function Header({ userRole, displayName }: NavProps) {
                     </Link>
                     <Link href="/my-learning" className="nav-link" style={{ padding: '0.625rem 0.875rem', borderRadius: 'var(--radius-sm)', display: 'flex' }} onClick={() => setUserOpen(false)}>
                       <BookOpen size={15} style={{ marginRight: '0.5rem' }} /> My Learning
+                    </Link>
+                    <Link href="/settings" className="nav-link" style={{ padding: '0.625rem 0.875rem', borderRadius: 'var(--radius-sm)', display: 'flex' }} onClick={() => setUserOpen(false)}>
+                      <Settings size={15} style={{ marginRight: '0.5rem' }} /> Settings
                     </Link>
                     {userRole === 'admin' && (
                       <Link href="/admin" className="nav-link" style={{ padding: '0.625rem 0.875rem', borderRadius: 'var(--radius-sm)', display: 'flex', color: 'var(--accent)' }} onClick={() => setUserOpen(false)}>

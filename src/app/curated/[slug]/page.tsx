@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, ExternalLink, Lightbulb, TrendingUp, AlertCircle, BookOpen } from 'lucide-react';
+import { ArrowLeft, Calendar, ExternalLink, Lightbulb, TrendingUp, AlertCircle, BookOpen, Sparkles } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
 import CuratedViewTracker from '@/components/ui/CuratedViewTracker';
 import CuratedSharePanel from '@/components/ui/CuratedSharePanel';
 import ArticleHelpfulness from '@/components/ui/ArticleHelpfulness';
-import { getCuratedPageBySlug, getCourseBySlug, getDB } from '@/lib/db';
+import { getCuratedPageBySlug, getCuratedPageBySlugAnyStatus, getCourseBySlug, getDB } from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -63,15 +63,17 @@ export default async function CuratedDetailPage({ params }: PageProps) {
     );
   }
 
-  const [page, cookieStore] = await Promise.all([
-    getCuratedPageBySlug(db, slug).catch(() => null),
-    cookies(),
-  ]);
-
-  if (!page) notFound();
-
+  const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
+
+  // Admins can preview any status; public only sees published
+  const isAdmin = session?.role === 'admin';
+  const page = isAdmin
+    ? await getCuratedPageBySlugAnyStatus(db, slug).catch(() => null)
+    : await getCuratedPageBySlug(db, slug).catch(() => null);
+
+  if (!page) notFound();
 
   // Fetch primary course and related courses in parallel
   const relatedSlugs: string[] = page.related_course_slugs_json
@@ -114,6 +116,30 @@ export default async function CuratedDetailPage({ params }: PageProps) {
       <main>
         <CuratedViewTracker slug={page.slug} />
 
+        {/* Admin preview banner — shown when page is not yet published */}
+        {isAdmin && page.published_status !== 'published' && (
+          <div style={{
+            background: 'linear-gradient(135deg, #78350f, #92400e)',
+            borderBottom: '1px solid #b45309',
+            padding: '0.625rem 0',
+          }}>
+            <div className="container" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#fcd34d' }}>
+                👁 Admin Preview
+              </span>
+              <span style={{ fontSize: '0.8125rem', color: '#fde68a' }}>
+                This page is <strong style={{ color: 'white' }}>{page.published_status}</strong> and not visible to the public.
+              </span>
+              <Link
+                href="/admin/curated"
+                style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fcd34d', textDecoration: 'underline', marginLeft: 'auto' }}
+              >
+                ← Back to admin
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Breadcrumb */}
         <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', padding: '0.875rem 0' }}>
           <div className="container breadcrumb">
@@ -143,6 +169,23 @@ export default async function CuratedDetailPage({ params }: PageProps) {
                   <Calendar size={13} />
                   Last verified {new Date(page.last_verified_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </div>
+              )}
+              {/* AI-generated disclosure badge */}
+              {page.ai_generated === 1 && (
+                <span
+                  title={page.generated_model ? `Generated with AI (${page.generated_model})` : 'Generated with AI assistance'}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                    fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase',
+                    letterSpacing: '0.05em', padding: '0.2rem 0.6rem',
+                    borderRadius: 'var(--radius-full)',
+                    background: 'rgba(139,92,246,0.1)', color: '#8b5cf6',
+                    border: '1px solid rgba(139,92,246,0.2)',
+                    cursor: 'default',
+                  }}
+                >
+                  <Sparkles size={10} /> AI-assisted
+                </span>
               )}
               {/* Share button — sits next to the date */}
               <CuratedSharePanel slug={page.slug} title={page.title} />
@@ -242,6 +285,25 @@ export default async function CuratedDetailPage({ params }: PageProps) {
 
             {/* Article helpfulness — Layer 1: visible after scrolling to bottom */}
             <ArticleHelpfulness slug={page.slug} pageUrl={`https://learn.bytesai.uk/curated/${page.slug}`} />
+
+            {/* AI disclosure footnote — shown on AI-generated articles */}
+            {page.ai_generated === 1 && (
+              <p style={{
+                fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.6,
+                padding: '0.75rem 1rem',
+                background: 'rgba(139,92,246,0.04)',
+                border: '1px solid rgba(139,92,246,0.12)',
+                borderRadius: 'var(--radius-sm)',
+              }}>
+                <Sparkles size={11} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: '-1px', color: '#8b5cf6' }} />
+                <strong style={{ color: '#8b5cf6' }}>AI-assisted content:</strong>{' '}
+                This article was drafted using AI assistance
+                {page.generated_model ? ` (${page.generated_model})` : ''}
+                {page.generated_at ? ` on ${new Date(page.generated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}` : ''} and reviewed by the BytesAI editorial team before publication.
+                Source references are listed above.{' '}
+                <a href="/about" style={{ color: '#8b5cf6', fontWeight: 600 }}>Learn about our editorial process</a>.
+              </p>
+            )}
 
             {/* Bottom share nudge */}
             <section style={{
