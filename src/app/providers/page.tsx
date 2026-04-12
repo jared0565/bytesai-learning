@@ -1,7 +1,7 @@
 import { getDB } from '@/lib/db';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Building2, Search, ArrowRight, ExternalLink } from 'lucide-react';
+import { Building2, ArrowRight, BookOpen } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { cookies } from 'next/headers';
@@ -18,13 +18,18 @@ export default async function ProvidersPage() {
   const session = token ? await verifySession(token) : null;
 
   const db = await getDB();
-  let providers: import('@/lib/db').Provider[] = [];
+  let providers: (import('@/lib/db').Provider & { course_count: number })[] = [];
 
   if (db) {
     try {
       const result = await db.prepare(
-        'SELECT * FROM providers ORDER BY name ASC LIMIT 100'
-      ).all<import('@/lib/db').Provider>();
+        `SELECT p.*, COUNT(c.id) as course_count
+         FROM providers p
+         LEFT JOIN courses c ON c.provider_id = p.id AND c.published_status = 'published'
+         GROUP BY p.id
+         ORDER BY p.name ASC
+         LIMIT 100`
+      ).all<import('@/lib/db').Provider & { course_count: number }>();
       providers = result.results;
     } catch {
       // Ignore
@@ -59,7 +64,7 @@ export default async function ProvidersPage() {
             ) : (
               <div className="grid-4">
                 {providers.map(p => (
-                  <ProviderCard key={p.id} provider={p} />
+                  <ProviderCard key={p.id} provider={p} courseCount={p.course_count} />
                 ))}
               </div>
             )}
@@ -72,9 +77,9 @@ export default async function ProvidersPage() {
   );
 }
 
-function ProviderCard({ provider }: { provider: import('@/lib/db').Provider }) {
+function ProviderCard({ provider, courseCount }: { provider: import('@/lib/db').Provider; courseCount: number }) {
   const isAlison = provider.slug === 'alison';
-  
+
   return (
     <Link href={`/providers/${provider.slug}`} className="card" style={{
       display: 'flex', flexDirection: 'column', padding: '1.25rem',
@@ -83,8 +88,8 @@ function ProviderCard({ provider }: { provider: import('@/lib/db').Provider }) {
       background: isAlison ? 'rgba(245, 158, 11, 0.03)' : undefined
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <div style={{ 
-          width: 40, height: 40, 
+        <div style={{
+          width: 40, height: 40,
           borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
         }}>
@@ -92,19 +97,25 @@ function ProviderCard({ provider }: { provider: import('@/lib/db').Provider }) {
         </div>
         {isAlison && <span className="badge badge-alison text-xs">Partner</span>}
       </div>
-      
+
       <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.375rem', color: 'var(--text-primary)' }}>
         {provider.name}
       </h3>
-      
+
       {provider.affiliate_enabled === 1 && provider.affiliate_disclosure && (
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1rem', flex: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', flex: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {provider.affiliate_disclosure}
         </p>
       )}
-      
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.875rem', color: 'var(--accent)', fontWeight: 600, marginTop: 'auto', paddingTop: '1rem' }}>
-        View courses <ArrowRight size={14} />
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '0.875rem' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+          <BookOpen size={13} />
+          {courseCount} {courseCount === 1 ? 'course' : 'courses'}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.875rem', color: 'var(--accent)', fontWeight: 600 }}>
+          View <ArrowRight size={13} />
+        </span>
       </div>
     </Link>
   );
