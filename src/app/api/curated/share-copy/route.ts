@@ -29,14 +29,21 @@ What changed: ${what}
 Key implications: ${exec}
 
 Rules (strictly follow ALL):
-- 1,200–1,500 characters total
-- First 3 lines: one short punchy sentence each (under 10 words), bold declarative statements — readers see only these before "see more"
-- Blank line after the hook
-- 3–4 short paragraphs (2–3 sentences each) expanding the insight with professional perspective
+- 1,800-2,400 characters total (mandatory minimum — if under 1,800, expand with sharper consequence, clearer mechanism, or stronger practical implication, never filler)
+- Answer-first: open with the direct key insight or most commercially surprising detail in the first 60 words — no setup, no preamble
+- Hook: consequence-first, contradiction-first, or operator moment — never a generic opening, broad abstract question, or definition before consequence
+- Post shape: strong opening (answer-first) -> one mechanism explained -> one consequence -> one practical takeaway -> clean ending with CTA
+- Write like a practitioner interpreting what this means, not a journalist describing what happened — state what this changes for executives, founders, or operators
+- Show reasoning step-by-step — explain why this matters, not just what happened; make the mechanism behind the change explicit
+- Each paragraph expresses one complete idea on its own — no cross-references like "as mentioned" or "as above"
+- Short paragraphs only, 2-3 sentences max — mobile-first pacing
+- No bullet points, numbered lists, or headings inside the post
+- Never use em dashes (—) — use commas, periods, or parentheses instead
+- Avoid consultant phrasing: "force multiplier", "orchestration", "high-leverage", "blueprint", "era of", "strategic positioning", "operational standpoint", "the trade-off is clear", "practical takeaway" — write like a smart operator would actually type
 - Final paragraph: CTA asking readers to follow BytesAI Learning for weekly AI updates
-- Human, first-person, no fluff, professional but conversational
+- End with exactly 3 hashtags on a new line — highly specific to the topic, mechanism, or buyer context; no broad generic hashtags like #AI or #Technology
 - NO URL (appended separately)
-- Return ONLY the post text — no quotes, no explanation`,
+- Return ONLY the post text with hashtags at the bottom — no quotes, no explanation`,
 
   whatsapp: (title, summary, why) => `Write a WhatsApp message sharing this AI insight.
 
@@ -116,7 +123,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 700,
+        max_tokens: 1000,
         temperature: 0.85,
       }),
       signal: AbortSignal.timeout(22_000),
