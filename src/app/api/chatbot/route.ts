@@ -78,9 +78,32 @@ function buildFallbackReply(message: string, courseCount: number): string {
     return `Here are the best beginner-friendly free AI courses — all free to start! 🚀 Found ${courseCount} result${courseCount === 1 ? '' : 's'}:`;
   }
   if (courseCount === 0) {
-    return `Hmm, I couldn't find an exact match in the catalog. Try browsing by category at /courses, or ask me something like "beginner AI course" or "prompt engineering".`;
+    return `I couldn't find an exact match right now — browse the catalog with the filter below to explore related courses.`;
   }
   return `Here are the best free courses for that — I've highlighted any with optional certificates first. All free to start! (${courseCount} found)`;
+}
+
+// Map a user message to the best browse URL + label when no courses found
+function buildBrowseUrl(message: string, llmSearchQuery: string | null): { browseUrl: string; browseLabel: string } | null {
+  const lower = (llmSearchQuery ?? message).toLowerCase();
+
+  const categoryMap: Array<{ terms: string[]; category: string; label: string }> = [
+    { terms: ['agent', 'agentic', 'langgraph', 'crewai', 'multi-agent', 'autonomous'], category: 'AI Agents', label: 'Browse AI Agents courses' },
+    { terms: ['prompt', 'prompting', 'prompt engineering'], category: 'Prompt Engineering', label: 'Browse Prompt Engineering courses' },
+    { terms: ['generative', 'genai', 'llm', 'large language', 'gpt', 'claude', 'gemini', 'chatgpt'], category: 'LLMs / Generative AI', label: 'Browse LLMs & Generative AI courses' },
+    { terms: ['machine learning', 'deep learning', 'neural', 'computer vision', 'audio', 'robotics', '3d ml'], category: 'Data / ML', label: 'Browse Data & ML courses' },
+    { terms: ['ethics', 'governance', 'responsible', 'safety', 'bias', 'fairness'], category: 'Governance / Responsible AI', label: 'Browse Governance & Responsible AI courses' },
+    { terms: ['python', 'programming', 'coding', 'developer', 'software'], category: 'Programming Foundations', label: 'Browse Programming courses' },
+    { terms: ['foundation', 'beginner', 'intro', 'basics', 'start', 'overview'], category: 'AI Foundations', label: 'Browse AI Foundations courses' },
+  ];
+
+  for (const { terms, category, label } of categoryMap) {
+    if (terms.some(t => lower.includes(t))) {
+      return { browseUrl: `/courses?category=${encodeURIComponent(category)}`, browseLabel: label };
+    }
+  }
+
+  return { browseUrl: '/courses', browseLabel: 'Browse all AI courses' };
 }
 
 // ─── Affiliate-priority sort ──────────────────────────────────────────────────
@@ -300,8 +323,11 @@ export async function POST(req: NextRequest) {
 
   const reply = llmReply ?? buildFallbackReply(rawMessage, courses.length);
 
+  // When no courses found, include a browse CTA with pre-applied filter
+  const browseCta = courses.length === 0 ? buildBrowseUrl(rawMessage, llmSearchQuery) : null;
+
   // Persist conversation
   await persistMessages(db, sessionId, userId, rawMessage, reply, courses, false);
 
-  return NextResponse.json({ reply, courses, sessionId, ok: true });
+  return NextResponse.json({ reply, courses, sessionId, ok: true, ...browseCta });
 }

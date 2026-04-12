@@ -29,6 +29,9 @@ interface Message {
   // Alison direct search link
   alisonSearchUrl?: string;
   alisonQuery?: string;
+  // Browse CTA when no catalog results found
+  browseUrl?: string;
+  browseLabel?: string;
 }
 
 const AI_CHIPS = [
@@ -259,6 +262,8 @@ export default function Chatbot() {
         courses?: AiCourse[];
         error?: string;
         alisonRedirect?: string;
+        browseUrl?: string;
+        browseLabel?: string;
       };
 
       const botMsg: Message = {
@@ -271,6 +276,8 @@ export default function Chatbot() {
           alisonSearchUrl: buildAlisonSearchUrl(data.alisonRedirect),
           alisonQuery: data.alisonRedirect,
         } : {}),
+        // Browse CTA when no catalog results found
+        ...(data.browseUrl ? { browseUrl: data.browseUrl, browseLabel: data.browseLabel } : {}),
       };
       setMessages(prev => [...prev, botMsg]);
       if (!open) setUnread(n => n + 1);
@@ -428,6 +435,33 @@ export default function Chatbot() {
                       );
                     })}
                   </div>
+                )}
+
+                {/* Browse CTA — shown when catalog returned 0 results */}
+                {msg.browseUrl && (!msg.courses || msg.courses.length === 0) && !msg.alisonSearchUrl && (
+                  <a
+                    href={msg.browseUrl}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.625rem',
+                      marginTop: '0.5rem', padding: '0.75rem 0.875rem',
+                      background: 'rgba(98,132,249,0.1)',
+                      border: '1px solid rgba(98,132,249,0.3)',
+                      borderRadius: 12, textDecoration: 'none',
+                      color: 'var(--text-primary)',
+                      maxWidth: '88%',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.1rem' }}>🔍</span>
+                    <span style={{ flex: 1 }}>
+                      <span style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#a5b4fc' }}>
+                        {msg.browseLabel ?? 'Browse courses with filter'}
+                      </span>
+                      <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                        Opens course catalog · pre-filtered for you
+                      </span>
+                    </span>
+                    <ExternalLink size={13} style={{ color: '#a5b4fc', flexShrink: 0 }} />
+                  </a>
                 )}
 
                 {/* Alison direct search button */}
