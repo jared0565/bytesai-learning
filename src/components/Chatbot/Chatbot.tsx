@@ -525,12 +525,6 @@ export default function Chatbot() {
                 : <Send size={16} />}
             </button>
           </div>
-
-          {/* Privacy notice */}
-          <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.375rem 0.875rem 0.5rem', lineHeight: 1.4 }}>
-            Conversations are stored for up to 12 months to improve the service.{' '}
-            <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>Privacy Policy</a>
-          </p>
         </div>
       )}
     </>

@@ -4,35 +4,35 @@
 :root {
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 
-  /* Space-dark theme — matches the #030a1a Starfield canvas background */
-  --bg: transparent;
-  --bg-card: rgba(10, 16, 34, 0.82);
-  --bg-card-hover: rgba(16, 26, 52, 0.90);
-  --bg-nav: rgba(3, 10, 26, 0.88);
-  --bg-input: rgba(15, 22, 42, 0.90);
+  /* Colors — light mode */
+  --bg: #f8f9fc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5ff;
+  --bg-nav: rgba(255,255,255,0.9);
+  --bg-input: #f1f4f9;
 
-  --text-primary: #f0f4ff;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-inverse: #0d1117;
+  --text-primary: #0d1117;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --text-inverse: #ffffff;
 
-  --accent: #6284f9;
-  --accent-hover: #7c9bff;
-  --accent-soft: rgba(98,132,249,0.15);
-  --teal: #22d3ee;
-  --teal-soft: rgba(14,165,233,0.12);
-  --amber: #fbbf24;
-  --amber-soft: rgba(251,191,36,0.12);
-  --emerald: #34d399;
-  --emerald-soft: rgba(52,211,153,0.12);
-  --rose: #fb7185;
+  --accent: #4f6ef7;
+  --accent-hover: #3a57e8;
+  --accent-soft: #eef1ff;
+  --teal: #0ea5e9;
+  --teal-soft: #e0f5ff;
+  --amber: #f59e0b;
+  --amber-soft: #fef3c7;
+  --emerald: #10b981;
+  --emerald-soft: #d1fae5;
+  --rose: #f43f5e;
 
-  --border: rgba(255,255,255,0.08);
-  --border-hover: rgba(98,132,249,0.40);
-  --shadow-sm: 0 1px 4px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 20px rgba(0,0,0,0.5);
-  --shadow-lg: 0 12px 48px rgba(0,0,0,0.6);
-  --shadow-glow: 0 0 0 3px rgba(98,132,249,0.25);
+  --border: #e5e7eb;
+  --border-hover: #c7d2fe;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-glow: 0 0 0 3px rgba(79,110,247,0.15);
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -44,17 +44,30 @@
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Dark mode — same as :root now that we're always space-dark */
+/* Dark mode */
 .dark, [data-theme="dark"] {
-  --bg-card: rgba(12, 20, 40, 0.88);
-  --bg-card-hover: rgba(20, 32, 62, 0.92);
-  --bg-nav: rgba(3, 10, 26, 0.92);
-  --bg-input: rgba(15, 22, 42, 0.90);
-  --border: rgba(255,255,255,0.09);
-  --border-hover: rgba(98,132,249,0.45);
-  --shadow-sm: 0 1px 4px rgba(0,0,0,0.5);
-  --shadow-md: 0 4px 20px rgba(0,0,0,0.6);
-  --shadow-lg: 0 12px 48px rgba(0,0,0,0.7);
+  --bg: #0a0e1a;
+  --bg-card: #111827;
+  --bg-card-hover: #1a2235;
+  --bg-nav: rgba(10,14,26,0.92);
+  --bg-input: #1f2937;
+
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+
+  --accent: #6284f9;
+  --accent-hover: #7c9bff;
+  --accent-soft: #1a2050;
+  --teal-soft: #0c2a3a;
+  --amber-soft: #2d1f00;
+  --emerald-soft: #052d1c;
+
+  --border: #1f2937;
+  --border-hover: #374151;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.5);
 }
 
 /* ─── Reset ─────────────────────────────────────────────────── */
@@ -62,12 +75,12 @@
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body {
   font-family: var(--font-sans);
-  /* Transparent so the fixed Starfield canvas shows through as the page background */
-  background: transparent;
+  background: var(--bg);
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
+  transition: background var(--transition-slow), color var(--transition-slow);
 }
 a { color: inherit; text-decoration: none; }
 img, video { max-width: 100%; display: block; }
@@ -123,8 +136,6 @@ input, textarea, select { font-family: inherit; }
 /* ─── Cards ──────────────────────────────────────────────────── */
 .card {
   background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
@@ -242,13 +253,13 @@ input, textarea, select { font-family: inherit; }
 
 /* ─── Hero section ───────────────────────────────────────────── */
 .hero {
-  background: transparent;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
   color: white; position: relative; overflow: hidden;
   padding: 5rem 0 4rem;
 }
 .hero::before {
   content: ''; position: absolute; inset: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(79,110,247,0.12) 0%, transparent 70%);
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(79,110,247,0.2) 0%, transparent 70%);
   pointer-events: none;
 }
 .hero-grid {
