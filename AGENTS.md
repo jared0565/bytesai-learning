@@ -17,3 +17,14 @@ Other deployment rules:
 - `export const runtime = 'edge'` is NOT needed — the Worker uses `nodejs_compat`
 - `@cloudflare/next-on-pages` is deprecated and incompatible — never use it
 - `--no-turbopack` flag does not exist — use `--webpack` explicitly
+
+# D1 Database — CRITICAL
+
+**NEVER run `wrangler d1 execute` or any wrangler D1 command.** Wrangler is not authenticated in this environment and will always fail with exit code 1.
+
+All D1 operations must go through the Cowork session:
+- Write the `.sql` file as normal
+- Then stop and tell the user: *"Please run this migration in Cowork — wrangler is not available here."*
+- Do NOT attempt to execute it yourself
+
+This applies to: `ALTER TABLE`, `CREATE TABLE`, `INSERT`, `UPDATE` on production data, and any file in `db/`.
