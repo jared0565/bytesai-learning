@@ -44,7 +44,7 @@ function slugifyCourse(text: string): string {
 
 async function resolveAlisonCourse(
   alisonSlug: string,
-  db: import('@/lib/db').Database,
+  db: import('@/lib/db').D1Database,
   adminUserId: string,
 ): Promise<{ slug: string; title: string; snippet: string | null } | null> {
   // Check DB first
