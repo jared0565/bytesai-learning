@@ -17,6 +17,7 @@ interface PageData {
   why_it_matters: string | null;
   what_changed: string | null;
   executive_implications: string | null;
+  primary_course_rationale: string | null;
   primary_course_slug: string | null;
   related_course_slugs_json: string | null;
   source_references_json: string | null;
@@ -290,6 +291,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   const [whyItMatters, setWhyItMatters] = useState('');
   const [whatChanged, setWhatChanged] = useState('');
   const [executiveImplications, setExecutiveImplications] = useState('');
+  const [primaryCourseRationale, setPrimaryCourseRationale] = useState('');
   const [primaryCourse, setPrimaryCourse] = useState('');
   const [relatedCourses, setRelatedCourses] = useState('');
   const [metaTitle, setMetaTitle] = useState('');
@@ -311,6 +313,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         setWhyItMatters(p.why_it_matters ?? '');
         setWhatChanged(p.what_changed ?? '');
         setExecutiveImplications(p.executive_implications ?? '');
+        setPrimaryCourseRationale(p.primary_course_rationale ?? '');
         setPrimaryCourse(p.primary_course_slug ?? '');
         setEditorialStatus(p.editorial_review_status ?? 'draft');
         setPublishedStatus(p.published_status ?? 'draft');
@@ -397,6 +400,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
           why_it_matters: whyItMatters.trim() || null,
           what_changed: whatChanged.trim() || null,
           executive_implications: executiveImplications.trim() || null,
+          primary_course_rationale: primaryCourseRationale.trim() || null,
           primary_course_slug: primaryCourse.trim() || null,
           related_course_slugs: relatedArr,
           meta_title: metaTitle.trim() || null,
@@ -419,7 +423,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
     } finally {
       setSaving(false);
     }
-  }, [pageId, title, slug, summary, whyItMatters, whatChanged, executiveImplications, primaryCourse, relatedCourses, metaTitle, metaDescription, editorialStatus, publishedStatus, onSaved]);
+  }, [pageId, title, slug, summary, whyItMatters, whatChanged, executiveImplications, primaryCourseRationale, primaryCourse, relatedCourses, metaTitle, metaDescription, editorialStatus, publishedStatus, onSaved]);
 
   // Ctrl/Cmd+S to save
   useEffect(() => {
@@ -701,9 +705,19 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                   style={inputSm}
                 />
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
-                  Embedded mid-article as "Free course to get started"
+                  Embedded mid-article as "Recommended course"
                 </span>
               </div>
+
+              <SmartTextarea
+                label="Course rationale"
+                value={primaryCourseRationale}
+                onChange={setPrimaryCourseRationale}
+                rows={4}
+                placeholder="Editorial paragraph: who this course is for, what they'll learn, what it doesn't cover, and why it's the right starting point."
+                hint="Displayed as prose above the course key-facts table. Keep it editorial, not promotional."
+                articleTitle={title}
+              />
 
               <div style={{ marginBottom: '1.125rem' }}>
                 <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>

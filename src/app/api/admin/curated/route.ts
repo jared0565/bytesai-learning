@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     if (id) {
       const page = await db.prepare(
         `SELECT id, slug, title, summary, why_it_matters, what_changed, executive_implications,
-                primary_course_slug, related_course_slugs_json, source_references_json,
+                primary_course_rationale, primary_course_slug, related_course_slugs_json, source_references_json,
                 meta_title, meta_description, og_title, og_description, og_image_url,
                 editorial_review_status, published_status, last_verified_at, created_at, updated_at
          FROM curated_pages WHERE id = ?`
@@ -147,8 +147,8 @@ export async function PATCH(req: NextRequest) {
 
   // Content fields
   const contentFields = ['title', 'slug', 'summary', 'why_it_matters', 'what_changed',
-    'executive_implications', 'primary_course_slug', 'meta_title', 'meta_description',
-    'og_title', 'og_description', 'og_image_url'] as const;
+    'executive_implications', 'primary_course_rationale', 'primary_course_slug',
+    'meta_title', 'meta_description', 'og_title', 'og_description', 'og_image_url'] as const;
 
   for (const field of contentFields) {
     if (field in body) {
