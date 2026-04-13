@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySession, COOKIE_NAME } from '@/lib/auth';
+import { verifySession, verifyBearerToken, COOKIE_NAME } from '@/lib/auth';
 import { getDB, logAdminAction } from '@/lib/db';
 import { nanoid } from 'nanoid';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 async function requireAdmin(req: NextRequest) {
+  // Accept session cookie (browser) or Bearer token (CLI/automation)
+  const bearer = await verifyBearerToken(req.headers.get('authorization'));
+  if (bearer) return bearer;
   const token = req.cookies.get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
   if (!session || session.role !== 'admin') return null;

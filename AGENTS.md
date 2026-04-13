@@ -22,9 +22,42 @@ Other deployment rules:
 
 **NEVER run `wrangler d1 execute` or any wrangler D1 command.** Wrangler is not authenticated in this environment and will always fail with exit code 1.
 
-All D1 operations must go through the Cowork session:
-- Write the `.sql` file as normal
-- Then stop and tell the user: *"Please run this migration in Cowork — wrangler is not available here."*
-- Do NOT attempt to execute it yourself
+## Schema migrations (ALTER TABLE, CREATE TABLE)
+Write the `.sql` file as normal, then tell the user:
+> "Please run this migration in Cowork — wrangler is not available here."
 
-This applies to: `ALTER TABLE`, `CREATE TABLE`, `INSERT`, `UPDATE` on production data, and any file in `db/`.
+## Content operations (curated pages, articles, course data)
+Use the live production API directly. Never write SQL files for content.
+
+The `BYTESAI_CLI_TOKEN` environment variable holds a long-lived admin Bearer token.
+
+**Generate a new insight article:**
+```bash
+curl -s -X POST https://learn.bytesai.uk/api/admin/article-gen \
+  -H "Authorization: Bearer $BYTESAI_CLI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"courseSlug": "your-course-slug"}' | jq .
+```
+
+**Update an existing curated page:**
+```bash
+# First get the page ID
+curl -s "https://learn.bytesai.uk/api/admin/curated" \
+  -H "Authorization: Bearer $BYTESAI_CLI_TOKEN" | jq '.pages[] | select(.slug=="your-slug") | .id'
+
+# Then update it
+curl -s -X PATCH "https://learn.bytesai.uk/api/admin/curated?id=PAGE_ID" \
+  -H "Authorization: Bearer $BYTESAI_CLI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"summary": "...", "why_it_matters": "...", ...}' | jq .
+```
+
+**Create a new curated page manually:**
+```bash
+curl -s -X POST https://learn.bytesai.uk/api/admin/curated \
+  -H "Authorization: Bearer $BYTESAI_CLI_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "...", "slug": "...", "summary": "..."}' | jq .
+```
+
+If `BYTESAI_CLI_TOKEN` is not set, tell the user: "Please set BYTESAI_CLI_TOKEN in your environment — see setup instructions."

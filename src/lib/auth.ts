@@ -56,6 +56,38 @@ export function getSessionCookieOptions(maxAgeSeconds: number) {
 
 export { COOKIE_NAME };
 
+// ─── Long-lived CLI token (for automated/CLI admin access) ───────────────────
+
+/** Generate a non-expiring admin JWT for CLI/automation use.
+ *  Call once from a logged-in admin session via GET /api/admin/cli-token.
+ *  Store the result as the BYTESAI_CLI_TOKEN Worker secret.
+ */
+export async function signCliToken(userId: string, email: string): Promise<string> {
+  return new SignJWT({ userId, email, role: 'admin', purpose: 'cli' } as JWTPayload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    // 10-year expiry — effectively permanent
+    .setExpirationTime(Math.floor(Date.now() / 1000) + 10 * 365 * 24 * 60 * 60)
+    .sign(getSecret());
+}
+
+/** Verify a Bearer token from Authorization header.
+ *  Accepts both regular session JWTs and CLI tokens (purpose: cli).
+ *  Returns the session payload if valid admin, null otherwise.
+ */
+export async function verifyBearerToken(authHeader: string | null): Promise<SessionPayload | null> {
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const token = authHeader.slice(7);
+  try {
+    const { payload } = await jwtVerify(token, getSecret());
+    const session = payload as SessionPayload;
+    if (session.role !== 'admin') return null;
+    return session;
+  } catch {
+    return null;
+  }
+}
+
 function parseDuration(d: string): number {
   const match = d.match(/^(\d+)(s|m|h|d)$/);
   if (!match) return 7 * 24 * 60 * 60 * 1000;
