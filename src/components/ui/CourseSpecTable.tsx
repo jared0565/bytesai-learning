@@ -20,6 +20,7 @@ export default function CourseSpecTable({ course, rationale }: Props) {
 
   const credential = (() => {
     const cert = course.certification_type;
+    if (cert === 'optional-paid-certificate') return 'Free to learn, optional paid certificate';
     if (isFree && cert) return `Free / ${fmt(cert)}`;
     if (isFree) return 'Free';
     if (cert) return fmt(cert);
