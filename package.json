@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
-    "build:cf": "npx opennextjs-cloudflare build",
-    "preview": "npx opennextjs-cloudflare build && wrangler dev",
-    "deploy": "npx opennextjs-cloudflare build && wrangler deploy",
+    "build:cf": "npx opennextjs-cloudflare build && node scripts/add-cron.mjs",
+    "preview": "npx opennextjs-cloudflare build && node scripts/add-cron.mjs && wrangler dev",
+    "deploy": "npx opennextjs-cloudflare build && node scripts/add-cron.mjs && wrangler deploy",
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "wrangler d1 execute bytesai-learning-db --local --file=db/schema.sql",

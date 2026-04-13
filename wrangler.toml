@@ -31,6 +31,11 @@ binding = "KV"
 id = "e8906bbacee64e21a17cdc9822f2c1a7"
 preview_id = "e8906bbacee64e21a17cdc9822f2c1a7"
 
+# Cron trigger — fires every hour, handler checks DB settings for actual frequency
+# Admin can set: Hourly / 2× Daily / Daily via the Article Generator UI
+[triggers]
+crons = ["0 * * * *"]
+
 [vars]
 NEXT_PUBLIC_SITE_NAME = "BytesAI Learning"
 NEXT_PUBLIC_SITE_URL = "https://learn.bytesai.uk"
