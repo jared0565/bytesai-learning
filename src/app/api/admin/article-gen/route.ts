@@ -239,7 +239,20 @@ export async function POST(req: NextRequest) {
   }
 
   if (!course) {
-    // Random published Alison course
+    // Random Alison course that does NOT already have a curated page
+    course = await db.prepare(
+      `SELECT title, slug, snippet, category, affiliate_url FROM courses
+       WHERE is_alison = 1
+         AND slug NOT IN (
+           SELECT primary_course_slug FROM curated_pages
+           WHERE primary_course_slug IS NOT NULL
+         )
+       ORDER BY RANDOM() LIMIT 1`
+    ).first<CourseRow>() ?? null;
+  }
+
+  // Fallback: all courses exhausted — pick any random one (will likely 409 on slug but won't crash)
+  if (!course) {
     course = await db.prepare(
       "SELECT title, slug, snippet, category, affiliate_url FROM courses WHERE is_alison = 1 ORDER BY RANDOM() LIMIT 1"
     ).first<CourseRow>() ?? null;
