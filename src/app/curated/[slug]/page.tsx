@@ -5,6 +5,8 @@ import { ArrowLeft, Calendar, ExternalLink, Lightbulb, TrendingUp, AlertCircle, 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
+import CourseSpecTable from '@/components/ui/CourseSpecTable';
+import MarkdownContent from '@/components/ui/MarkdownContent';
 import CuratedViewTracker from '@/components/ui/CuratedViewTracker';
 import CuratedSharePanel from '@/components/ui/CuratedSharePanel';
 import ArticleHelpfulness from '@/components/ui/ArticleHelpfulness';
@@ -159,9 +161,21 @@ export default async function CuratedDetailPage({ params }: PageProps) {
               {page.title}
             </h1>
             {page.summary && (
-              <p style={{ fontSize: '1.0625rem', color: 'var(--text-secondary)', lineHeight: 1.75, marginBottom: '1.25rem' }}>
-                {page.summary}
-              </p>
+              <div style={{
+                padding: '0.875rem 1.125rem',
+                background: 'rgba(79,110,247,0.04)',
+                border: '1px solid rgba(79,110,247,0.14)',
+                borderLeft: '3px solid var(--accent)',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: '1.25rem',
+              }}>
+                <p style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--accent)', marginBottom: '0.375rem' }}>
+                  TL;DR
+                </p>
+                <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>
+                  {page.summary}
+                </p>
+              </div>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
               {page.last_verified_at && (
@@ -198,26 +212,22 @@ export default async function CuratedDetailPage({ params }: PageProps) {
             {page.why_it_matters && (
               <section className="card">
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Lightbulb size={20} color="var(--accent)" /> Why it matters
+                  <Lightbulb size={20} color="var(--accent)" /> Why this matters right now
                 </h2>
-                <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-                  {page.why_it_matters}
-                </p>
+                <MarkdownContent>{page.why_it_matters}</MarkdownContent>
               </section>
             )}
 
             {page.what_changed && (
               <section className="card">
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <TrendingUp size={20} color="var(--teal)" /> What changed
+                  <TrendingUp size={20} color="var(--teal)" /> How this technology has evolved
                 </h2>
-                <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-                  {page.what_changed}
-                </p>
+                <MarkdownContent>{page.what_changed}</MarkdownContent>
               </section>
             )}
 
-            {/* Primary recommended course — embedded mid-article after "What changed" */}
+            {/* Primary recommended course — structured spec table for AI retrieval */}
             {primaryCourse && (
               <section style={{
                 padding: '1.25rem 1.5rem',
@@ -225,23 +235,22 @@ export default async function CuratedDetailPage({ params }: PageProps) {
                 border: '1px solid rgba(79,110,247,0.15)',
                 borderRadius: 'var(--radius-md)',
               }}>
-                <p style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--accent)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                  <BookOpen size={13} /> Free course to get started
+                <p style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--accent)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <BookOpen size={13} /> Recommended course
                 </p>
-                <div style={{ maxWidth: 380 }}>
-                  <CourseCard course={primaryCourse} featured />
-                </div>
+                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.875rem' }}>
+                  Course Specifications: {primaryCourse.title}
+                </h3>
+                <CourseSpecTable course={primaryCourse} />
               </section>
             )}
 
             {page.executive_implications && (
               <section className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
                 <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <AlertCircle size={20} color="var(--accent)" /> Key implications
+                  <AlertCircle size={20} color="var(--accent)" /> What this means for your roadmap
                 </h2>
-                <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-                  {page.executive_implications}
-                </p>
+                <MarkdownContent>{page.executive_implications}</MarkdownContent>
               </section>
             )}
 
