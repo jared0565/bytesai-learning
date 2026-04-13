@@ -3,6 +3,8 @@ import { verifySession, verifyBearerToken, COOKIE_NAME } from '@/lib/auth';
 import { getDB, logAdminAction } from '@/lib/db';
 import { nanoid } from 'nanoid';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { fetchTrendingArticles, type ParsedArticle } from '@/lib/rss-parser';
+import { RSS_SOURCES } from '@/lib/rss-sources';
 
 async function requireAdmin(req: NextRequest) {
   // Accept session cookie (browser) or Bearer token (CLI/automation)
@@ -14,65 +16,104 @@ async function requireAdmin(req: NextRequest) {
   return session;
 }
 
-// ── Web search via DuckDuckGo HTML ────────────────────────────────────────────
+const AFFILIATE_ID = '27668723';
+const AFFILIATE_PARAMS = `utm_source=alison_user&utm_medium=affiliate&utm_campaign=${AFFILIATE_ID}`;
 
-async function searchDDG(query: string): Promise<string[]> {
-  try {
-    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; BytesAIBot/1.0)',
-        'Accept': 'text/html',
-      },
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (!res.ok) return [];
-    const html = await res.text();
-    const urls: string[] = [];
-    const re = /href="\/l\/\?uddg=([^&"]+)/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(html)) !== null) {
-      try {
-        const decoded = decodeURIComponent(m[1]);
-        if (decoded.startsWith('http') && !decoded.includes('duckduckgo.com')) {
-          urls.push(decoded);
-        }
-      } catch { /* skip */ }
-    }
-    return [...new Set(urls)].slice(0, 6);
-  } catch {
-    return [];
-  }
+// ── Slug helper ───────────────────────────────────────────────────────────────
+
+function toSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 80);
 }
 
-// ── Minimal article text extractor ───────────────────────────────────────────
+// ── Live Alison course search ─────────────────────────────────────────────────
+// Searches alison.com for courses congruent with a given topic query.
+// Returns the first matching Alison course slug, or null if nothing found.
 
-async function fetchSnippet(url: string): Promise<string> {
+async function searchAlisonForCourse(query: string): Promise<{ alisonSlug: string; title: string } | null> {
   try {
+    const url = `https://alison.com/courses?query=${encodeURIComponent(query)}`;
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'text/html,*/*',
       },
-      signal: AbortSignal.timeout(6_000),
+      signal: AbortSignal.timeout(10_000),
     });
-    if (!res.ok) return '';
+    if (!res.ok) return null;
+
     const html = await res.text();
-    const text = html
-      .replace(/<style[\s\S]*?<\/style>/gi, '')
-      .replace(/<script[\s\S]*?<\/script>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
-    return text.slice(0, 2000);
+
+    // Strategy 1: __NEXT_DATA__ JSON
+    const nextMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+    if (nextMatch) {
+      try {
+        const data = JSON.parse(nextMatch[1]);
+        const found = extractFirstCourse(data, 0);
+        if (found) return found;
+      } catch { /* fall through */ }
+    }
+
+    // Strategy 2: href="/course/{slug}" pattern
+    const m = html.match(/href="\/course\/([a-z0-9][a-z0-9-]+)"/i);
+    if (m) {
+      const alisonSlug = m[1];
+      const ctxStart = Math.max(0, m.index! - 200);
+      const ctx = html.slice(ctxStart, m.index! + 400);
+      const titleMatch = ctx.match(/title="([^"]{5,120})"/) ?? ctx.match(/aria-label="([^"]{5,120})"/);
+      const title = titleMatch ? titleMatch[1].trim() : alisonSlug.replace(/-/g, ' ');
+      return { alisonSlug, title };
+    }
+
+    return null;
   } catch {
-    return '';
+    return null;
   }
 }
 
-// ── OpenRouter article generation ────────────────────────────────────────────
+function extractFirstCourse(obj: unknown, depth: number): { alisonSlug: string; title: string } | null {
+  if (depth > 8 || !obj || typeof obj !== 'object') return null;
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      const r = extractFirstCourse(item, depth + 1);
+      if (r) return r;
+    }
+    return null;
+  }
+  const r = obj as Record<string, unknown>;
+  if (typeof r.slug === 'string' && typeof r.title === 'string' && r.slug.length > 3) {
+    return { alisonSlug: r.slug, title: r.title };
+  }
+  for (const val of Object.values(r)) {
+    if (val && typeof val === 'object') {
+      const result = extractFirstCourse(val, depth + 1);
+      if (result) return result;
+    }
+  }
+  return null;
+}
+
+// ── Find course in our DB by Alison slug ──────────────────────────────────────
+// Checks if an Alison course is already imported into our DB.
+// Matches against destination_url which contains the Alison course path.
+
+async function findCourseInDB(
+  alisonSlug: string,
+  db: import('@/lib/db').Database
+): Promise<{ slug: string; title: string } | null> {
+  const row = await db.prepare(
+    `SELECT slug, title FROM courses WHERE destination_url LIKE ? AND is_alison = 1 LIMIT 1`
+  ).bind(`%/course/${alisonSlug}%`).first<{ slug: string; title: string }>();
+  return row ?? null;
+}
+
+// ── AI article generation ─────────────────────────────────────────────────────
+// Generates editorial content from a trending article or course context.
 
 interface GeneratedArticle {
   title: string;
@@ -84,65 +125,129 @@ interface GeneratedArticle {
   meta_description: string;
 }
 
-async function generateArticle(
+async function generateFromTrend(
+  article: ParsedArticle,
+  course: { title: string; slug: string; snippet: string | null } | null,
+  apiKey: string,
+  model: string,
+): Promise<GeneratedArticle | null> {
+  const courseSection = course
+    ? `\n\nRecommended course to link (already in our catalog):
+Title: "${course.title}"
+Slug: ${course.slug}
+Description: ${course.snippet ?? 'An AI course covering this topic'}
+
+Write the primary_course_rationale to explain why this specific course suits a reader of this article.`
+    : `\n\nNo course has been linked yet. Set primary_course_rationale to an empty string "".`;
+
+  const prompt = `You are an editorial writer for BytesAI Learning. Write a high-quality insight article based on this trending AI news article.
+
+Source article title: "${article.title}"
+Source: ${article.sourceName}
+Content:
+${article.contentText.slice(0, 4000)}
+${courseSection}
+
+QUALITY STANDARDS:
+1. Ground every claim in the source content — no fabricated stats or invented developments
+2. Write in operator language — practitioner voice, not consultant framing
+3. Pick one concrete mechanism or use-case and go deep rather than broad
+4. Include at least one honest limitation or failure mode
+5. Make executive_implications operational and sequenced — not strategic platitudes
+
+BANNED PHRASES: force multiplier, unprecedented, game-changing, transformational, cutting-edge, revolutionary, robust, holistic, paradigm shift, leverage (as verb), synergy, seamlessly, bridge the gap
+
+SECTION INSTRUCTIONS:
+- title: A specific article headline under 85 characters — not the source title verbatim, editorially reframed
+- summary: 60-80 words. One direct definition of what changed + one concrete practical implication
+- why_it_matters: 3-5 sentences. One specific use-case, the mechanism, one honest limitation
+- what_changed: 3-5 sentences. How it works + what specifically changed + one current limitation
+- executive_implications: 3-5 sentences. Where to start, first decisions, governance considerations, what success looks like
+- primary_course_rationale: 3-5 sentences explaining the linked course to the reader (who it's for, what they'll learn, honest limitation, why it's the right entry point). Empty string "" if no course linked.
+- meta_description: Under 155 characters, SEO-friendly, factual
+
+Respond ONLY with valid JSON — no markdown fences:
+{
+  "title": "...",
+  "summary": "...",
+  "why_it_matters": "...",
+  "what_changed": "...",
+  "executive_implications": "...",
+  "primary_course_rationale": "...",
+  "meta_description": "..."
+}`;
+
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://learn.bytesai.uk',
+        'X-Title': 'BytesAI Learning',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.72,
+        max_tokens: 1800,
+      }),
+      signal: AbortSignal.timeout(35_000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { choices: Array<{ message: { content: string } }> };
+    const raw = data.choices?.[0]?.message?.content ?? '';
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    return JSON.parse(jsonMatch[0]) as GeneratedArticle;
+  } catch {
+    return null;
+  }
+}
+
+// Legacy: generate from course (used when admin manually specifies courseSlug)
+async function generateFromCourse(
   course: { title: string; slug: string; snippet: string | null; category: string | null },
   referenceContent: string,
   apiKey: string,
   model: string,
 ): Promise<GeneratedArticle | null> {
-  const courseContext = `Course title: "${course.title}"
+  const prompt = `You are an editorial writer for BytesAI Learning. Write an insight article about the AI topic covered by the course below.
+
+Course title: "${course.title}"
 Category: ${course.category ?? 'Artificial Intelligence'}
 Course description: ${course.snippet ?? 'A free AI course covering the fundamentals and practical applications'}
-Course page: https://learn.bytesai.uk/courses/${course.slug}`;
+Course page: https://learn.bytesai.uk/courses/${course.slug}
 
-  const refSection = referenceContent.length > 100
-    ? `\n\nResearch context gathered from the web (use as background knowledge — do NOT copy verbatim):\n${referenceContent.slice(0, 4500)}`
-    : '';
+${referenceContent.length > 100 ? `Research context (use as background — do NOT copy verbatim):\n${referenceContent.slice(0, 4500)}` : ''}
 
-  const prompt = `You are an editorial writer and subject-matter curator for BytesAI Learning. Write an insight article about the AI topic covered by the course below. The article must read like it was written by a knowledgeable human practitioner with a real point of view — not a system summarising a topic.
+QUALITY STANDARDS:
+1. Ground every claim — no fabricated stats
+2. Pick one concrete use-case and stay there
+3. Write like an operator, not a summariser
+4. Include at least one limitation or failure mode
+5. Make executive_implications operational, not strategic
 
-${courseContext}${refSection}
+BANNED PHRASES: force multiplier, unprecedented, game-changing, transformational, cutting-edge, revolutionary, robust, holistic, paradigm shift, leverage (as verb), synergy, seamlessly
 
-QUALITY STANDARDS — apply to every sentence, no exceptions:
+SECTIONS:
+- title: Specific headline under 85 characters
+- summary: 60-80 words. Definition + concrete practical implication
+- why_it_matters: 3-5 sentences. Specific use-case, mechanism, honest limitation
+- what_changed: 3-5 sentences. How it works + recent developments + current limitation
+- executive_implications: 3-5 sentences. Where to start, first decisions, what success looks like
+- primary_course_rationale: 3-5 sentences. Who this course is for, what they'll learn, honest limitation, why it's the right entry point
+- meta_description: Under 155 characters
 
-1. Ground every claim. Do not assert significance without support. Replace "unprecedented accuracy" or "transformational shift" with specific mechanisms or conditions from the research context. If you cannot support a claim, make it smaller or conditional.
-
-2. Pick one concrete use-case and stay there. Do not write about "various industries." Identify the one application where this technology matters most and write through that lens. Depth beats breadth.
-
-3. Write like an operator, not a system summarising a topic. Use plain practitioner language. Avoid polished abstraction. Sound like someone who has worked with this, not someone reading about it for the first time.
-
-4. Add at least one limitation or failure mode. Expertise is demonstrated by knowing where something breaks. At least one section must acknowledge what this technology does not do well, where it fails, or what practitioners commonly misunderstand.
-
-5. Make the roadmap advice operational, not strategic. Replace "organisations should prioritise integration" with specific sequencing: where to start, what decision comes first, what to avoid in phase one.
-
-BANNED PHRASES — never use any of these:
-bridge the gap, unprecedented, lead the next wave, psychologically resonant, sustainable competitive advantage, superior user experiences, empathetic machine interfaces, active participant, human-centric (unless quoting), crowded market, game-changing, transformational, cutting-edge, revolutionary, robust, holistic, ecosystem, paradigm shift, leverage (as a verb), synergy, seamlessly.
-
-Every sentence must be specific enough that it could not apply to a different AI topic without rewriting.
-
-SECTION INSTRUCTIONS:
-
-summary: One direct definition of the topic plus one concrete practical implication. 60-80 words maximum. This is the TL;DR and the primary AI-retrieval chunk. State what this technology is and what it actually changes in practice. No fluff, no significance inflation.
-
-why_it_matters: One grounded use-case where this technology changes what a system does or what a practitioner decides. Name the specific context — call centre escalation, adaptive tutoring, patient monitoring, etc. Explain the specific mechanism that makes it useful there. End with one honest note on where it is not yet reliable or where the limits are. 3-5 sentences.
-
-what_changed: Explain how this technology works at a mechanism level — what signals it uses, how it processes them, what it infers. Then explain what has shifted recently: architecture changes, data approaches, deployment patterns, or research breakthroughs. One honest limitation on current state. 3-5 sentences.
-
-executive_implications: Practical sequencing for a decision-maker — not strategy, execution. Answer: where should this be tried first, what does the team need to decide before deploying it, what are the consent or governance questions that come first, what does operational success look like in the first six months. No "competitive advantage" language. 3-5 sentences.
-
-primary_course_rationale: A short curated recommendation paragraph (3-5 sentences) that explains the course to the reader. Answer: who this course is for, what they will understand after completing it, what it does not cover (be honest about the limitation), and why this is the right starting point given this article topic. Do not describe the course like a product listing. Sound editorial. Add one explicit honest limitation, for example "this course covers foundational concepts and will not give you implementation depth."
-
-meta_description: SEO meta description under 155 characters.
-
-Respond ONLY with a valid JSON object — no markdown fences, no extra text:
+Respond ONLY with valid JSON:
 {
-  "title": "A specific, clear article headline under 85 characters — not just the course name, not a generic AI headline",
-  "summary": "60-80 word TL;DR: one direct definition + one concrete practical implication",
-  "why_it_matters": "3-5 sentences: one specific use-case, the mechanism, one honest limitation",
-  "what_changed": "3-5 sentences: how it works + recent developments + one honest current limitation",
-  "executive_implications": "3-5 sentences: operational sequencing, first decisions, governance, what success looks like",
-  "primary_course_rationale": "3-5 sentences: who this is for, what they will learn, what it does not cover, why this is the right entry point",
-  "meta_description": "SEO meta description under 155 characters"
+  "title": "...",
+  "summary": "...",
+  "why_it_matters": "...",
+  "what_changed": "...",
+  "executive_implications": "...",
+  "primary_course_rationale": "...",
+  "meta_description": "..."
 }`;
 
   try {
@@ -174,7 +279,6 @@ Respond ONLY with a valid JSON object — no markdown fences, no extra text:
 }
 
 // ── GET /api/admin/article-gen ────────────────────────────────────────────────
-// Returns current auto-gen settings and last run time
 
 export async function GET(req: NextRequest) {
   const session = await requireAdmin(req);
@@ -201,7 +305,9 @@ export async function GET(req: NextRequest) {
 }
 
 // ── POST /api/admin/article-gen ───────────────────────────────────────────────
-// Generates one article from a randomly selected Alison course
+// Two modes:
+//   { courseSlug } → manual: generate article from a specific course (admin use)
+//   {}             → trend:  pick top trending RSS article, search Alison for congruent course
 
 export async function POST(req: NextRequest) {
   const session = await requireAdmin(req);
@@ -213,7 +319,7 @@ export async function POST(req: NextRequest) {
   let body: { courseSlug?: string } = {};
   try { body = await req.json(); } catch { /* body is optional */ }
 
-  // Resolve API key + model from Cloudflare env
+  // Resolve API key + model
   let apiKey = '';
   let model = 'google/gemini-flash-1.5';
   try {
@@ -221,95 +327,108 @@ export async function POST(req: NextRequest) {
     const env = ctx.env as Record<string, string>;
     apiKey = env.OPENROUTER_API_KEY ?? '';
     if (env.CHATBOT_MODEL) model = env.CHATBOT_MODEL;
-  } catch { /* local dev fallback */ }
+  } catch { /* local dev */ }
 
   if (!apiKey) {
-    return NextResponse.json({ error: 'OpenRouter API key not configured. Add OPENROUTER_API_KEY as a Worker secret.' }, { status: 503 });
+    return NextResponse.json({ error: 'OpenRouter API key not configured.' }, { status: 503 });
   }
 
-  // ── Resolve course ──────────────────────────────────────────────────────────
-  type CourseRow = { title: string; slug: string; snippet: string | null; category: string | null; affiliate_url: string | null };
-
-  let course: CourseRow | null = null;
-
-  if (body.courseSlug) {
-    course = await db.prepare(
-      'SELECT title, slug, snippet, category, affiliate_url FROM courses WHERE slug = ? AND is_alison = 1 LIMIT 1'
-    ).bind(body.courseSlug).first<CourseRow>() ?? null;
-  }
-
-  if (!course) {
-    // Random Alison course that does NOT already have a curated page
-    course = await db.prepare(
-      `SELECT title, slug, snippet, category, affiliate_url FROM courses
-       WHERE is_alison = 1
-         AND slug NOT IN (
-           SELECT primary_course_slug FROM curated_pages
-           WHERE primary_course_slug IS NOT NULL
-         )
-       ORDER BY RANDOM() LIMIT 1`
-    ).first<CourseRow>() ?? null;
-  }
-
-  // Fallback: all courses exhausted — pick any random one (will likely 409 on slug but won't crash)
-  if (!course) {
-    course = await db.prepare(
-      "SELECT title, slug, snippet, category, affiliate_url FROM courses WHERE is_alison = 1 ORDER BY RANDOM() LIMIT 1"
-    ).first<CourseRow>() ?? null;
-  }
-
-  if (!course) {
-    return NextResponse.json({ error: 'No Alison courses found in the database.' }, { status: 404 });
-  }
-
-  // ── Read auto-approve setting ───────────────────────────────────────────────
+  // Read auto-approve setting
   const autoApproveSetting = await db.prepare(
     "SELECT value FROM site_settings WHERE key = 'article_gen_auto_approve'"
   ).first<{ value: string }>();
   const autoApprove = autoApproveSetting?.value === 'true';
 
-  // ── Web search for reference content ───────────────────────────────────────
-  const query = `${course.title} artificial intelligence`;
-  const articleUrls = await searchDDG(query);
+  const now = new Date().toISOString();
+  let generated: GeneratedArticle | null = null;
+  let linkedCourseSlug: string | null = null;
+  let sourceRefs: Array<{ title: string; url: string }> = [];
 
-  let referenceContent = '';
-  for (const url of articleUrls.slice(0, 3)) {
-    const snippet = await fetchSnippet(url);
-    if (snippet.length > 200) {
-      referenceContent += `\n\n--- Source: ${url} ---\n${snippet}`;
-      if (referenceContent.length > 5000) break;
+  // ── MODE A: Manual — admin specifies a course ─────────────────────────────
+  if (body.courseSlug) {
+    type CourseRow = { title: string; slug: string; snippet: string | null; category: string | null };
+    const course = await db.prepare(
+      'SELECT title, slug, snippet, category FROM courses WHERE slug = ? AND is_alison = 1 LIMIT 1'
+    ).bind(body.courseSlug).first<CourseRow>();
+
+    if (!course) {
+      return NextResponse.json({ error: 'Course not found.' }, { status: 404 });
     }
+
+    // Web search for reference context
+    const searchQuery = `${course.title} artificial intelligence`;
+    const articleUrls = await searchDDG(searchQuery);
+    let referenceContent = '';
+    for (const url of articleUrls.slice(0, 3)) {
+      const snippet = await fetchSnippet(url);
+      if (snippet.length > 200) {
+        referenceContent += `\n\n--- Source: ${url} ---\n${snippet}`;
+        if (referenceContent.length > 5000) break;
+      }
+    }
+
+    generated = await generateFromCourse(course, referenceContent, apiKey, model);
+    linkedCourseSlug = course.slug;
+    sourceRefs = articleUrls.slice(0, 4).map(url => {
+      const path = url.replace(/^https?:\/\//, '').split('/').slice(1).join('/');
+      return { title: path ? path.replace(/-/g, ' ').slice(0, 80) : url, url };
+    });
+
+  // ── MODE B: Trend — pick top unprocessed RSS article ─────────────────────
+  } else {
+    // Fetch trending articles
+    const trendingArticles = await fetchTrendingArticles(RSS_SOURCES);
+    if (trendingArticles.length === 0) {
+      return NextResponse.json({ error: 'No trending articles found from RSS feeds.' }, { status: 404 });
+    }
+
+    // Get slugs already in curated_pages to avoid duplicates
+    const existingSlugs = await db.prepare(
+      'SELECT slug FROM curated_pages'
+    ).all<{ slug: string }>();
+    const existingSlugSet = new Set(existingSlugs.results.map(r => r.slug));
+
+    // Pick top-scored article whose slug isn't already in curated_pages
+    const article = trendingArticles.find(a => !existingSlugSet.has(toSlug(a.title)));
+    if (!article) {
+      return NextResponse.json({
+        error: 'All trending articles have already been processed. Check back later for new content.',
+      }, { status: 409 });
+    }
+
+    // Search Alison live for a congruent course
+    const alisonResult = await searchAlisonForCourse(article.title);
+    let linkedCourse: { slug: string; title: string; snippet: string | null } | null = null;
+
+    if (alisonResult) {
+      // Check if this Alison course is already in our DB
+      const dbCourse = await findCourseInDB(alisonResult.alisonSlug, db);
+      if (dbCourse) {
+        // Get snippet for rationale generation
+        const courseDetail = await db.prepare(
+          'SELECT snippet FROM courses WHERE slug = ? LIMIT 1'
+        ).bind(dbCourse.slug).first<{ snippet: string | null }>();
+        linkedCourse = { ...dbCourse, snippet: courseDetail?.snippet ?? null };
+        linkedCourseSlug = dbCourse.slug;
+      }
+      // If not in DB: leave linkedCourseSlug null — admin can link it later
+    }
+
+    generated = await generateFromTrend(article, linkedCourse, apiKey, model);
+    sourceRefs = [{ title: `${article.sourceName}: ${article.title}`, url: article.url }];
   }
 
-  // ── Generate article via OpenRouter ────────────────────────────────────────
-  const generated = await generateArticle(course, referenceContent, apiKey, model);
   if (!generated) {
-    return NextResponse.json({ error: 'Article generation failed. The AI model may be unavailable — please try again.' }, { status: 500 });
+    return NextResponse.json({ error: 'Article generation failed. Please try again.' }, { status: 500 });
   }
 
-  // ── Slug from generated title ───────────────────────────────────────────────
-  const slug = generated.title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .slice(0, 80);
-
+  // ── Save to curated_pages ─────────────────────────────────────────────────
+  const slug = toSlug(generated.title);
   if (!slug) {
     return NextResponse.json({ error: 'Could not generate a URL slug from the article title.' }, { status: 500 });
   }
 
   const id = `cp-${nanoid(10)}`;
-  const now = new Date().toISOString();
-
-  // Build source references from searched URLs
-  const sourceRefs = articleUrls.slice(0, 4).map(url => {
-    const path = url.replace(/^https?:\/\//, '').split('/').slice(1).join('/');
-    const label = path ? path.replace(/-/g, ' ').replace(/\//g, ' › ').slice(0, 80) : url;
-    return { title: label, url };
-  });
-
-  // ── Insert into curated_pages ───────────────────────────────────────────────
   const editorialStatus = autoApprove ? 'approved' : 'draft';
   const publishedStatus = autoApprove ? 'published' : 'draft';
 
@@ -323,23 +442,18 @@ export async function POST(req: NextRequest) {
         created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
     `).bind(
-      id,
-      slug,
-      generated.title,
+      id, slug, generated.title,
       generated.summary,
       generated.why_it_matters,
       generated.what_changed,
       generated.executive_implications,
-      generated.primary_course_rationale,
-      course.slug,
+      generated.primary_course_rationale || null,
+      linkedCourseSlug,
       JSON.stringify(sourceRefs),
       generated.meta_description,
       editorialStatus,
       publishedStatus,
-      model,
-      now,
-      now,
-      now,
+      model, now, now, now,
     ).run();
 
     // Update last run timestamp
@@ -353,7 +467,7 @@ export async function POST(req: NextRequest) {
       entityType: 'curated_page',
       entityId: id,
       before: null,
-      after: { id, slug, title: generated.title, source: 'article-gen', courseSlug: course.slug },
+      after: { id, slug, title: generated.title, source: body.courseSlug ? 'manual' : 'trend-engine', linkedCourseSlug },
     });
 
     return NextResponse.json({
@@ -361,17 +475,70 @@ export async function POST(req: NextRequest) {
       id,
       slug,
       title: generated.title,
-      courseSlug: course.slug,
-      courseTitle: course.title,
+      linkedCourseSlug,
       published: autoApprove,
     });
   } catch (e: unknown) {
     const msg = (e as { message?: string }).message ?? '';
     if (msg.includes('UNIQUE')) {
       return NextResponse.json({
-        error: 'An article with this slug already exists. Generate again to get a different article.',
+        error: 'An article with this slug already exists.',
       }, { status: 409 });
     }
     return NextResponse.json({ error: 'Database error saving article.' }, { status: 500 });
   }
 }
+
+// ── Helpers (used by manual/course mode) ─────────────────────────────────────
+
+async function searchDDG(query: string): Promise<string[]> {
+  try {
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BytesAIBot/1.0)', 'Accept': 'text/html' },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const urls: string[] = [];
+    const re = /href="\/l\/\?uddg=([^&"]+)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html)) !== null) {
+      try {
+        const decoded = decodeURIComponent(m[1]);
+        if (decoded.startsWith('http') && !decoded.includes('duckduckgo.com')) urls.push(decoded);
+      } catch { /* skip */ }
+    }
+    return [...new Set(urls)].slice(0, 6);
+  } catch {
+    return [];
+  }
+}
+
+async function fetchSnippet(url: string): Promise<string> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,*/*',
+      },
+      signal: AbortSignal.timeout(6_000),
+    });
+    if (!res.ok) return '';
+    const html = await res.text();
+    return html
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+      .slice(0, 2000);
+  } catch {
+    return '';
+  }
+}
+
+// Suppress unused import warning — AFFILIATE_PARAMS used in future Alison course import flow
+void AFFILIATE_PARAMS;
