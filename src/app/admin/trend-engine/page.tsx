@@ -264,25 +264,23 @@ export default function TrendEnginePage() {
             </div>
           )}
 
-          {/* Auto-approve publishing toggle */}
+          {/* Auto-approve toggle */}
           <div style={{
             marginBottom: '1.25rem', padding: '0.875rem 1rem',
-            background: autoApprove ? 'rgba(239,68,68,0.05)' : 'var(--bg)',
-            border: `1px solid ${autoApprove ? 'rgba(239,68,68,0.25)' : 'var(--border)'}`,
+            background: 'var(--bg)', border: '1px solid var(--border)',
             borderRadius: 'var(--radius-md)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
               <div>
                 <p style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: '0.2rem' }}>
-                  Auto-approve &amp; publish
+                  Auto-approve editorial review
                 </p>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                   {autoApprove
-                    ? 'Generated articles are published immediately without review.'
-                    : 'Generated articles are saved as drafts. You review and publish manually.'}
+                    ? 'Articles skip the editorial queue and are marked approved. Publishing is still manual.'
+                    : 'Articles are saved as drafts pending your editorial review before publishing.'}
                 </p>
               </div>
-              {/* Toggle switch */}
               <button
                 role="switch"
                 aria-checked={autoApprove}
@@ -294,7 +292,7 @@ export default function TrendEnginePage() {
                   border: 'none',
                   cursor: 'pointer',
                   position: 'relative',
-                  background: autoApprove ? 'var(--rose)' : 'var(--border)',
+                  background: autoApprove ? 'var(--accent)' : 'var(--border)',
                   transition: 'background 0.2s',
                   padding: 0,
                 }}
@@ -310,18 +308,16 @@ export default function TrendEnginePage() {
                 }} />
               </button>
             </div>
-            {autoApprove && (
-              <div style={{
-                marginTop: '0.75rem', padding: '0.5rem 0.75rem',
-                background: 'rgba(239,68,68,0.07)', borderRadius: 'var(--radius)',
-                display: 'flex', gap: '0.375rem', alignItems: 'flex-start',
-              }}>
-                <AlertCircle size={13} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
-                <p style={{ fontSize: '0.72rem', color: 'var(--rose)', lineHeight: 1.5 }}>
-                  <strong>Caution:</strong> Articles will go live on the public site immediately upon generation with no human review. Recommended only once you have verified the article quality consistently meets your standard.
-                </p>
-              </div>
-            )}
+            <div style={{
+              marginTop: '0.625rem', padding: '0.4rem 0.75rem',
+              background: 'rgba(0,0,0,0.04)', borderRadius: 'var(--radius)',
+              display: 'flex', gap: '0.375rem', alignItems: 'flex-start',
+            }}>
+              <AlertCircle size={12} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: 1 }} />
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Articles are never published automatically. Publishing always requires a manual action.
+              </p>
+            </div>
           </div>
 
           {/* Last run info */}

@@ -5,6 +5,12 @@ import { nanoid } from 'nanoid';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { fetchTrendingArticles, type ParsedArticle } from '@/lib/rss-parser';
 import { RSS_SOURCES } from '@/lib/rss-sources';
+import {
+  scrapeAlisonSearch,
+  scrapeAlisonDetail,
+  ALISON_PROVIDER_ID,
+} from '@/lib/alison';
+import { sanitizeText, isValidSlug } from '@/lib/security';
 
 async function requireAdmin(req: NextRequest) {
   // Accept session cookie (browser) or Bearer token (CLI/automation)
@@ -15,9 +21,6 @@ async function requireAdmin(req: NextRequest) {
   if (!session || session.role !== 'admin') return null;
   return session;
 }
-
-const AFFILIATE_ID = '27668723';
-const AFFILIATE_PARAMS = `utm_source=alison_user&utm_medium=affiliate&utm_campaign=${AFFILIATE_ID}`;
 
 // ── Slug helper ───────────────────────────────────────────────────────────────
 
@@ -31,85 +34,93 @@ function toSlug(title: string): string {
     .slice(0, 80);
 }
 
-// ── Live Alison course search ─────────────────────────────────────────────────
-// Searches alison.com for courses congruent with a given topic query.
-// Returns the first matching Alison course slug, or null if nothing found.
+// ── Alison course resolution ──────────────────────────────────────────────────
+// Checks if an Alison course is already in our DB; if not, imports it inline.
+// Returns the DB slug for the course (existing or newly inserted), or null on failure.
 
-async function searchAlisonForCourse(query: string): Promise<{ alisonSlug: string; title: string } | null> {
+function slugifyCourse(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120);
+}
+
+async function resolveAlisonCourse(
+  alisonSlug: string,
+  db: import('@/lib/db').Database,
+  adminUserId: string,
+): Promise<{ slug: string; title: string; snippet: string | null } | null> {
+  // Check DB first
+  const existing = await db.prepare(
+    `SELECT slug, title, snippet FROM courses WHERE destination_url LIKE ? AND is_alison = 1 LIMIT 1`
+  ).bind(`%/course/${alisonSlug}%`).first<{ slug: string; title: string; snippet: string | null }>();
+  if (existing) return existing;
+
+  // Not in DB — scrape full detail and import inline
   try {
-    const url = `https://alison.com/courses?query=${encodeURIComponent(query)}`;
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,*/*',
-      },
-      signal: AbortSignal.timeout(10_000),
+    const detail = await scrapeAlisonDetail(alisonSlug);
+    let dbSlug = slugifyCourse(detail.title);
+    if (!isValidSlug(dbSlug)) dbSlug = `alison-${alisonSlug.slice(0, 80)}`;
+
+    // Guard: slug collision
+    const collision = await db.prepare('SELECT id FROM courses WHERE slug = ?').bind(dbSlug).first<{ id: string }>();
+    if (collision) {
+      // Already exists under a different destination_url — return it
+      const collided = await db.prepare('SELECT slug, title, snippet FROM courses WHERE slug = ? LIMIT 1').bind(dbSlug).first<{ slug: string; title: string; snippet: string | null }>();
+      return collided ?? null;
+    }
+
+    const id = `crs-${nanoid(12)}`;
+    const now = new Date().toISOString();
+    const outcomesJson = detail.outcomes?.length ? JSON.stringify(detail.outcomes) : null;
+
+    const fields = {
+      id,
+      slug: dbSlug,
+      provider_id: ALISON_PROVIDER_ID,
+      title: sanitizeText(detail.title).slice(0, 200),
+      content_type: 'course',
+      category: detail.category ?? 'AI Foundations',
+      level: detail.level ?? null,
+      snippet: detail.description ?? null,
+      long_description: null,
+      learning_outcomes_json: outcomesJson,
+      duration_text: detail.duration ?? null,
+      official_link: detail.officialLink,
+      destination_url: detail.affiliateUrl,
+      affiliate_url: detail.affiliateUrl,
+      is_affiliate: 1,
+      is_alison: 1,
+      affiliate_provider: 'alison',
+      certification_type: detail.certType ?? 'Certificate (optional paid)',
+      disclosure_label: 'Free to learn. We may earn a commission if you purchase a certificate.',
+      cover_image_url: detail.coverImageUrl ?? null,
+      og_image_url: detail.coverImageUrl ?? null,
+      published_status: 'published',
+      featured_priority: 0,
+      popularity_score: 0,
+      recent_views_30d: 0,
+      unique_learners_30d: 0,
+      starts_30d: 0,
+      completion_rate: 0,
+      enroll_count: detail.enrollCount ?? null,
+      last_verified_at: now.slice(0, 10),
+      created_at: now,
+      updated_at: now,
+    };
+
+    const columns = Object.keys(fields).join(', ');
+    const placeholders = Object.keys(fields).map(() => '?').join(', ');
+    await db.prepare(`INSERT INTO courses (${columns}) VALUES (${placeholders})`).bind(...Object.values(fields)).run();
+    await logAdminAction(db, {
+      adminUserId,
+      actionType: 'CREATE',
+      entityType: 'course',
+      entityId: id,
+      after: { source: 'article_gen_inline_import', alisonSlug, ...fields },
     });
-    if (!res.ok) return null;
 
-    const html = await res.text();
-
-    // Strategy 1: __NEXT_DATA__ JSON
-    const nextMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-    if (nextMatch) {
-      try {
-        const data = JSON.parse(nextMatch[1]);
-        const found = extractFirstCourse(data, 0);
-        if (found) return found;
-      } catch { /* fall through */ }
-    }
-
-    // Strategy 2: href="/course/{slug}" pattern
-    const m = html.match(/href="\/course\/([a-z0-9][a-z0-9-]+)"/i);
-    if (m) {
-      const alisonSlug = m[1];
-      const ctxStart = Math.max(0, m.index! - 200);
-      const ctx = html.slice(ctxStart, m.index! + 400);
-      const titleMatch = ctx.match(/title="([^"]{5,120})"/) ?? ctx.match(/aria-label="([^"]{5,120})"/);
-      const title = titleMatch ? titleMatch[1].trim() : alisonSlug.replace(/-/g, ' ');
-      return { alisonSlug, title };
-    }
-
-    return null;
+    return { slug: dbSlug, title: detail.title, snippet: detail.description };
   } catch {
     return null;
   }
-}
-
-function extractFirstCourse(obj: unknown, depth: number): { alisonSlug: string; title: string } | null {
-  if (depth > 8 || !obj || typeof obj !== 'object') return null;
-  if (Array.isArray(obj)) {
-    for (const item of obj) {
-      const r = extractFirstCourse(item, depth + 1);
-      if (r) return r;
-    }
-    return null;
-  }
-  const r = obj as Record<string, unknown>;
-  if (typeof r.slug === 'string' && typeof r.title === 'string' && r.slug.length > 3) {
-    return { alisonSlug: r.slug, title: r.title };
-  }
-  for (const val of Object.values(r)) {
-    if (val && typeof val === 'object') {
-      const result = extractFirstCourse(val, depth + 1);
-      if (result) return result;
-    }
-  }
-  return null;
-}
-
-// ── Find course in our DB by Alison slug ──────────────────────────────────────
-// Checks if an Alison course is already imported into our DB.
-// Matches against destination_url which contains the Alison course path.
-
-async function findCourseInDB(
-  alisonSlug: string,
-  db: import('@/lib/db').Database
-): Promise<{ slug: string; title: string } | null> {
-  const row = await db.prepare(
-    `SELECT slug, title FROM courses WHERE destination_url LIKE ? AND is_alison = 1 LIMIT 1`
-  ).bind(`%/course/${alisonSlug}%`).first<{ slug: string; title: string }>();
-  return row ?? null;
 }
 
 // ── AI article generation ─────────────────────────────────────────────────────
@@ -333,11 +344,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'OpenRouter API key not configured.' }, { status: 503 });
   }
 
-  // Read auto-approve setting
+  // editorial_review_status: 'approved' if auto-approve is on (skips review queue),
+  // but published_status is always 'draft' — publishing requires a manual action.
   const autoApproveSetting = await db.prepare(
     "SELECT value FROM site_settings WHERE key = 'article_gen_auto_approve'"
   ).first<{ value: string }>();
-  const autoApprove = autoApproveSetting?.value === 'true';
+  const editorialStatus = autoApproveSetting?.value === 'true' ? 'approved' : 'draft';
 
   const now = new Date().toISOString();
   let generated: GeneratedArticle | null = null;
@@ -396,22 +408,16 @@ export async function POST(req: NextRequest) {
       }, { status: 409 });
     }
 
-    // Search Alison live for a congruent course
-    const alisonResult = await searchAlisonForCourse(article.title);
+    // Search Alison live for a congruent course, then resolve (DB lookup or inline import)
+    const alisonResults = await scrapeAlisonSearch(article.title);
     let linkedCourse: { slug: string; title: string; snippet: string | null } | null = null;
 
-    if (alisonResult) {
-      // Check if this Alison course is already in our DB
-      const dbCourse = await findCourseInDB(alisonResult.alisonSlug, db);
-      if (dbCourse) {
-        // Get snippet for rationale generation
-        const courseDetail = await db.prepare(
-          'SELECT snippet FROM courses WHERE slug = ? LIMIT 1'
-        ).bind(dbCourse.slug).first<{ snippet: string | null }>();
-        linkedCourse = { ...dbCourse, snippet: courseDetail?.snippet ?? null };
-        linkedCourseSlug = dbCourse.slug;
+    if (alisonResults.length > 0) {
+      const resolved = await resolveAlisonCourse(alisonResults[0].slug, db, session.userId);
+      if (resolved) {
+        linkedCourse = resolved;
+        linkedCourseSlug = resolved.slug;
       }
-      // If not in DB: leave linkedCourseSlug null — admin can link it later
     }
 
     generated = await generateFromTrend(article, linkedCourse, apiKey, model);
@@ -429,8 +435,6 @@ export async function POST(req: NextRequest) {
   }
 
   const id = `cp-${nanoid(10)}`;
-  const editorialStatus = autoApprove ? 'approved' : 'draft';
-  const publishedStatus = autoApprove ? 'published' : 'draft';
 
   try {
     await db.prepare(`
@@ -452,7 +456,7 @@ export async function POST(req: NextRequest) {
       JSON.stringify(sourceRefs),
       generated.meta_description,
       editorialStatus,
-      publishedStatus,
+      'draft',
       model, now, now, now,
     ).run();
 
@@ -476,7 +480,6 @@ export async function POST(req: NextRequest) {
       slug,
       title: generated.title,
       linkedCourseSlug,
-      published: autoApprove,
     });
   } catch (e: unknown) {
     const msg = (e as { message?: string }).message ?? '';
@@ -540,5 +543,3 @@ async function fetchSnippet(url: string): Promise<string> {
   }
 }
 
-// Suppress unused import warning — AFFILIATE_PARAMS used in future Alison course import flow
-void AFFILIATE_PARAMS;
