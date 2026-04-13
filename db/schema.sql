@@ -150,6 +150,7 @@ CREATE TABLE IF NOT EXISTS curated_pages (
   why_it_matters TEXT,
   what_changed TEXT,
   executive_implications TEXT,
+  primary_course_rationale TEXT,
   primary_course_slug TEXT,
   related_course_slugs_json TEXT,
   source_references_json TEXT,

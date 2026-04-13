@@ -77,6 +77,7 @@ interface GeneratedArticle {
   why_it_matters: string;
   what_changed: string;
   executive_implications: string;
+  primary_course_rationale: string;
   meta_description: string;
 }
 
@@ -95,25 +96,49 @@ Course page: https://learn.bytesai.uk/courses/${course.slug}`;
     ? `\n\nResearch context gathered from the web (use as background knowledge — do NOT copy verbatim):\n${referenceContent.slice(0, 4500)}`
     : '';
 
-  const prompt = `You are an editorial writer for BytesAI Learning, an AI education platform. Write an insightful, well-structured article about the AI topic covered by the course below. The article is for professionals and learners who want to stay on top of AI developments.
+  const prompt = `You are an editorial writer and subject-matter curator for BytesAI Learning. Write an insight article about the AI topic covered by the course below. The article must read like it was written by a knowledgeable human practitioner with a real point of view — not a system summarising a topic.
 
 ${courseContext}${refSection}
 
-WRITING RULES:
-- Write about the TOPIC, not a review of the course
-- Mention the free course naturally within the text — treat it as a helpful resource the reader can use, not an ad
-- Write in clear, authoritative prose — no bullet points or markdown symbols (no asterisks, dashes as lists, etc.)
-- Each section must be 3 to 5 full, substantial sentences
-- Sound like a knowledgeable human author, not a chatbot summary
-- Use the course mention in the "why_it_matters" section: e.g. "For professionals looking to build practical skills in [topic], Alison's free course [title] provides a structured, self-paced introduction..."
+QUALITY STANDARDS — apply to every sentence, no exceptions:
 
-Respond ONLY with a valid JSON object — no markdown fences, no extra text. Use exactly this structure:
+1. Ground every claim. Do not assert significance without support. Replace "unprecedented accuracy" or "transformational shift" with specific mechanisms or conditions from the research context. If you cannot support a claim, make it smaller or conditional.
+
+2. Pick one concrete use-case and stay there. Do not write about "various industries." Identify the one application where this technology matters most and write through that lens. Depth beats breadth.
+
+3. Write like an operator, not a system summarising a topic. Use plain practitioner language. Avoid polished abstraction. Sound like someone who has worked with this, not someone reading about it for the first time.
+
+4. Add at least one limitation or failure mode. Expertise is demonstrated by knowing where something breaks. At least one section must acknowledge what this technology does not do well, where it fails, or what practitioners commonly misunderstand.
+
+5. Make the roadmap advice operational, not strategic. Replace "organisations should prioritise integration" with specific sequencing: where to start, what decision comes first, what to avoid in phase one.
+
+BANNED PHRASES — never use any of these:
+bridge the gap, unprecedented, lead the next wave, psychologically resonant, sustainable competitive advantage, superior user experiences, empathetic machine interfaces, active participant, human-centric (unless quoting), crowded market, game-changing, transformational, cutting-edge, revolutionary, robust, holistic, ecosystem, paradigm shift, leverage (as a verb), synergy, seamlessly.
+
+Every sentence must be specific enough that it could not apply to a different AI topic without rewriting.
+
+SECTION INSTRUCTIONS:
+
+summary: One direct definition of the topic plus one concrete practical implication. 60-80 words maximum. This is the TL;DR and the primary AI-retrieval chunk. State what this technology is and what it actually changes in practice. No fluff, no significance inflation.
+
+why_it_matters: One grounded use-case where this technology changes what a system does or what a practitioner decides. Name the specific context — call centre escalation, adaptive tutoring, patient monitoring, etc. Explain the specific mechanism that makes it useful there. End with one honest note on where it is not yet reliable or where the limits are. 3-5 sentences.
+
+what_changed: Explain how this technology works at a mechanism level — what signals it uses, how it processes them, what it infers. Then explain what has shifted recently: architecture changes, data approaches, deployment patterns, or research breakthroughs. One honest limitation on current state. 3-5 sentences.
+
+executive_implications: Practical sequencing for a decision-maker — not strategy, execution. Answer: where should this be tried first, what does the team need to decide before deploying it, what are the consent or governance questions that come first, what does operational success look like in the first six months. No "competitive advantage" language. 3-5 sentences.
+
+primary_course_rationale: A short curated recommendation paragraph (3-5 sentences) that explains the course to the reader. Answer: who this course is for, what they will understand after completing it, what it does not cover (be honest about the limitation), and why this is the right starting point given this article topic. Do not describe the course like a product listing. Sound editorial. Add one explicit honest limitation, for example "this course covers foundational concepts and will not give you implementation depth."
+
+meta_description: SEO meta description under 155 characters.
+
+Respond ONLY with a valid JSON object — no markdown fences, no extra text:
 {
-  "title": "An engaging article headline (under 85 chars) about the AI topic — not just the course name",
-  "summary": "2-3 sentence intro paragraph that hooks the reader on why this AI topic is important right now",
-  "why_it_matters": "3-5 sentences on the real-world significance of this topic for learners and professionals. Naturally embed a mention of the free course here as a resource",
-  "what_changed": "3-5 sentences on the current state and recent developments in this AI field — what is evolving, what is new, and how practitioners should take note",
-  "executive_implications": "3-5 sentences of practical takeaways — what learners and organisations should do next and how this knowledge translates into competitive advantage",
+  "title": "A specific, clear article headline under 85 characters — not just the course name, not a generic AI headline",
+  "summary": "60-80 word TL;DR: one direct definition + one concrete practical implication",
+  "why_it_matters": "3-5 sentences: one specific use-case, the mechanism, one honest limitation",
+  "what_changed": "3-5 sentences: how it works + recent developments + one honest current limitation",
+  "executive_implications": "3-5 sentences: operational sequencing, first decisions, governance, what success looks like",
+  "primary_course_rationale": "3-5 sentences: who this is for, what they will learn, what it does not cover, why this is the right entry point",
   "meta_description": "SEO meta description under 155 characters"
 }`;
 
@@ -130,7 +155,7 @@ Respond ONLY with a valid JSON object — no markdown fences, no extra text. Use
         model,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.72,
-        max_tokens: 1400,
+        max_tokens: 1800,
       }),
       signal: AbortSignal.timeout(35_000),
     });
@@ -276,11 +301,11 @@ export async function POST(req: NextRequest) {
     await db.prepare(`
       INSERT INTO curated_pages (
         id, slug, title, summary, why_it_matters, what_changed, executive_implications,
-        primary_course_slug, source_references_json, meta_description,
+        primary_course_rationale, primary_course_slug, source_references_json, meta_description,
         editorial_review_status, published_status,
         ai_generated, generated_model, generated_at,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
     `).bind(
       id,
       slug,
@@ -289,6 +314,7 @@ export async function POST(req: NextRequest) {
       generated.why_it_matters,
       generated.what_changed,
       generated.executive_implications,
+      generated.primary_course_rationale,
       course.slug,
       JSON.stringify(sourceRefs),
       generated.meta_description,

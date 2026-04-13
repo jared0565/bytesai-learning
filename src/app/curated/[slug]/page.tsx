@@ -239,9 +239,9 @@ export default async function CuratedDetailPage({ params }: PageProps) {
                   <BookOpen size={13} /> Recommended course
                 </p>
                 <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.875rem' }}>
-                  Course Specifications: {primaryCourse.title}
+                  Recommended starting point
                 </h3>
-                <CourseSpecTable course={primaryCourse} />
+                <CourseSpecTable course={primaryCourse} rationale={page.primary_course_rationale ?? undefined} />
               </section>
             )}
 

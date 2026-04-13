@@ -167,6 +167,7 @@ export interface CuratedPage {
   why_it_matters: string | null;
   what_changed: string | null;
   executive_implications: string | null;
+  primary_course_rationale: string | null;
   primary_course_slug: string | null;
   related_course_slugs_json: string | null;
   source_references_json: string | null;
