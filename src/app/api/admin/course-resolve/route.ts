@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 import { getDB, logAdminAction } from '@/lib/db';
-import { scrapeAlisonDetail, ALISON_PROVIDER_ID } from '@/lib/alison';
+import { scrapeAlisonDetail, scrapeAlisonSearch, ALISON_PROVIDER_ID } from '@/lib/alison';
 import { sanitizeText, isValidSlug } from '@/lib/security';
 import { nanoid } from 'nanoid';
 
@@ -32,15 +32,26 @@ export async function POST(req: NextRequest) {
   const db = await getDB();
   if (!db) return NextResponse.json({ error: 'DB unavailable.' }, { status: 503 });
 
-  let body: { url?: string } = {};
+  let body: { input?: string } = {};
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid body.' }, { status: 400 }); }
 
-  const url = (body.url ?? '').trim();
-  if (!url) return NextResponse.json({ error: 'url is required.' }, { status: 422 });
+  const input = (body.input ?? '').trim();
+  if (!input) return NextResponse.json({ error: 'input is required.' }, { status: 422 });
 
-  const alisonSlug = extractAlisonSlug(url);
-  if (!alisonSlug) {
-    return NextResponse.json({ error: 'Not a recognised Alison course URL. Expected format: alison.com/course/course-slug' }, { status: 422 });
+  // Auto-detect: URL vs keyword
+  let alisonSlug: string | null = null;
+  if (input.startsWith('http')) {
+    alisonSlug = extractAlisonSlug(input);
+    if (!alisonSlug) {
+      return NextResponse.json({ error: 'Not a recognised Alison course URL. Expected format: alison.com/course/course-slug' }, { status: 422 });
+    }
+  } else {
+    // Keyword search — take first result
+    const results = await scrapeAlisonSearch(input);
+    if (!results.length) {
+      return NextResponse.json({ error: `No Alison courses found for "${input}". Try a different keyword.` }, { status: 404 });
+    }
+    alisonSlug = results[0].slug;
   }
 
   // Check if already in DB

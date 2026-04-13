@@ -19,6 +19,7 @@ interface PageData {
   executive_implications: string | null;
   primary_course_rationale: string | null;
   primary_course_slug: string | null;
+  categories_json: string | null;
   related_course_slugs_json: string | null;
   source_references_json: string | null;
   meta_title: string | null;
@@ -293,6 +294,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   const [executiveImplications, setExecutiveImplications] = useState('');
   const [primaryCourseRationale, setPrimaryCourseRationale] = useState('');
   const [primaryCourse, setPrimaryCourse] = useState('');
+  const [categories, setCategories] = useState<string[]>([]);
   const [relatedCourses, setRelatedCourses] = useState('');
   const [resolveUrl, setResolveUrl] = useState('');
   const [resolving, setResolving] = useState(false);
@@ -326,6 +328,8 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         const relSlugs: string[] = p.related_course_slugs_json
           ? JSON.parse(p.related_course_slugs_json) : [];
         setRelatedCourses(relSlugs.join(', '));
+        const cats: string[] = p.categories_json ? JSON.parse(p.categories_json) : [];
+        setCategories(cats);
       })
       .catch(() => setLoadError('Failed to load article.'))
       .finally(() => setLoading(false));
@@ -406,6 +410,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
           executive_implications: executiveImplications.trim() || null,
           primary_course_rationale: primaryCourseRationale.trim() || null,
           primary_course_slug: primaryCourse.trim() || null,
+          categories_json: categories.length ? JSON.stringify(categories) : null,
           related_course_slugs: relatedArr,
           meta_title: metaTitle.trim() || null,
           meta_description: metaDescription.trim() || null,
@@ -451,7 +456,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
       const res = await fetch('/api/admin/course-resolve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: resolveUrl.trim() }),
+        body: JSON.stringify({ input: resolveUrl.trim() }),
       });
       const data = await res.json();
       if (!res.ok || data.error) {
@@ -721,13 +726,55 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
 
               <div style={divider} />
 
+              {/* ── Categories ── */}
+              <span style={sectionLabel}>Categories</span>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                  {categories.map(cat => (
+                    <span key={cat} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                      fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.6rem',
+                      borderRadius: 'var(--radius-full)',
+                      background: 'rgba(79,110,247,0.08)', color: 'var(--accent)',
+                      border: '1px solid rgba(79,110,247,0.2)',
+                      cursor: 'pointer',
+                    }}
+                      onClick={() => setCategories(prev => prev.filter(c => c !== cat))}
+                      title="Click to remove"
+                    >
+                      {cat} <X size={10} />
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {['AI Governance','AI Safety','Foundation Models','AI Tooling','AI Workflow','Ethics & Bias','Regulation & Compliance','Technical Implementation','Research & Models','AI in Business'].map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => { if (!categories.includes(cat)) setCategories(prev => [...prev, cat]); }}
+                      disabled={categories.includes(cat)}
+                      style={{
+                        fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)',
+                        border: '1px solid var(--border)', background: categories.includes(cat) ? 'var(--border)' : 'var(--bg)',
+                        color: categories.includes(cat) ? 'var(--text-muted)' : 'var(--text-secondary)',
+                        cursor: categories.includes(cat) ? 'default' : 'pointer',
+                      }}
+                    >{cat}</button>
+                  ))}
+                </div>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.4rem', display: 'block' }}>
+                  Click to add · Click a tag to remove. AI assigns these automatically on generation.
+                </span>
+              </div>
+
+              <div style={divider} />
+
               {/* ── Course linking ── */}
               <span style={sectionLabel}>Course links</span>
 
               {/* Resolve from URL */}
               <div style={{ marginBottom: '1.125rem', padding: '0.875rem 1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle, var(--bg))' }}>
                 <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.5rem' }}>
-                  <Link2 size={13} /> Resolve from Alison URL
+                  <Link2 size={13} /> Link course by URL or keyword
                 </label>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <input
@@ -735,7 +782,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                     value={resolveUrl}
                     onChange={e => { setResolveUrl(e.target.value); setResolveError(null); setResolveResult(null); }}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleResolve(); } }}
-                    placeholder="https://alison.com/course/course-slug"
+                    placeholder="alison.com/course/... or keyword e.g. AI Governance"
                     style={{ ...inputSm, flex: 1 }}
                     disabled={resolving}
                   />
@@ -764,7 +811,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                   </div>
                 )}
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.4rem', display: 'block' }}>
-                  Paste any Alison course URL — course is imported to the DB if not already there.
+                  Paste an Alison URL or type a keyword (e.g. "AI Governance") — course is imported if not already in the DB.
                 </span>
               </div>
 

@@ -164,6 +164,7 @@ interface GeneratedArticle {
   executive_implications: string;
   primary_course_rationale: string;
   meta_description: string;
+  categories: string[];
 }
 
 async function generateFromTrend(
@@ -206,6 +207,7 @@ SECTION INSTRUCTIONS:
 - executive_implications: 3-5 sentences. Where to start, first decisions, governance considerations, what success looks like
 - primary_course_rationale: 3-5 sentences explaining the linked course to the reader (who it's for, what they'll learn, honest limitation, why it's the right entry point). Empty string "" if no course linked.
 - meta_description: Under 155 characters, SEO-friendly, factual
+- categories: JSON array of 1–3 topic labels that best describe this article's domain based on the content (not just the title). Choose from: AI Governance, AI Safety, Foundation Models, AI Tooling, AI Workflow, Ethics & Bias, Regulation & Compliance, Technical Implementation, Research & Models, AI in Business. Multiple categories are allowed when the article genuinely spans domains.
 
 Respond ONLY with valid JSON — no markdown fences:
 {
@@ -215,7 +217,8 @@ Respond ONLY with valid JSON — no markdown fences:
   "what_changed": "...",
   "executive_implications": "...",
   "primary_course_rationale": "...",
-  "meta_description": "..."
+  "meta_description": "...",
+  "categories": ["..."]
 }`;
 
   try {
@@ -279,6 +282,7 @@ SECTIONS:
 - executive_implications: 3-5 sentences. Where to start, first decisions, what success looks like
 - primary_course_rationale: 3-5 sentences. Who this course is for, what they'll learn, honest limitation, why it's the right entry point
 - meta_description: Under 155 characters
+- categories: JSON array of 1–3 topic labels based on the article content. Choose from: AI Governance, AI Safety, Foundation Models, AI Tooling, AI Workflow, Ethics & Bias, Regulation & Compliance, Technical Implementation, Research & Models, AI in Business.
 
 Respond ONLY with valid JSON:
 {
@@ -288,7 +292,8 @@ Respond ONLY with valid JSON:
   "what_changed": "...",
   "executive_implications": "...",
   "primary_course_rationale": "...",
-  "meta_description": "..."
+  "meta_description": "...",
+  "categories": ["..."]
 }`;
 
   try {
@@ -438,15 +443,51 @@ export async function POST(req: NextRequest) {
       }, { status: 409 });
     }
 
-    // Search Alison live for a congruent course, then resolve (DB lookup or inline import)
+    // Search Alison for congruent courses, pick best with rotation logic
     const alisonResults = await scrapeAlisonSearch(buildAlisonQuery(article));
     let linkedCourse: { slug: string; title: string; snippet: string | null } | null = null;
 
     if (alisonResults.length > 0) {
-      const resolved = await resolveAlisonCourse(alisonResults[0].slug, db, session.userId);
-      if (resolved) {
-        linkedCourse = resolved;
-        linkedCourseSlug = resolved.slug;
+      // Get referral history: which DB course slugs have been used, and when last used
+      const referralHistory = await db.prepare(
+        'SELECT primary_course_slug, MAX(created_at) as last_referred FROM curated_pages WHERE primary_course_slug IS NOT NULL GROUP BY primary_course_slug'
+      ).all<{ primary_course_slug: string; last_referred: string }>();
+      const referralMap = new Map(referralHistory.results.map(r => [r.primary_course_slug, r.last_referred]));
+
+      // Look up which Alison results are already in our DB
+      type CourseRow = { slug: string; title: string; snippet: string | null };
+      const dbLookups = await Promise.all(
+        alisonResults.map(r =>
+          db.prepare('SELECT slug, title, snippet FROM courses WHERE destination_url LIKE ? AND is_alison = 1 LIMIT 1')
+            .bind(`%/course/${r.slug}%`).first<CourseRow>()
+        )
+      );
+
+      // Build candidate list: { alisonSlug, dbSlug|null, lastReferred|null }
+      type Candidate = { alisonSlug: string; dbSlug: string | null; lastReferred: string | null };
+      const candidates: Candidate[] = alisonResults.map((r, i) => ({
+        alisonSlug: r.slug,
+        dbSlug: dbLookups[i]?.slug ?? null,
+        lastReferred: dbLookups[i] ? (referralMap.get(dbLookups[i]!.slug) ?? null) : null,
+      }));
+
+      // Priority 1: not in DB (brand new to us)
+      // Priority 2: in DB but never referred
+      // Priority 3 (rotation): referred before — pick least recently referred
+      const notInDb = candidates.find(c => !c.dbSlug);
+      const unreferred = candidates.find(c => c.dbSlug && !c.lastReferred);
+      const leastRecent = candidates
+        .filter(c => c.dbSlug && c.lastReferred)
+        .sort((a, b) => a.lastReferred!.localeCompare(b.lastReferred!))[0];
+
+      const winner = notInDb ?? unreferred ?? leastRecent ?? candidates[0];
+
+      if (winner) {
+        const resolved = await resolveAlisonCourse(winner.alisonSlug, db, session.userId);
+        if (resolved) {
+          linkedCourse = resolved;
+          linkedCourseSlug = resolved.slug;
+        }
       }
     }
 
@@ -467,14 +508,18 @@ export async function POST(req: NextRequest) {
   const id = `cp-${nanoid(10)}`;
 
   try {
+    const categoriesJson = Array.isArray(generated.categories) && generated.categories.length
+      ? JSON.stringify(generated.categories)
+      : null;
+
     await db.prepare(`
       INSERT INTO curated_pages (
         id, slug, title, summary, why_it_matters, what_changed, executive_implications,
         primary_course_rationale, primary_course_slug, source_references_json, meta_description,
-        editorial_review_status, published_status,
+        categories_json, editorial_review_status, published_status,
         ai_generated, generated_model, generated_at,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
     `).bind(
       id, slug, generated.title,
       generated.summary,
@@ -485,6 +530,7 @@ export async function POST(req: NextRequest) {
       linkedCourseSlug,
       JSON.stringify(sourceRefs),
       generated.meta_description,
+      categoriesJson,
       editorialStatus,
       'draft',
       model, now, now, now,

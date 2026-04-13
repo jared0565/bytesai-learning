@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     if (id) {
       const page = await db.prepare(
         `SELECT id, slug, title, summary, why_it_matters, what_changed, executive_implications,
-                primary_course_rationale, primary_course_slug, related_course_slugs_json, source_references_json,
+                primary_course_rationale, primary_course_slug, categories_json, related_course_slugs_json, source_references_json,
                 meta_title, meta_description, og_title, og_description, og_image_url,
                 editorial_review_status, published_status, last_verified_at, created_at, updated_at
          FROM curated_pages WHERE id = ?`
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 
     const result = await db.prepare(
       `SELECT id, slug, title, summary, editorial_review_status, published_status,
-              primary_course_slug, why_it_matters, what_changed, executive_implications,
+              primary_course_slug, categories_json, why_it_matters, what_changed, executive_implications,
               meta_description, last_verified_at, view_count, last_viewed_at,
               referrer_counts_json, ai_generated, generated_model, generated_at,
               created_at, updated_at
@@ -163,6 +163,9 @@ export async function PATCH(req: NextRequest) {
   if ('related_course_slugs' in body) {
     const arr = Array.isArray(body.related_course_slugs) ? body.related_course_slugs : [];
     updates.related_course_slugs_json = arr.length ? JSON.stringify(arr) : null;
+  }
+  if ('categories_json' in body) {
+    updates.categories_json = body.categories_json ?? null;
   }
   if ('source_references' in body) {
     const arr = Array.isArray(body.source_references) ? body.source_references : [];

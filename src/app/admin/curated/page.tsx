@@ -17,6 +17,7 @@ interface CuratedRow {
   executive_implications: string | null;
   meta_description: string | null;
   primary_course_slug: string | null;
+  categories_json: string | null;
   editorial_review_status: string;
   published_status: string;
   view_count: number;
@@ -233,6 +234,7 @@ export default function AdminCuratedPage() {
       executive_implications: null,
       meta_description: null,
       primary_course_slug: null,
+      categories_json: null,
       editorial_review_status: 'draft',
       published_status: 'draft',
       view_count: 0,
@@ -526,6 +528,26 @@ export default function AdminCuratedPage() {
                   <p style={{ fontWeight: 700, fontSize: '0.9375rem', lineHeight: 1.4, marginBottom: '0.25rem' }}>
                     {p.title}
                   </p>
+
+                  {/* Category tags */}
+                  {p.categories_json && (() => {
+                    try {
+                      const cats: string[] = JSON.parse(p.categories_json);
+                      if (!cats.length) return null;
+                      return (
+                        <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
+                          {cats.map(cat => (
+                            <span key={cat} style={{
+                              fontSize: '0.68rem', fontWeight: 600, padding: '0.1rem 0.45rem',
+                              borderRadius: 'var(--radius-full)',
+                              background: 'rgba(79,110,247,0.08)', color: 'var(--accent)',
+                              border: '1px solid rgba(79,110,247,0.2)',
+                            }}>{cat}</span>
+                          ))}
+                        </div>
+                      );
+                    } catch { return null; }
+                  })()}
 
                   {p.summary && (
                     <p style={{
