@@ -3,9 +3,8 @@ import { getDB } from '@/lib/db';
 
 type Platform = 'twitter' | 'linkedin' | 'whatsapp' | 'facebook';
 
-// LinkedIn model — DeepSeek V3 produces stronger human-sounding output than Flash Lite
-// Verify exact OpenRouter slug at openrouter.ai/models if this errors
-const LINKEDIN_MODEL = 'deepseek/deepseek-v3-0324';
+// LinkedIn model — Gemini 3 Flash Preview (DeepSeek V3 not available on OpenRouter)
+const LINKEDIN_MODEL = 'google/gemini-3-flash-preview';
 
 // System prompt targeting: AI detection <=25%, hook >=80, overall potential >=80, algorithm >=80
 const LINKEDIN_SYSTEM_PROMPT = `You are Atlas. Write a LinkedIn post that reads like it came from a sharp, opinionated practitioner who has actually seen this play out. Not a content strategist. Someone who works with this daily and has opinions formed from real situations.
