@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, Loader2, ExternalLink, AlertCircle, Sparkles,
   Printer, Copy, CheckCircle2, Maximize2, Minimize2,
-  BookOpen, Save,
+  BookOpen, Save, Link2,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -294,6 +294,10 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   const [primaryCourseRationale, setPrimaryCourseRationale] = useState('');
   const [primaryCourse, setPrimaryCourse] = useState('');
   const [relatedCourses, setRelatedCourses] = useState('');
+  const [resolveUrl, setResolveUrl] = useState('');
+  const [resolving, setResolving] = useState(false);
+  const [resolveResult, setResolveResult] = useState<{ title: string; imported: boolean } | null>(null);
+  const [resolveError, setResolveError] = useState<string | null>(null);
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
   const [editorialStatus, setEditorialStatus] = useState('draft');
@@ -436,6 +440,33 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [handleSave]);
+
+  // ── Course URL resolver ──────────────────────────────────────────────────────
+  const handleResolve = useCallback(async () => {
+    if (!resolveUrl.trim()) return;
+    setResolving(true);
+    setResolveError(null);
+    setResolveResult(null);
+    try {
+      const res = await fetch('/api/admin/course-resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: resolveUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setResolveError(data.error ?? 'Failed to resolve course.');
+        return;
+      }
+      setPrimaryCourse(data.slug);
+      setResolveResult({ title: data.title, imported: data.imported });
+      setResolveUrl('');
+    } catch {
+      setResolveError('Network error — could not reach the server.');
+    } finally {
+      setResolving(false);
+    }
+  }, [resolveUrl]);
 
   // ── Styles ──────────────────────────────────────────────────────────────────
 
@@ -693,6 +724,50 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
               {/* ── Course linking ── */}
               <span style={sectionLabel}>Course links</span>
 
+              {/* Resolve from URL */}
+              <div style={{ marginBottom: '1.125rem', padding: '0.875rem 1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle, var(--bg))' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.5rem' }}>
+                  <Link2 size={13} /> Resolve from Alison URL
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    className="input"
+                    value={resolveUrl}
+                    onChange={e => { setResolveUrl(e.target.value); setResolveError(null); setResolveResult(null); }}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleResolve(); } }}
+                    placeholder="https://alison.com/course/course-slug"
+                    style={{ ...inputSm, flex: 1 }}
+                    disabled={resolving}
+                  />
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={handleResolve}
+                    disabled={resolving || !resolveUrl.trim()}
+                    style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                  >
+                    {resolving ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : 'Resolve & link'}
+                  </button>
+                </div>
+                {resolveError && (
+                  <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'flex-start', marginTop: '0.5rem' }}>
+                    <AlertCircle size={12} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span style={{ fontSize: '0.72rem', color: 'var(--rose)' }}>{resolveError}</span>
+                  </div>
+                )}
+                {resolveResult && (
+                  <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'flex-start', marginTop: '0.5rem' }}>
+                    <CheckCircle2 size={12} color="var(--green, #22c55e)" style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      {resolveResult.imported ? 'Imported & linked: ' : 'Found & linked: '}
+                      <strong>{resolveResult.title}</strong>
+                    </span>
+                  </div>
+                )}
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.4rem', display: 'block' }}>
+                  Paste any Alison course URL — course is imported to the DB if not already there.
+                </span>
+              </div>
+
               <div style={{ marginBottom: '1.125rem' }}>
                 <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.3rem' }}>
                   <BookOpen size={13} /> Primary course slug
@@ -705,7 +780,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                   style={inputSm}
                 />
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
-                  Embedded mid-article as "Recommended course"
+                  Auto-filled by "Resolve & link" above, or enter a slug manually. Embedded mid-article as "Recommended course".
                 </span>
               </div>
 
