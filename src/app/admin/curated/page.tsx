@@ -114,6 +114,13 @@ export default function AdminCuratedPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // ── Fill-rationale state ─────────────────────────────────────────────────────
+  const [rationaleStats, setRationaleStats] = useState<{ missing: number } | null>(null);
+  const [rationaleRunning, setRationaleRunning] = useState(false);
+  const [rationaleDone, setRationaleDone] = useState(false);
+  const [rationaleProcessed, setRationaleProcessed] = useState(0);
+  const [rationaleFailed, setRationaleFailed] = useState(0);
+
   // ── Regenerate state ────────────────────────────────────────────────────────
   const [regenStats, setRegenStats] = useState<{ total: number; needsRegen: number } | null>(null);
   const [regenRunning, setRegenRunning] = useState(false);
@@ -130,6 +137,11 @@ export default function AdminCuratedPage() {
     fetch('/api/admin/curated/regenerate')
       .then(r => r.json())
       .then(d => { if (d.total !== undefined) setRegenStats(d); })
+      .catch(() => {});
+    // Load rationale stats
+    fetch('/api/admin/curated/fill-rationale')
+      .then(r => r.json())
+      .then(d => { if (d.missing !== undefined) setRationaleStats(d); })
       .catch(() => {});
   }, []);
 
@@ -170,6 +182,40 @@ export default function AdminCuratedPage() {
     // Refresh page list
     fetch('/api/admin/curated').then(r => r.json()).then(d => { if (d.pages) setPages(d.pages); });
   }, [regenStats]);
+
+  const runFillRationale = useCallback(async () => {
+    setRationaleRunning(true);
+    setRationaleDone(false);
+    setRationaleProcessed(0);
+    setRationaleFailed(0);
+    let remaining = rationaleStats?.missing ?? 1;
+    let processed = 0;
+    let failed = 0;
+
+    while (remaining > 0) {
+      try {
+        const res = await fetch('/api/admin/curated/fill-rationale', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        const data = await res.json();
+        if (!res.ok) break;
+        processed += data.processed ?? 0;
+        failed += data.failed ?? 0;
+        remaining = data.remaining ?? 0;
+        setRationaleProcessed(processed);
+        setRationaleFailed(failed);
+        if (data.processed === 0) break;
+      } catch {
+        break;
+      }
+    }
+
+    setRationaleRunning(false);
+    setRationaleDone(true);
+    fetch('/api/admin/curated/fill-rationale').then(r => r.json()).then(d => { if (d.missing !== undefined) setRationaleStats(d); });
+  }, [rationaleStats]);
 
   function handleUpdate(id: string, updates: Record<string, string | null>) {
     setPages(prev => prev.map(p => p.id === id ? { ...p, ...updates } as CuratedRow : p));
@@ -323,6 +369,56 @@ export default function AdminCuratedPage() {
               <AlertCircle size={12} /> {regenStats.needsRegen} remaining
             </button>
           )}
+        </div>
+      )}
+
+      {/* ── Fill rationale panel ── */}
+      {rationaleStats && rationaleStats.missing > 0 && !rationaleDone && (
+        <div style={{
+          marginBottom: '1.25rem', padding: '1rem 1.25rem',
+          background: 'rgba(20,184,166,0.05)', border: '1px solid rgba(20,184,166,0.2)',
+          borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem',
+          alignItems: 'center', flexWrap: 'wrap',
+        }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              <BookOpen size={15} color="var(--teal)" />
+              {rationaleStats.missing} article{rationaleStats.missing !== 1 ? 's' : ''} missing a course rationale
+            </p>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              These articles have a linked course but no editorial rationale paragraph. Click to generate one for each using AI.
+            </p>
+            {rationaleRunning && (
+              <p style={{ fontSize: '0.78rem', color: 'var(--teal)', marginTop: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                Generated {rationaleProcessed} so far{rationaleFailed > 0 ? ` · ${rationaleFailed} failed` : ''} — working through the batch…
+              </p>
+            )}
+          </div>
+          <button
+            className="btn btn-sm"
+            onClick={runFillRationale}
+            disabled={rationaleRunning}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', whiteSpace: 'nowrap', background: 'var(--teal)', color: '#fff', border: 'none' }}
+          >
+            {rationaleRunning
+              ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Generating…</>
+              : <><BookOpen size={13} /> Fill all rationales</>}
+          </button>
+        </div>
+      )}
+
+      {rationaleDone && (
+        <div style={{
+          marginBottom: '1.25rem', padding: '0.875rem 1.25rem',
+          background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.25)',
+          borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.75rem', alignItems: 'center',
+        }}>
+          <CheckCircle2 size={16} color="var(--emerald)" style={{ flexShrink: 0 }} />
+          <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--emerald)' }}>
+            Rationale generation complete — {rationaleProcessed} article{rationaleProcessed !== 1 ? 's' : ''} updated
+            {rationaleFailed > 0 && <span style={{ color: 'var(--amber)', fontWeight: 400, marginLeft: '0.5rem' }}>({rationaleFailed} failed — check course slug is valid)</span>}
+          </p>
         </div>
       )}
 
