@@ -34,6 +34,7 @@ const FEED_TIMEOUT = 10_000;
 const ARTICLE_TIMEOUT = 8_000;
 const MIN_COMPLETE_CHARS = 800;
 const MIN_ACCEPTABLE_CHARS = 300;
+const MAX_AGE_DAYS = 14; // Hard cutoff — articles older than this are never surfaced
 
 const AI_KEYWORDS =
   /\b(ai|artificial intelligence|machine learning|deep learning|llm|large language model|neural network|gpt|claude|gemini|llama|transformer|generative ai|chatbot|nlp|computer vision|reinforcement learning|foundation model|agent|agi|openai|anthropic|deepmind|mistral|copilot|diffusion model)\b/i;
@@ -281,6 +282,10 @@ async function parseFeed(source: RssSource): Promise<ParsedArticle[]> {
       ? (getFirstTag(seg, 'published') || getFirstTag(seg, 'updated'))
       : (getFirstTag(seg, 'pubDate') || getFirstTag(seg, 'date'));
     const publishedAt = parseDate(pubRaw);
+
+    // Hard age cutoff — skip anything older than MAX_AGE_DAYS
+    const ageDays = (Date.now() - new Date(publishedAt).getTime()) / 86_400_000;
+    if (ageDays > MAX_AGE_DAYS) continue;
 
     // Get whatever content the feed provides
     const rawContent =

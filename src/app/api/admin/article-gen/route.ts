@@ -34,6 +34,36 @@ function toSlug(title: string): string {
     .slice(0, 80);
 }
 
+// ── Alison search query builder ───────────────────────────────────────────────
+// Derives a clean, topic-focused search query from an article's title + content.
+// Strips company names and filler words; amplifies AI domain terms found in the text.
+
+const COMPANY_WORDS = /\b(microsoft|google|openai|anthropic|meta|apple|amazon|nvidia|deepmind|hugging\s?face|mistral|adobe|ibm|salesforce|samsung|intel)\b'?s?/gi;
+const FILLER_WORDS = /\b(the|a|an|for|to|of|in|with|and|or|is|are|was|has|have|how|why|what|when|up|on|at|by|its|it|this|that|their|our|your|from|about|into|as|be|been|being|but|not|we|they|you|he|she|so|if|than|then|more|most|new|all|just|now|here|after|before|over|out|off|will|can|may|might|could|would|should)\b/gi;
+const DOMAIN_TERMS = /\b(governance|ethics|safety|alignment|bias|fairness|transparency|accountability|compliance|regulation|responsible\s?ai|trustworthy|audit|risk|machine learning|deep learning|neural network|natural language|computer vision|automation|robotics|data science|prompt engineering|fine.?tuning|reinforcement learning|large language model|generative ai|agentic|multimodal|diffusion|rag|retrieval|embedding)\b/gi;
+
+function buildAlisonQuery(article: ParsedArticle): string {
+  // Pick up domain terms from the article body
+  const bodyMatches = article.contentText.match(DOMAIN_TERMS) ?? [];
+  const domainTerms = [...new Set(bodyMatches.map(t => t.toLowerCase().replace(/\s+/g, ' ')))].slice(0, 2);
+
+  // Clean the title down to 3 meaningful words
+  const cleanTitle = article.title
+    .replace(COMPANY_WORDS, '')
+    .replace(FILLER_WORDS, ' ')
+    .replace(/[''':]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(w => w.length > 3)
+    .slice(0, 3)
+    .join(' ');
+
+  // Domain terms first (higher signal for Alison's catalogue), then title words
+  const query = [...domainTerms, cleanTitle].join(' ').replace(/\s+/g, ' ').trim();
+  return query || article.title.slice(0, 60);
+}
+
 // ── Alison course resolution ──────────────────────────────────────────────────
 // Checks if an Alison course is already in our DB; if not, imports it inline.
 // Returns the DB slug for the course (existing or newly inserted), or null on failure.
@@ -409,7 +439,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Search Alison live for a congruent course, then resolve (DB lookup or inline import)
-    const alisonResults = await scrapeAlisonSearch(article.title);
+    const alisonResults = await scrapeAlisonSearch(buildAlisonQuery(article));
     let linkedCourse: { slug: string; title: string; snippet: string | null } | null = null;
 
     if (alisonResults.length > 0) {
