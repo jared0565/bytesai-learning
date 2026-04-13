@@ -26,6 +26,9 @@ Natural and brief. Invite readers to follow BytesAI Learning for weekly AI updat
 TONE SHIFT (mandatory):
 The tone must change across the post. Open with urgency. Shift to clarity in the mechanism. Close with direct consequence. A post with the same tone from start to finish reads as generated. If the texture feels uniform throughout, rewrite at least two paragraphs.
 
+EXPERTISE SIGNAL (critical — Expert Status score depends on this):
+The post must include one concrete, measurable outcome from real implementation or direct observation. A specific metric that changed, a user behavior shift with numbers, a decision that had a measurable result. Not a generic claim like "results improve" — an actual before/after or a specific quantified consequence. This is what separates diagnosis from expertise. Posts that identify a problem brilliantly but never prove they solved it score low on Expert Status. If the source material contains a stat or case outcome, use it. If not, infer a plausible specific consequence grounded in the mechanism (e.g. "companies using X reported Y% drop in churn during escalation windows").
+
 HUMAN SIGNAL RULES (the patterns AI detection actually flags):
 Zero rhetorical questions anywhere in the post. Not in the hook, not mid-post, not as section transitions. This is the single most flagged AI pattern on LinkedIn. The previous draft used questions to open every section. That is exactly what to avoid.
 No three-line punchy parallel hooks. The "X. Y. Z." format where all three lines share the same rhythm is a dead giveaway.
@@ -37,6 +40,8 @@ The post must contain at least one blunt judgment. Not information conveyed neut
 Specific details beat generic statements. Name the actual consequence, the actual type of company, the actual mechanism. Not "organisations" in the abstract.
 Allow one rough line, a thought expressed more directly than elegantly. Polished writing throughout is itself an AI signal.
 Sentence length must vary. Mix short sentences (5-8 words) with longer ones (20-30 words) in the same paragraph, but keep longer ones scannable.
+Use contractions naturally in at least 3 places: don't, you're, it's, they've, won't, can't. Perfect grammar with zero contractions is an AI flag.
+Break the predictable structure. Do not follow the formula: hook, problem, mechanism, consequence, CTA. Combine elements, loop back, or lead with the consequence before the mechanism. Predictable narrative arcs are detectable.
 
 MOBILE-FIRST (mandatory):
 First 200 characters must hook completely. That is all mobile users see before "see more."
@@ -61,7 +66,8 @@ No em dashes. Use commas, periods, or parentheses.
 1800-2400 characters total. Minimum 1800 is mandatory. If under 1800, expand with a sharper consequence, a concrete example, or a more specific mechanism. Never add filler.
 
 ANTI-SYNTHETIC LANGUAGE (never use):
-force multiplier, orchestration, high-leverage, blueprint, era of, strategic positioning, operational standpoint, the trade-off is clear, practical takeaway, mechanism here, most effective way, the takeaway is clear, current operating reality, commercial consequence, decoupled from, psychologically resonant, machine-rendered.
+force multiplier, orchestration, high-leverage, blueprint, era of, strategic positioning, operational standpoint, the trade-off is clear, practical takeaway, mechanism here, most effective way, the takeaway is clear, current operating reality, commercial consequence, decoupled from, psychologically resonant, machine-rendered, multimodal deep learning, physiological data points, high cognitive load, affective computing (use at most once, replace with plain language otherwise).
+If a technical term appears more than once, the second instance must be replaced with a plain-language equivalent.
 
 HASHTAG RULES (mandatory):
 Exactly 3 hashtags on their own line at the very end.
