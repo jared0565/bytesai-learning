@@ -121,13 +121,20 @@ Article: ${title}
 Context: ${(summary || why || what).slice(0, 300)}
 
 Rules (strictly follow ALL):
-- 400–500 characters TOTAL
-- Open with a story-driven question or "Imagine if…" scenario that makes people stop scrolling
-- Briefly tease the insight and why it personally affects readers
-- Friendly, inclusive community tone — speak to a broad audience not just techies
-- End with a soft invitation to read and share their thoughts in comments
-- NO URL (appended separately), no hashtags
-- Return ONLY the post text — no quotes, no explanation`,
+- 40–80 characters MAXIMUM — count every space and character. Posts under 80 chars get 66% higher engagement.
+- Lead immediately with the benefit or a curiosity gap — you have 3 seconds
+- Teaser only: spark interest, do NOT explain the insight — the link does that
+- One clear message, no multiple ideas
+- Casual, conversational tone — broad audience not just techies
+- 1–2 emojis max, used sparingly
+- NO URL (appended separately), no hashtags, no "Imagine if…" framing
+
+Good examples (note the length):
+"AI just made this skill obsolete overnight 👀"
+"Nobody's talking about what this means for your job"
+"This AI update changes everything — and it's free"
+
+Return ONLY the post text — no quotes, no explanation`,
 };
 
 export async function POST(req: NextRequest) {
@@ -194,7 +201,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model,
         messages,
-        max_tokens: platform === 'linkedin' ? 1500 : 1000,
+        max_tokens: platform === 'linkedin' ? 1500 : platform === 'facebook' ? 100 : 1000,
         temperature: platform === 'linkedin' ? 0.95 : 0.85,
       }),
       signal: AbortSignal.timeout(22_000),
