@@ -7,7 +7,7 @@ type Platform = 'twitter' | 'linkedin' | 'whatsapp' | 'facebook';
 const LINKEDIN_MODEL = 'google/gemini-3-flash-preview';
 
 // System prompt — Atlas framework v2: narrative mode selection, 6 hook families, operator language
-const LINKEDIN_SYSTEM_PROMPT = `You are Atlas. Write a LinkedIn post from a sharp, opinionated operator — not a consultant, not a content strategist. Someone who works with this daily and has views formed from real situations and a low tolerance for vague abstractions.
+const LINKEDIN_SYSTEM_PROMPT = `You are Atlas. Write a LinkedIn post from a sharp, opinionated operator — not a consultant, not a content strategist. Someone who works with this daily and has views formed from real situations and a low tolerance for vague abstractions. Your voice is direct and confident, but warm — you share because the insight is genuinely valuable, not to perform expertise. The reader should feel recommended to, not lectured at.
 
 COMPLIANCE: Use only stats from the source material. No fabricated figures, no engagement bait, no hype that creates reputation risk.
 
@@ -91,50 +91,60 @@ const PLATFORM_PROMPTS: Record<Exclude<Platform, 'linkedin'>, (
   title: string, summary: string, why: string, what: string, exec: string
 ) => string> = {
 
-  twitter: (title, summary, why, what) => `Write a single tweet for X/Twitter about this AI insight.
+  twitter: (title, summary, why, what) => `Write a single tweet for X/Twitter sharing this AI insight from BytesAI Learning.
 
-Article: ${title}
-Key point: ${(summary || why || what).slice(0, 300)}
+Article: "${title}"
+Key insight: ${(summary || why || what).slice(0, 300)}
+
+Tone: executive and warm — confident, outcome-focused, genuine. Reads like a thoughtful recommendation from someone who actually found this useful, not a broadcast.
+
+Apply this hook structure in order:
+1. Bold statement — what this insight means for the reader, stated as a consequence not a definition
+2. Tension — the gap or cost of not knowing this
+3. Twist — the unexpected angle or concrete outcome the article reveals
+4. Warmth — one grounded line that makes clicking feel like a natural next step, not urgent bait
 
 Rules (strictly follow ALL):
-- 240–260 characters TOTAL (count every space and character)
-- Open with a bold, provocative hook or surprising claim — stop-the-scroll energy
-- End with a tension or curiosity gap that makes clicking feel urgent
-- Conversational, punchy, zero corporate speak
-- NO hashtags, NO emojis unless essential, NO URL (appended separately)
-- Return ONLY the tweet text — no quotes, no explanation`,
+- 100–200 characters TOTAL (the URL is added separately — do not include it)
+- No rhetorical questions, no hashtags, no emojis
+- No corporate speak, no superlatives
+- End with a pull toward the article — curiosity, not pressure
+- Return ONLY the tweet text — no quotes, no labels, no explanation`,
 
-  whatsapp: (title, summary, why) => `Write a WhatsApp message sharing this AI insight.
+  whatsapp: (title, summary, why) => `Write a WhatsApp message sharing this AI insight from BytesAI Learning.
 
-Article: ${title}
+Article: "${title}"
 Key point: ${(summary || why).slice(0, 200)}
+
+Tone: executive and warm — like a trusted peer sharing something they found genuinely valuable. Confident and specific, not breathless or salesy. The kind of message a senior professional sends when something is actually worth reading.
 
 Rules (strictly follow ALL):
 - 300–400 characters TOTAL
-- Tone: texting a smart friend — casual, warm, excited
-- Structure: short hook why this matters → article title → one-line personal reason to read
-- Feels like a genuine recommendation, not a broadcast
+- Open with why you are sharing this (the value to the reader), not a description of what it is
+- Mention the article title naturally mid-message
+- One clear reason to read — no list of features
+- Feels like a personal endorsement from someone whose attention has worth
 - NO URL (appended separately), no hashtags
 - Return ONLY the message text — no quotes, no explanation`,
 
-  facebook: (title, summary, why, what) => `Write a Facebook post sharing this AI insight.
+  facebook: (title, summary, why, what) => `Write a Facebook post sharing this AI insight from BytesAI Learning.
 
-Article: ${title}
-Context: ${(summary || why || what).slice(0, 300)}
+Article: "${title}"
+Context: ${(summary || why || what).slice(0, 200)}
+
+Tone: executive and warm — clear, confident, genuine. A recommendation that respects the reader's intelligence, not viral bait.
 
 Rules (strictly follow ALL):
-- 40–80 characters MAXIMUM — count every space and character. Posts under 80 chars get 66% higher engagement.
-- Lead immediately with the benefit or a curiosity gap — you have 3 seconds
-- Teaser only: spark interest, do NOT explain the insight — the link does that
-- One clear message, no multiple ideas
-- Casual, conversational tone — broad audience not just techies
-- 1–2 emojis max, used sparingly
-- NO URL (appended separately), no hashtags, no "Imagine if…" framing
+- 40–80 characters MAXIMUM — count every character including spaces
+- Lead with the value or outcome — what the reader gets from this
+- Teaser only: spark real interest, do not explain the insight
+- 1 emoji maximum, only if it genuinely adds clarity
+- NO URL (appended separately), no hashtags
 
-Good examples (note the length):
-"AI just made this skill obsolete overnight 👀"
-"Nobody's talking about what this means for your job"
-"This AI update changes everything — and it's free"
+Good examples (note the brevity and tone):
+"Worth reading if you work in AI"
+"This reframes how I think about learning"
+"The AI insight I keep coming back to"
 
 Return ONLY the post text — no quotes, no explanation`,
 };

@@ -124,8 +124,8 @@ export default async function HomePage() {
                 <span className="hero-share-label">Share this resource:</span>
                 <SharePanel
                   url="https://learn.bytesai.uk"
-                  title="100+ Free AI Courses"
-                  description="I found this — 100+ free AI courses from Google, Microsoft, Anthropic, NVIDIA & more. All curated and verified."
+                  title="BytesAI Learning"
+                  description="100+ free AI courses from Google, Microsoft, Anthropic & NVIDIA — curated, verified, no paywalls. Genuinely worth your time."
                   compact
                   labeled
                 />
@@ -344,8 +344,8 @@ export default async function HomePage() {
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <SharePanel
                 url="https://learn.bytesai.uk"
-                title="100+ Free AI Courses"
-                description="I found this — 100+ free AI courses from Google, Microsoft, Anthropic, NVIDIA & more. All curated and verified. No sign-up walls."
+                title="BytesAI Learning"
+                description="100+ free AI courses from Google, Microsoft, Anthropic & NVIDIA — curated, verified, no paywalls. Genuinely worth your time."
                 compact
               />
             </div>
