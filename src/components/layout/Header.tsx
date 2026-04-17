@@ -202,10 +202,10 @@ export default function Header({ userRole, displayName }: NavProps) {
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <button className="btn btn-ghost btn-sm" onClick={() => setAuthModal('login')}>
+                <button className="btn btn-ghost btn-sm" onClick={() => { setAuthModal('login'); window.dispatchEvent(new CustomEvent('bai:cta', { detail: { ctaType: 'sign_in' } })); }}>
                   <LogIn size={15} /> Sign in
                 </button>
-                <button className="btn btn-primary btn-sm" onClick={() => setAuthModal('register')}>
+                <button className="btn btn-primary btn-sm" onClick={() => { setAuthModal('register'); window.dispatchEvent(new CustomEvent('bai:cta', { detail: { ctaType: 'get_started' } })); }}>
                   Get started
                 </button>
               </div>
@@ -266,8 +266,8 @@ export default function Header({ userRole, displayName }: NavProps) {
               </a>
               {!userRole && (
                 <>
-                  <button className="btn btn-outline" onClick={() => { setMenuOpen(false); setAuthModal('login'); }}>Sign in</button>
-                  <button className="btn btn-primary" style={{ marginTop: '0.5rem' }} onClick={() => { setMenuOpen(false); setAuthModal('register'); }}>Get started free</button>
+                  <button className="btn btn-outline" onClick={() => { setMenuOpen(false); setAuthModal('login'); window.dispatchEvent(new CustomEvent('bai:cta', { detail: { ctaType: 'sign_in' } })); }}>Sign in</button>
+                  <button className="btn btn-primary" style={{ marginTop: '0.5rem' }} onClick={() => { setMenuOpen(false); setAuthModal('register'); window.dispatchEvent(new CustomEvent('bai:cta', { detail: { ctaType: 'get_started' } })); }}>Get started free</button>
                 </>
               )}
             </div>

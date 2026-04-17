@@ -86,8 +86,10 @@ export default function AuthModal({ open, onClose, initialTab = 'register' }: Au
         body: JSON.stringify({ email: regEmail, password: regPw, displayName: regName, marketingConsent: regMarketing }),
       });
       const data = await res.json() as { ok?: boolean; error?: string; redirectTo?: string };
-      if (data.ok) { onClose(); router.push(data.redirectTo ?? '/dashboard'); router.refresh(); }
-      else setRegError(data.error ?? 'Registration failed. Please try again.');
+      if (data.ok) {
+        window.dispatchEvent(new CustomEvent('bai:cta', { detail: { ctaType: 'create_account' } }));
+        onClose(); router.push(data.redirectTo ?? '/dashboard'); router.refresh();
+      } else setRegError(data.error ?? 'Registration failed. Please try again.');
     } catch { setRegError('Network error. Please try again.'); }
     finally { setRegLoading(false); }
   }

@@ -7,6 +7,7 @@ import CookieConsent, { type TrackingCode } from '@/components/CookieConsent/Coo
 import Starfield from '@/components/Starfield/Starfield';
 import { getDB } from '@/lib/db';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
+import AnalyticsProvider from '@/components/Analytics/AnalyticsProvider';
 
 async function getSiteSettings(): Promise<{ trackingCodes: TrackingCode[] }> {
   try {
@@ -114,6 +115,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         */}
         <Chatbot />
         <CookieConsent trackingCodes={trackingCodes} />
+        <AnalyticsProvider />
       </body>
     </html>
   );
