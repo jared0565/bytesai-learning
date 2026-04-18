@@ -10,9 +10,9 @@ import SharePanel from '@/components/ui/SharePanel';
 import FeedbackTab from '@/components/ui/FeedbackTab';
 
 const NUDGE_MESSAGES = [
-  { emoji: '🎓', text: "Looking for free courses? I can find them in seconds!" },
-  { emoji: '🤖', text: "Need a learning plan? I'm your free course navigator." },
-  { emoji: '✨', text: "Over 100 free AI courses + Alison's full catalog — ask me anything!" },
+  { emoji: '🆓', text: "100+ free AI courses from Google, Microsoft, Anthropic & NVIDIA — no paywalls, ever." },
+  { emoji: '✅', text: "Every course is verified free before it goes live. No bait-and-switch, no hidden fees." },
+  { emoji: '📚', text: "Courses from Microsoft, Google, Anthropic, NVIDIA, Stanford & more — all in one place." },
 ];
 
 interface NavProps {

@@ -136,8 +136,8 @@ export default async function HomePage() {
                 {courseCount > 0 ? courseCount : '100'}+ courses · {providerCount > 0 ? providerCount : '28'} providers · 100% free to start
               </div>
               <h1 className="text-hero" style={{ color: 'white', marginBottom: '1.25rem' }}>
-                The best free AI courses,{' '}
-                <span className="gradient-text">curated for you</span>
+                The best <span className="gradient-text">free</span> AI courses,{' '}
+                curated for you.
               </h1>
               <p className="hero-subtitle" style={{ fontSize: '1.125rem', color: '#cbd5e1', lineHeight: 1.75, maxWidth: 540, marginBottom: '2rem' }}>
                 Stop hunting across 20 tabs. We curate and verify the best free AI learning from
@@ -145,21 +145,19 @@ export default async function HomePage() {
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.875rem' }}>
                 <Link href="/courses" className="btn btn-primary btn-lg">
-                  Browse all courses <ArrowRight size={18} />
+                  Explore free courses <ArrowRight size={18} />
                 </Link>
                 {!session && (
                   <AuthButton className="btn btn-outline btn-lg" style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>
-                    Create free account
+                    Save progress — it&apos;s free
                   </AuthButton>
                 )}
               </div>
 
             </div>
 
-            {/* Right column — Alison hero card + feature pills */}
+            {/* Right column — feature pills */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
-              {/* Feature pills */}
               {FEATURES.map(f => (
                 <div key={f.title} className="card card-glass" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                   <div style={{ width: 36, height: 36, borderRadius: 8, background: 'linear-gradient(135deg, var(--accent), var(--teal))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white' }}>
@@ -172,32 +170,35 @@ export default async function HomePage() {
                 </div>
               ))}
 
-              {/* Alison card — below feature pills */}
-              <a
-                href="https://alison.com/?utm_source=alison_user&utm_medium=affiliate&utm_campaign=27668723"
-                target="_blank"
-                rel="noopener noreferrer"
-                id="hero-alison-cta"
-                style={{ textDecoration: 'none' }}
-              >
-                <div className="card card-glass" style={{ padding: '1.25rem 1.5rem', background: 'linear-gradient(135deg, rgba(245,158,11,0.25), rgba(251,191,36,0.1))', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 'var(--radius-md)', cursor: 'pointer' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.625rem' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 8, background: 'linear-gradient(135deg, #f59e0b, #fb923c)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <span style={{ fontSize: '1.1rem' }}>🏆</span>
-                    </div>
-                    <div>
-                      <p style={{ fontWeight: 800, color: '#fde68a', fontSize: '0.9375rem', lineHeight: 1.2 }}>Alison — Free Courses</p>
-                      <p style={{ fontSize: '0.7rem', color: 'rgba(253,230,138,0.7)', marginTop: '0.1rem', fontStyle: 'italic' }}>Affiliate link</p>
-                    </div>
+              {/* Course preview strip — shows 2 featured courses as a concrete product preview */}
+              {featuredCourses.slice(0, 2).map(course => (
+                <a
+                  key={course.id}
+                  href={course.destination_url ?? course.affiliate_url ?? course.official_link ?? '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="card card-glass"
+                  style={{ padding: '0.875rem 1rem', display: 'flex', gap: '0.75rem', alignItems: 'center', textDecoration: 'none' }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 700, color: 'white', fontSize: '0.8125rem', lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {course.title}
+                    </p>
+                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.15rem' }}>
+                      {course.provider_id ?? course.author_or_source}
+                    </p>
                   </div>
-                  <p style={{ fontSize: '0.8125rem', color: '#fef3c7', lineHeight: 1.55, marginBottom: '0.75rem' }}>
-                    Free to learn — earn an optional certificate. 100+ AI &amp; tech courses across every skill level.
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', fontWeight: 700, color: '#f59e0b' }}>
-                    Browse Alison courses <ArrowRight size={14} />
-                  </div>
-                </div>
-              </a>
+                  <span style={{ fontSize: '0.6875rem', fontWeight: 700, background: 'rgba(52,211,153,0.18)', color: '#6ee7b7', border: '1px solid rgba(52,211,153,0.25)', borderRadius: 'var(--radius-full)', padding: '0.2rem 0.5rem', flexShrink: 0 }}>
+                    FREE
+                  </span>
+                </a>
+              ))}
+
+              {featuredCourses.length > 0 && (
+                <Link href="/courses" style={{ textAlign: 'center', fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', padding: '0.25rem' }}>
+                  See all {courseCount > 0 ? courseCount : '100'}+ free courses <ArrowRight size={13} />
+                </Link>
+              )}
             </div>
           </div>
         </section>
@@ -251,6 +252,35 @@ export default async function HomePage() {
                 {Array.from({ length: 8 }).map((_, i) => <CourseCardSkeleton key={i} />)}
               </div>
             )}
+          </div>
+        </section>
+
+        {/* ── Alison promo ──────────────────────────────────────── */}
+        <section className="section-sm" style={{ background: 'var(--bg-card)' }}>
+          <div className="container">
+            <a
+              href="https://alison.com/?utm_source=alison_user&utm_medium=affiliate&utm_campaign=27668723"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none', display: 'block' }}
+            >
+              <div style={{ padding: '1.5rem 2rem', background: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(251,191,36,0.08))', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #f59e0b, #fb923c)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: '1.4rem' }}>🏆</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <p style={{ fontWeight: 800, color: '#fde68a', fontSize: '1rem', marginBottom: '0.25rem' }}>
+                    Want a certificate to show for it?
+                  </p>
+                  <p style={{ fontSize: '0.875rem', color: '#fef3c7', lineHeight: 1.5 }}>
+                    Alison offers 100+ free AI &amp; tech courses — free to learn, optional paid certificate. Affiliate link.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.9375rem', fontWeight: 700, color: '#f59e0b', flexShrink: 0 }}>
+                  Browse Alison <ArrowRight size={16} />
+                </div>
+              </div>
+            </a>
           </div>
         </section>
 

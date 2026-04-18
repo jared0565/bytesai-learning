@@ -156,6 +156,19 @@ export default function Starfield() {
 
     resize();
     window.addEventListener('resize', resize);
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      ctx.fillStyle = BG;
+      ctx.fillRect(0, 0, el.width, el.height);
+      for (const s of stars) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(220,235,255,${s.baseOpacity})`;
+        ctx.fill();
+      }
+      return;
+    }
+
     draw();
 
     return () => {
