@@ -127,26 +127,43 @@ Rules (strictly follow ALL):
 - NO URL (appended separately), no hashtags
 - Return ONLY the message text — no quotes, no explanation`,
 
-  facebook: (title, summary, why, what) => `Write a Facebook post sharing this AI insight from BytesAI Learning.
+  facebook: (title, summary, why, what) => `Write a high-performance Facebook post sharing this AI insight from BytesAI Learning. Goal: drive clicks to the article link. Optimise for maximum reach and link click-through rate.
 
 Article: "${title}"
-Context: ${(summary || why || what).slice(0, 200)}
+Key insight: ${(summary || why || what).slice(0, 300)}
 
-Tone: executive and warm — clear, confident, genuine. A recommendation that respects the reader's intelligence, not viral bait.
+STRUCTURE (follow exactly):
 
-Rules (strictly follow ALL):
-- 40–80 characters MAXIMUM — count every character including spaces
-- Lead with the value or outcome — what the reader gets from this
-- Teaser only: spark real interest, do not explain the insight
-- 1 emoji maximum, only if it genuinely adds clarity
-- NO URL (appended separately), no hashtags
+LINE 1 — Hook (visible before "See More"): One bold, curiosity-driven statement that makes scrolling past feel like a mistake. State a consequence or surprising truth from the insight. Max 90 characters. No question marks.
 
-Good examples (note the brevity and tone):
-"Worth reading if you work in AI"
-"This reframes how I think about learning"
-"The AI insight I keep coming back to"
+BLANK LINE
 
-Return ONLY the post text — no quotes, no explanation`,
+BODY — 3 short paragraphs, each 1-3 sentences:
+- Para 1: Expand the hook — what is the insight and why does it matter right now?
+- Para 2: The concrete implication — what changes for someone who applies this?
+- Para 3: One specific, grounded detail from the article that adds credibility.
+
+BLANK LINE
+
+CTA LINE: Direct, confident, warm. Example: "Read the full insight on BytesAI Learning ↓" (URL is appended automatically — do not include it)
+
+BLANK LINE
+
+HASHTAGS: Exactly 4 hashtags on their own line. 2 topic-specific (precise to this article), 1 audience-specific (e.g. #AILeaders, #LearningAndDevelopment), 1 broad reach (e.g. #ArtificialIntelligence or #MachineLearning). No spaces between hashtags.
+
+EMOJI RULES:
+- 3-5 emojis total across the whole post
+- Use at the START of paragraphs or the CTA line only — not mid-sentence
+- Choose emojis that match the specific topic, not generic thumbs-up or sparkles
+- Never stack more than 1 emoji in a row
+
+TONE: Warm, confident, human. Like a knowledgeable peer sharing something genuinely useful — not a brand broadcast. Write contractions naturally (it's, you'll, don't). Vary sentence length.
+
+FORBIDDEN: rhetorical questions, superlatives (revolutionary, groundbreaking, game-changing), corporate jargon, "I", markdown formatting of any kind.
+
+LENGTH: 120-200 words total (excluding hashtags).
+
+Return ONLY the post text followed by the hashtag line. No labels, no explanation, no quotes.`,
 };
 
 export async function POST(req: NextRequest) {
@@ -213,7 +230,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model,
         messages,
-        max_tokens: platform === 'linkedin' ? 1500 : platform === 'facebook' ? 100 : 1000,
+        max_tokens: platform === 'linkedin' ? 1500 : platform === 'facebook' ? 600 : 1000,
         temperature: platform === 'linkedin' ? 0.95 : 0.85,
       }),
       signal: AbortSignal.timeout(22_000),
