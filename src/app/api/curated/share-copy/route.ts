@@ -127,24 +127,23 @@ Rules (strictly follow ALL):
 - NO URL (appended separately), no hashtags
 - Return ONLY the message text — no quotes, no explanation`,
 
-  facebook: (title, summary, why, what) => `Write a Facebook post teaser for this AI insight from BytesAI Learning. The URL is appended automatically after the text — do not include it.
+  facebook: (title, summary, why, what) => `Write a Facebook post for this AI insight from BytesAI Learning. The URL is appended automatically — do not include it.
 
 Article: "${title}"
 Key insight: ${(summary || why || what).slice(0, 200)}
 
-FORMAT (mandatory):
-- One punchy teaser sentence: 27–67 characters
-- Followed by exactly: "Learn more 👇"
-- Total output: 40–80 characters (teaser + "Learn more 👇")
+FORMAT — exactly 3 lines, no extras:
+Line 1 — Teaser: 27–52 characters. MUST start with "You", "Your", or "You're". Use one of these hook formulas:
+  • Curiosity gap: reveal a consequence without the cause ("You're losing X without knowing it")
+  • Before/after: contrast two states ("Your old approach is costing you results")
+  • Pattern interrupt: challenge an assumption ("Your team doesn't need more AI tools")
+Line 2 — CTA: rotate — pick exactly one of: "It's free 👇" / "Read it free 👇" / "Start free 👇"
+Line 3 — Hashtag: one niche hashtag specific to the article topic — NOT #AI, #Tech, or any broad generic tag
 
 RULES:
-- State one surprising consequence or concrete outcome — not what the article is about
-- 0–1 emoji in the teaser only (not in the CTA line)
-- No hashtags, no rhetorical questions, no superlatives
-- No markdown, no quotes, no labels
-- The teaser must stand alone — someone who sees only the first line must feel compelled to click
-
-Return ONLY the teaser line followed by a newline and "Learn more 👇". Nothing else.`,
+- 0–1 emoji in the teaser only (none in lines 2 or 3 except the CTA emoji)
+- No markdown, no quotes, no labels, no rhetorical questions, no superlatives
+- Return ONLY the 3 lines. Nothing else.`,
 };
 
 export async function POST(req: NextRequest) {
@@ -211,7 +210,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model,
         messages,
-        max_tokens: platform === 'linkedin' ? 1500 : platform === 'facebook' ? 60 : 1000,
+        max_tokens: platform === 'linkedin' ? 1500 : platform === 'facebook' ? 100 : 1000,
         temperature: platform === 'linkedin' ? 0.95 : 0.85,
       }),
       signal: AbortSignal.timeout(22_000),

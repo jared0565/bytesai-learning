@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Check, Copy, Mail } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Check, Copy, Mail, Download, Loader2 } from 'lucide-react';
 
 /* ── Social icons (inline SVGs for zero deps) ───────────────────────────── */
 const XIcon = () => (
@@ -27,12 +27,39 @@ interface SharePanelProps {
   url: string;
   title: string;
   description?: string;
-  compact?: boolean; // true = inline row, false = full panel with heading
-  labeled?: boolean; // true = show platform names next to icons in compact mode
+  compact?: boolean;
+  labeled?: boolean;
+  ogSlug?: string; // course slug — enables branded image download in full mode
 }
 
-export default function SharePanel({ url, title, description, compact, labeled }: SharePanelProps) {
+export default function SharePanel({ url, title, description, compact, labeled, ogSlug }: SharePanelProps) {
   const [copied, setCopied] = useState(false);
+  const [downloadingImage, setDownloadingImage] = useState(false);
+
+  const handleDownloadImage = useCallback(async () => {
+    if (!ogSlug) return;
+    setDownloadingImage(true);
+    try {
+      const res = await fetch(`/api/og?slug=${encodeURIComponent(ogSlug)}&type=course`);
+      const svgText = await res.text();
+      const svgBase64 = btoa(unescape(encodeURIComponent(svgText)));
+      const img = new Image();
+      img.src = `data:image/svg+xml;base64,${svgBase64}`;
+      await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = reject; });
+      const canvas = document.createElement('canvas');
+      canvas.width = 1200;
+      canvas.height = 630;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, 1200, 630);
+      const link = document.createElement('a');
+      link.download = `bytesai-${ogSlug}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch {
+      // silent fail
+    } finally {
+      setDownloadingImage(false);
+    }
+  }, [ogSlug]);
 
   const shareText = description
     ? `${title} — ${description}`
@@ -136,6 +163,16 @@ export default function SharePanel({ url, title, description, compact, labeled }
           {copied ? <Check size={16} /> : <Copy size={16} />}
           <span style={{ fontSize: '0.625rem', fontWeight: 600 }}>{copied ? 'Copied!' : 'Copy'}</span>
         </button>
+        {ogSlug && (
+          <button onClick={handleDownloadImage} disabled={downloadingImage} title="Download image card for native Facebook/Instagram post"
+            style={{ ...btnStyle, flexDirection: 'column', width: 'auto', height: 'auto', padding: '0.5rem 0.625rem', gap: '0.25rem' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#1877f2'; (e.currentTarget as HTMLElement).style.color = '#1877f2'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+          >
+            {downloadingImage ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={16} />}
+            <span style={{ fontSize: '0.625rem', fontWeight: 600 }}>{downloadingImage ? '…' : 'Image'}</span>
+          </button>
+        )}
       </div>
     </div>
   );

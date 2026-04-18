@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Share2, X, Copy, Check, ExternalLink, Loader2, AlertCircle } from 'lucide-react';
+import { Share2, X, Copy, Check, ExternalLink, Loader2, AlertCircle, Download } from 'lucide-react';
 
 interface Props {
   slug: string;
@@ -51,6 +51,7 @@ export default function CuratedSharePanel({ slug, title }: Props) {
   const [errors, setErrors] = useState<Partial<Record<Platform, string>>>({});
   const [loading, setLoading] = useState<Platform | null>(null);
   const [copied, setCopied] = useState(false);
+  const [downloadingImage, setDownloadingImage] = useState(false);
 
   const selectPlatform = useCallback(async (p: Platform) => {
     setSelected(p);
@@ -76,6 +77,30 @@ export default function CuratedSharePanel({ slug, title }: Props) {
     }
     setLoading(null);
   }, [copies, loading, slug]);
+
+  const handleDownloadImage = useCallback(async () => {
+    setDownloadingImage(true);
+    try {
+      const res = await fetch(`/api/og?slug=${encodeURIComponent(slug)}&type=article`);
+      const svgText = await res.text();
+      const svgBase64 = btoa(unescape(encodeURIComponent(svgText)));
+      const img = new Image();
+      img.src = `data:image/svg+xml;base64,${svgBase64}`;
+      await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = reject; });
+      const canvas = document.createElement('canvas');
+      canvas.width = 1200;
+      canvas.height = 630;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, 1200, 630);
+      const link = document.createElement('a');
+      link.download = `bytesai-${slug}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch {
+      // silent fail
+    } finally {
+      setDownloadingImage(false);
+    }
+  }, [slug]);
 
   const handleCopy = useCallback(async () => {
     if (!selected || !copies[selected]) return;
@@ -328,6 +353,34 @@ export default function CuratedSharePanel({ slug, title }: Props) {
                           ↺ Regenerate
                         </button>
                       </div>
+
+                      {/* Native image post tip — Facebook only */}
+                      {selected === 'facebook' && (
+                        <div style={{
+                          marginTop: '0.875rem', padding: '0.875rem 1rem',
+                          background: 'rgba(24,119,242,0.04)',
+                          border: '1px solid rgba(24,119,242,0.15)',
+                          borderRadius: 'var(--radius-md)',
+                        }}>
+                          <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1877f2', marginBottom: '0.375rem' }}>
+                            📸 Native image post — 2–3× more reach
+                          </p>
+                          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '0.625rem' }}>
+                            Facebook suppresses link posts. Download the branded card, post it as a native image, and paste the copy + link in the caption for full organic reach.
+                          </p>
+                          <button
+                            onClick={handleDownloadImage}
+                            disabled={downloadingImage}
+                            className="btn btn-outline btn-sm"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+                          >
+                            {downloadingImage
+                              ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                              : <Download size={13} />}
+                            {downloadingImage ? 'Generating…' : 'Download image card'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : null}
                 </div>

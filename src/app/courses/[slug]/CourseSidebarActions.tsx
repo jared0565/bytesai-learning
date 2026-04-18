@@ -173,6 +173,7 @@ export default function CourseSidebarActions({
         <SharePanel
           url={`https://learn.bytesai.uk/courses/${courseSlug}`}
           title={courseTitle}
+          ogSlug={courseSlug}
         />
       </div>
     </>
