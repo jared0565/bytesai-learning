@@ -335,15 +335,19 @@ export async function GET(req: NextRequest) {
 
   try {
     const rows = await db.prepare(
-      "SELECT key, value FROM site_settings WHERE key IN ('article_gen_mode','article_gen_frequency','article_gen_last_run','article_gen_auto_approve')"
+      "SELECT key, value FROM site_settings WHERE key IN ('article_gen_mode','article_gen_frequency','article_gen_last_run','article_gen_auto_approve','article_gen_last_cron_attempt','article_gen_last_cron_result')"
     ).all<{ key: string; value: string }>();
     const map: Record<string, string> = {};
     for (const r of rows.results) map[r.key] = r.value;
+    let lastCronResult: { status: string; msg: string; at: string } | null = null;
+    try { lastCronResult = map['article_gen_last_cron_result'] ? JSON.parse(map['article_gen_last_cron_result']) : null; } catch { /* ignore */ }
     return NextResponse.json({
       mode: map['article_gen_mode'] ?? 'manual',
       frequency: map['article_gen_frequency'] ?? 'daily',
       lastRun: map['article_gen_last_run'] ?? null,
       autoApprove: map['article_gen_auto_approve'] === 'true',
+      lastCronAttempt: map['article_gen_last_cron_attempt'] ?? null,
+      lastCronResult,
     });
   } catch {
     return NextResponse.json({ error: 'Failed to load settings.' }, { status: 500 });

@@ -31,11 +31,14 @@ export async function scheduled(event, env, ctx) {
 }
 
 async function runArticleGenCron(env) {
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
+  console.log('[cron:article-gen] tick', now);
+
   try {
     const db = env.DB;
-    if (!db) return;
+    if (!db) { console.log('[cron:article-gen] no DB binding'); return; }
 
-    // Read article gen settings
     const rows = await db.prepare(
       "SELECT key, value FROM site_settings WHERE key IN ('article_gen_mode','article_gen_frequency','article_gen_last_run')"
     ).all();
@@ -43,42 +46,65 @@ async function runArticleGenCron(env) {
     const settings = {};
     for (const row of (rows.results ?? [])) settings[row.key] = row.value;
 
-    // Only run if auto mode is enabled
-    if (settings['article_gen_mode'] !== 'auto') return;
+    if (settings['article_gen_mode'] !== 'auto') {
+      console.log('[cron:article-gen] mode=', settings['article_gen_mode'], '— skip');
+      return;
+    }
 
     const frequency = settings['article_gen_frequency'] ?? 'daily';
-
-    // Explicit pause — do nothing
-    if (frequency === 'paused') return;
+    if (frequency === 'paused') { console.log('[cron:article-gen] paused — skip'); return; }
 
     const lastRun = settings['article_gen_last_run'] ? new Date(settings['article_gen_last_run']) : null;
-    const now = new Date();
-
-    // Minimum elapsed time per frequency setting (with 5-min buffer)
     const minElapsed = {
-      hourly:      55 * 60 * 1000,       // 55 min
-      twice_daily: 11 * 60 * 60 * 1000,  // 11 hours
-      daily:       23 * 60 * 60 * 1000,  // 23 hours
+      hourly:      55 * 60 * 1000,
+      twice_daily: 11 * 60 * 60 * 1000,
+      daily:       23 * 60 * 60 * 1000,
     }[frequency] ?? 23 * 60 * 60 * 1000;
 
-    if (lastRun && (now.getTime() - lastRun.getTime()) < minElapsed) return;
+    if (lastRun && (nowDate.getTime() - lastRun.getTime()) < minElapsed) {
+      console.log('[cron:article-gen] too soon since last run:', lastRun.toISOString(), '— skip');
+      return;
+    }
 
-    // Require CLI token — must be set as Worker secret BYTESAI_CLI_TOKEN
     const token = env.BYTESAI_CLI_TOKEN;
-    if (!token) return;
+    if (!token) { console.log('[cron:article-gen] BYTESAI_CLI_TOKEN not set — skip'); return; }
 
-    // Call the article-gen endpoint using the long-lived admin Bearer token
-    await fetch('https://learn.bytesai.uk/api/admin/article-gen', {
-      method: 'POST',
-      headers: {
-        'Authorization': \`Bearer \${token}\`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({}),
-      signal: AbortSignal.timeout(40_000),
-    });
-  } catch {
-    // Silent — cron errors must never crash the Worker
+    // Record attempt timestamp so admin can see cron IS firing
+    await db.prepare(
+      "INSERT INTO site_settings (key, value, updated_at) VALUES ('article_gen_last_cron_attempt', ?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at"
+    ).bind(now, now).run();
+
+    console.log('[cron:article-gen] calling article-gen API');
+    let cronStatus = 'error';
+    let cronMsg = '';
+
+    try {
+      const resp = await fetch('https://learn.bytesai.uk/api/admin/article-gen', {
+        method: 'POST',
+        headers: {
+          'Authorization': \`Bearer \${token}\`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+        signal: AbortSignal.timeout(90_000),
+      });
+      cronStatus = String(resp.status);
+      const body = await resp.json().catch(() => ({}));
+      cronMsg = JSON.stringify(body).slice(0, 300);
+      console.log('[cron:article-gen] response', resp.status, cronMsg);
+    } catch (fetchErr) {
+      cronStatus = 'fetch_error';
+      cronMsg = String(fetchErr).slice(0, 200);
+      console.log('[cron:article-gen] fetch error:', fetchErr);
+    }
+
+    // Store result for admin visibility
+    await db.prepare(
+      "INSERT INTO site_settings (key, value, updated_at) VALUES ('article_gen_last_cron_result', ?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at"
+    ).bind(JSON.stringify({ status: cronStatus, msg: cronMsg, at: now }), now).run();
+
+  } catch (err) {
+    console.log('[cron:article-gen] unexpected error:', err);
   }
 }
 `;

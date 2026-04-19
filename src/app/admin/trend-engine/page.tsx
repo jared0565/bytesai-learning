@@ -45,6 +45,8 @@ export default function TrendEnginePage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [lastRun, setLastRun] = useState<string | null>(null);
+  const [lastCronAttempt, setLastCronAttempt] = useState<string | null>(null);
+  const [lastCronResult, setLastCronResult] = useState<{ status: string; msg: string; at: string } | null>(null);
   const [genStatus, setGenStatus] = useState<GenStatus>('idle');
   const [genResult, setGenResult] = useState<GenResult & { published?: boolean } | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
@@ -68,6 +70,8 @@ export default function TrendEnginePage() {
       setGenFreq(data.frequency ?? 'daily');
       setAutoApprove(data.autoApprove ?? false);
       setLastRun(data.lastRun ?? null);
+      setLastCronAttempt(data.lastCronAttempt ?? null);
+      setLastCronResult(data.lastCronResult ?? null);
     } finally {
       setSettingsLoaded(true);
     }
@@ -333,13 +337,37 @@ export default function TrendEnginePage() {
             </div>
           </div>
 
-          {/* Last run info */}
-          {lastRun && (
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-              <Clock size={12} />
-              Last generated: {new Date(lastRun).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
-            </p>
-          )}
+          {/* Last run / cron diagnostic info */}
+          <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            {lastRun && (
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <Clock size={12} />
+                Last generated: {new Date(lastRun).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+              </p>
+            )}
+            {lastCronAttempt && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <Zap size={11} />
+                Last cron attempt: {new Date(lastCronAttempt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                {lastCronResult && (
+                  <span style={{
+                    marginLeft: '0.375rem',
+                    fontSize: '0.7rem', fontWeight: 700, padding: '0.1rem 0.45rem',
+                    borderRadius: 'var(--radius-full)',
+                    background: lastCronResult.status === '200' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                    color: lastCronResult.status === '200' ? 'var(--emerald)' : '#ef4444',
+                  }}>
+                    {lastCronResult.status}
+                  </span>
+                )}
+              </p>
+            )}
+            {lastCronResult && lastCronResult.status !== '200' && (
+              <p style={{ fontSize: '0.72rem', color: '#ef4444', fontFamily: 'monospace', background: 'rgba(239,68,68,0.06)', padding: '0.3rem 0.6rem', borderRadius: 'var(--radius)', wordBreak: 'break-all' }}>
+                {lastCronResult.msg}
+              </p>
+            )}
+          </div>
 
           {/* Save + Generate row */}
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
