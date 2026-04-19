@@ -132,13 +132,14 @@ Rules (strictly follow ALL):
 Article: "${title}"
 Key insight: ${(summary || why || what).slice(0, 200)}
 
-FORMAT — exactly 3 lines, no extras:
-Line 1 — Teaser: 27–52 characters. MUST start with "You", "Your", or "You're". Use one of these hook formulas:
+FORMAT — exactly 3 lines, no extras. Total post must be under 80 characters (all 3 lines combined):
+Line 1 — Teaser: 27–40 characters. MUST start with "You", "Your", or "You're". Use one of these hook formulas:
   • Curiosity gap: reveal a consequence without the cause ("You're losing X without knowing it")
   • Before/after: contrast two states ("Your old approach is costing you results")
   • Pattern interrupt: challenge an assumption ("Your team doesn't need more AI tools")
+  Write this so someone would forward it to a friend — the Facebook algorithm rewards private shares to Messenger above all else.
 Line 2 — CTA: rotate — pick exactly one of: "It's free 👇" / "Read it free 👇" / "Start free 👇"
-Line 3 — Hashtag: one niche hashtag specific to the article topic — NOT #AI, #Tech, or any broad generic tag
+Line 3 — Hashtag: one niche hashtag specific to the article topic — NOT #AI, #Tech, or any broad generic tag. 1 hashtag only — more than 2 looks like spam in 2026.
 
 RULES:
 - 0–1 emoji in the teaser only (none in lines 2 or 3 except the CTA emoji)
