@@ -151,7 +151,7 @@ export default async function CategoryPage({ params }: PageProps) {
               <>
                 <div className="grid-3">
                   {courses.map(course => (
-                    <CourseCard key={course.id} course={course} />
+                    <CourseCard key={course.id} course={course} isGuest={!session} />
                   ))}
                 </div>
 

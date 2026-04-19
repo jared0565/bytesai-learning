@@ -215,7 +215,7 @@ export default async function HomePage() {
             {hasFeatured ? (
               <div className="grid-4">
                 {featuredCourses.map((course, i) => (
-                  <CourseCard key={course.id} course={course} featured={i < 2} />
+                  <CourseCard key={course.id} course={course} featured={i < 2} isGuest={!session} />
                 ))}
               </div>
             ) : (
@@ -244,7 +244,7 @@ export default async function HomePage() {
             {trending.length > 0 ? (
               <div className="grid-4">
                 {trending.map(course => (
-                  <CourseCard key={course.id} course={course} />
+                  <CourseCard key={course.id} course={course} isGuest={!session} />
                 ))}
               </div>
             ) : (

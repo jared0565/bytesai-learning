@@ -153,7 +153,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             ) : (
               <div className="grid-4">
                 {courses.map(course => (
-                  <CourseCard key={course.id} course={course} />
+                  <CourseCard key={course.id} course={course} isGuest={!session} />
                 ))}
               </div>
             )}

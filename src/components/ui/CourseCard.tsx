@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ExternalLink, BookOpen, Layers, Brain, Cpu, MessageSquare, Shield, Database, Code, Rss, Users } from 'lucide-react';
+import { ExternalLink, BookOpen, Layers, Brain, Cpu, MessageSquare, Shield, Database, Code, Rss, Users, Lock } from 'lucide-react';
 import type { Course } from '@/lib/db';
 
 function formatEnrollCount(n: number): string {
@@ -10,6 +10,7 @@ interface CourseCardProps {
   course: Course;
   featured?: boolean;
   compact?: boolean;
+  isGuest?: boolean;
 }
 
 // Category → gradient + icon
@@ -52,8 +53,9 @@ function getLevelColor(level: string | null): string {
   return 'badge-free';
 }
 
-export default function CourseCard({ course, featured = false, compact = false }: CourseCardProps) {
+export default function CourseCard({ course, featured = false, compact = false, isGuest = false }: CourseCardProps) {
   const isAlison = course.is_alison === 1;
+  const membersOnly = isGuest && !isAlison;
   const isAffiliate = course.is_affiliate === 1;
   const { gradient, icon } = getCategoryStyle(course.category);
   const providerName = formatProvider(course.provider_id);
@@ -94,7 +96,8 @@ export default function CourseCard({ course, featured = false, compact = false }
         <div className="course-card-badges">
           {course.level && <span className={`badge ${getLevelColor(course.level)}`}>{course.level}</span>}
           <span className="badge badge-free">Free</span>
-          {isAffiliate && <span className="badge badge-affiliate">Affiliate</span>}
+          {membersOnly && <span className="badge badge-level" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Lock size={10} /> Members</span>}
+          {isAffiliate && !membersOnly && <span className="badge badge-affiliate">Affiliate</span>}
           {course.certification_type && course.certification_type !== 'none' && (
             <span className="badge badge-cert">Certificate</span>
           )}
@@ -109,8 +112,8 @@ export default function CourseCard({ course, featured = false, compact = false }
         )}
         <div className="course-card-footer">
           <span className="course-card-provider">{providerName}</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 600 }}>
-            {isAlison ? 'Open on Alison' : 'View'} <ExternalLink size={11} />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem', color: membersOnly ? 'var(--text-muted)' : 'var(--accent)', fontWeight: 600 }}>
+            {isAlison ? <>Open on Alison <ExternalLink size={11} /></> : membersOnly ? <><Lock size={11} /> Sign in</> : <>View <ExternalLink size={11} /></>}
           </span>
         </div>
       </div>

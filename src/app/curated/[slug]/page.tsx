@@ -262,7 +262,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
                 </h2>
                 <div className="grid-4">
                   {validRelated.map(course => (
-                    <CourseCard key={course.id} course={course} />
+                    <CourseCard key={course.id} course={course} isGuest={!session} />
                   ))}
                 </div>
               </section>

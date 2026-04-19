@@ -210,7 +210,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
                 <>
                   <div className="grid-3">
                     {courses.map(course => (
-                      <CourseCard key={course.id} course={course} />
+                      <CourseCard key={course.id} course={course} isGuest={!session} />
                     ))}
                   </div>
 
