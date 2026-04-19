@@ -251,16 +251,29 @@ export default function TrendEnginePage() {
               <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
                 Auto-generated articles are saved as drafts and require editorial review before publishing.
               </p>
-              <div style={{
-                marginTop: '0.75rem', padding: '0.625rem 0.875rem',
-                background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)',
-                borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.5rem', alignItems: 'flex-start',
-              }}>
-                <AlertCircle size={13} color="var(--amber)" style={{ flexShrink: 0, marginTop: 1 }} />
-                <p style={{ fontSize: '0.75rem', color: 'var(--amber)', lineHeight: 1.5 }}>
-                  <strong>Cron trigger not yet active.</strong> The frequency preference is saved, but automatic scheduling requires a Cloudflare Cron Trigger in <code style={{ fontFamily: 'monospace', background: 'rgba(0,0,0,0.15)', padding: '0 3px', borderRadius: 3 }}>wrangler.toml</code>. Until then, use <em>Generate article now</em> to run manually.
-                </p>
-              </div>
+              {genFreq === 'paused' ? (
+                <div style={{
+                  marginTop: '0.75rem', padding: '0.625rem 0.875rem',
+                  background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)',
+                  borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.5rem', alignItems: 'flex-start',
+                }}>
+                  <AlertCircle size={13} color="var(--amber)" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <p style={{ fontSize: '0.75rem', color: 'var(--amber)', lineHeight: 1.5 }}>
+                    <strong>Auto-posting paused.</strong> The cron trigger fires hourly but will skip generation until you change the frequency. Use <em>Generate article now</em> to run manually.
+                  </p>
+                </div>
+              ) : (
+                <div style={{
+                  marginTop: '0.75rem', padding: '0.625rem 0.875rem',
+                  background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)',
+                  borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.5rem', alignItems: 'flex-start',
+                }}>
+                  <CheckCircle2 size={13} color="var(--emerald)" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <p style={{ fontSize: '0.75rem', color: 'var(--emerald)', lineHeight: 1.5 }}>
+                    <strong>Cron active.</strong> Cloudflare fires the trigger hourly — the worker checks your frequency setting and skips if not enough time has passed. Requires <code style={{ fontFamily: 'monospace', background: 'rgba(0,0,0,0.08)', padding: '0 3px', borderRadius: 3 }}>BYTESAI_CLI_TOKEN</code> to be set as a Worker secret.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

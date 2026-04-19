@@ -47,14 +47,18 @@ async function runArticleGenCron(env) {
     if (settings['article_gen_mode'] !== 'auto') return;
 
     const frequency = settings['article_gen_frequency'] ?? 'daily';
+
+    // Explicit pause — do nothing
+    if (frequency === 'paused') return;
+
     const lastRun = settings['article_gen_last_run'] ? new Date(settings['article_gen_last_run']) : null;
     const now = new Date();
 
     // Minimum elapsed time per frequency setting (with 5-min buffer)
     const minElapsed = {
-      hourly:   55 * 60 * 1000,        // 55 min
-      '2xdaily': 11 * 60 * 60 * 1000,  // 11 hours
-      daily:    23 * 60 * 60 * 1000,   // 23 hours
+      hourly:      55 * 60 * 1000,       // 55 min
+      twice_daily: 11 * 60 * 60 * 1000,  // 11 hours
+      daily:       23 * 60 * 60 * 1000,  // 23 hours
     }[frequency] ?? 23 * 60 * 60 * 1000;
 
     if (lastRun && (now.getTime() - lastRun.getTime()) < minElapsed) return;
