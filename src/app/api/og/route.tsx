@@ -44,8 +44,15 @@ function wrapText(text: string, maxChars: number, maxLines = 3): string[] {
   return lines.slice(0, maxLines);
 }
 
+function truncateAtWord(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut) + '…';
+}
+
 // ── Article OG image ──────────────────────────────────────────────────────────
-function buildArticleSvg(title: string, summary: string): string {
+function buildArticleSvg(title: string, summary: string, callout?: string): string {
   const titleLines = wrapText(title, 42, 4);
   const titleFontSize = titleLines.length >= 3 ? 40 : title.length > 50 ? 44 : 52;
   const titleLineHeight = titleFontSize * 1.22;
@@ -56,7 +63,24 @@ function buildArticleSvg(title: string, summary: string): string {
   ).join('');
 
   const snippetY = titleY + titleLines.length * titleLineHeight + 32;
-  const displaySnippet = summary.length > 110 ? summary.slice(0, 107) + '…' : summary;
+  const displaySnippet = summary.length > 110 ? truncateAtWord(summary, 110) : summary;
+
+  // "Why it matters" callout — positioned dynamically below the snippet
+  const calloutStartY = Math.round(snippetY + (displaySnippet ? 36 : 8) + 18);
+  const availableForCallout = 548 - calloutStartY;
+  const maxCalloutLines = availableForCallout >= 108 ? 3 : availableForCallout >= 82 ? 2 : 1;
+  const showCallout = !!(callout && callout.length >= 50 && availableForCallout >= 56);
+
+  let calloutSvg = '';
+  if (showCallout && callout) {
+    const calloutLines = wrapText(truncateAtWord(callout, 220), 85, maxCalloutLines);
+    const calloutHeight = 22 + calloutLines.length * 26;
+    calloutSvg = `
+  <!-- Why it matters callout -->
+  <rect x="64" y="${calloutStartY}" width="3" height="${calloutHeight}" rx="1.5" fill="url(#accent)"/>
+  <text x="82" y="${calloutStartY + 14}" fill="#a78bfa" font-size="11" font-weight="700" font-family="Inter,system-ui,sans-serif" letter-spacing="1.5">WHY IT MATTERS</text>
+  ${calloutLines.map((line, i) => `<text x="82" y="${calloutStartY + 38 + i * 26}" fill="#e2e8f0" font-size="17" font-family="Inter,system-ui,sans-serif">${escapeXml(line)}</text>`).join('\n  ')}`;
+  }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
@@ -117,6 +141,7 @@ function buildArticleSvg(title: string, summary: string): string {
   ${displaySnippet ? `<text x="64" y="${snippetY}" fill="#94a3b8" font-size="20" font-family="Inter,system-ui,sans-serif" font-weight="400">
     ${escapeXml(displaySnippet)}
   </text>` : ''}
+${calloutSvg}
 
   <!-- Bottom decoration -->
   <rect x="64" y="580" width="1072" height="1" fill="rgba(255,255,255,0.06)"/>
@@ -214,9 +239,12 @@ export async function GET(request: Request) {
     // ── Article mode ──────────────────────────────────────────────────────────
     if (type === 'article') {
       const article = await getCuratedPageBySlug(db, slug).catch(() => null);
+      const snippet = article?.summary ?? '';
+      const why = article?.why_it_matters ?? '';
       const svg = buildArticleSvg(
         article?.title ?? 'AI Insight',
-        article?.summary ?? article?.why_it_matters ?? ''
+        snippet || why,
+        snippet ? why : '',
       );
       return new Response(svg, {
         headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400, s-maxage=604800' },
@@ -241,9 +269,12 @@ export async function GET(request: Request) {
 
     // Not a course — try article
     const article = await getCuratedPageBySlug(db, slug).catch(() => null);
+    const snippet = article?.summary ?? '';
+    const why = article?.why_it_matters ?? '';
     const svg = buildArticleSvg(
       article?.title ?? 'AI Insight',
-      article?.summary ?? article?.why_it_matters ?? ''
+      snippet || why,
+      snippet ? why : '',
     );
     return new Response(svg, {
       headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400, s-maxage=604800' },
