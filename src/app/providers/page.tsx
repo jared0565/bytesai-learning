@@ -27,7 +27,7 @@ export default async function ProvidersPage() {
          FROM providers p
          LEFT JOIN courses c ON c.provider_id = p.id AND c.published_status = 'published'
          GROUP BY p.id
-         ORDER BY p.name ASC
+         ORDER BY course_count DESC, p.name ASC
          LIMIT 100`
       ).all<import('@/lib/db').Provider & { course_count: number }>();
       providers = result.results;
