@@ -1,4 +1,4 @@
--- BytesAI Learning — Provider seed data (28 providers)
+-- BytesAI Learning — Provider seed data (32 providers)
 -- Generated from ai_courses_catalog_latest_alison_affiliate.md
 
 INSERT OR IGNORE INTO providers (id, slug, name, website_url, affiliate_enabled, affiliate_disclosure, created_at, updated_at) VALUES
@@ -29,4 +29,8 @@ INSERT OR IGNORE INTO providers (id, slug, name, website_url, affiliate_enabled,
 ('prov-mohri','mohri-rostamizadeh-talwalkar','Mohri, Rostamizadeh, Talwalkar','https://cs.nyu.edu/~mohri/mlbook/',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
 ('prov-simon-prince','simon-prince','Simon J.D. Prince','https://udlbook.github.io/udlbook/',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
 ('prov-ankur-moitra','ankur-moitra','Ankur Moitra','https://people.csail.mit.edu/moitra/',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
-('prov-albrecht','albrecht-christianos-schafer','Albrecht, Christianos, Schäfer','https://www.marl-book.com',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z');
+('prov-albrecht','albrecht-christianos-schafer','Albrecht, Christianos, Schäfer','https://www.marl-book.com',0,NULL,'2026-03-30T00:00:00Z','2026-03-30T00:00:00Z'),
+('prov-mit-ocw','mit-ocw','MIT OpenCourseWare','https://ocw.mit.edu',0,NULL,'2026-04-20T00:00:00Z','2026-04-20T00:00:00Z'),
+('prov-elements-of-ai','elements-of-ai','Elements of AI','https://www.elementsofai.com',0,NULL,'2026-04-20T00:00:00Z','2026-04-20T00:00:00Z'),
+('prov-google-cloud','google-cloud','Google Cloud','https://www.cloudskillsboost.google',0,NULL,'2026-04-20T00:00:00Z','2026-04-20T00:00:00Z'),
+('prov-umd','umd','University of Maryland','https://www.rhsmith.umd.edu',0,NULL,'2026-04-20T00:00:00Z','2026-04-20T00:00:00Z');
