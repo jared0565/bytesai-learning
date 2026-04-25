@@ -300,7 +300,8 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   const [resolving, setResolving] = useState(false);
   const [resolveResult, setResolveResult] = useState<{ title: string; imported: boolean } | null>(null);
   const [resolveError, setResolveError] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<Array<{ alisonSlug: string; title: string; alisonUrl: string; dbSlug: string | null }>>([]);
+  const [suggestions, setSuggestions] = useState<Array<{ alisonSlug: string; title: string; alisonUrl: string; dbSlug: string | null; category: string }>>([]);
+  const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
   const [suggesting, setSuggesting] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
   const [metaTitle, setMetaTitle] = useState('');
@@ -482,22 +483,24 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
     setSuggesting(true);
     setSuggestError(null);
     setSuggestions([]);
+    setSuggestedCategories([]);
     try {
       const res = await fetch('/api/admin/curated/suggest-courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim() }),
+        body: JSON.stringify({ title: title.trim(), summary, whyItMatters }),
       });
       const data = await res.json();
       if (!res.ok || data.error) { setSuggestError(data.error ?? 'Failed to fetch suggestions.'); return; }
       if (data.suggestions.length === 0) { setSuggestError('No matching courses found on Alison for this topic.'); return; }
       setSuggestions(data.suggestions);
+      if (data.categories?.length) setSuggestedCategories(data.categories);
     } catch {
       setSuggestError('Network error — could not reach the server.');
     } finally {
       setSuggesting(false);
     }
-  }, [title]);
+  }, [title, summary, whyItMatters]);
 
   const handleUseSuggestion = useCallback(async (alisonUrl: string) => {
     setResolving(true);
@@ -889,11 +892,23 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                 )}
                 {suggestions.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                    {suggestedCategories.length > 0 && (
+                      <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
+                        {suggestedCategories.map(c => (
+                          <span key={c} style={{ fontSize: '0.68rem', fontWeight: 600, padding: '0.15rem 0.5rem', borderRadius: 99, background: 'var(--accent-subtle, rgba(99,102,241,0.1))', color: 'var(--accent, #6366f1)', border: '1px solid var(--accent-border, rgba(99,102,241,0.25))' }}>
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {suggestions.map(s => (
                       <div key={s.alisonSlug} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', padding: '0.45rem 0.625rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg)' }}>
                         <div style={{ minWidth: 0 }}>
                           <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-primary)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
-                          {s.dbSlug && <span style={{ fontSize: '0.68rem', color: 'var(--green, #22c55e)' }}>Already in DB</span>}
+                          <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center', marginTop: '0.1rem' }}>
+                            <span style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>{s.category}</span>
+                            {s.dbSlug && <span style={{ fontSize: '0.67rem', color: 'var(--green, #22c55e)' }}>· Already in DB</span>}
+                          </div>
                         </div>
                         <button
                           className="btn btn-outline btn-sm"
@@ -909,7 +924,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                 )}
                 {!suggesting && suggestions.length === 0 && !suggestError && (
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    Searches Alison for courses relevant to this article&apos;s topic.
+                    Classifies the article by topic, then searches Alison for matching courses.
                   </span>
                 )}
               </div>
