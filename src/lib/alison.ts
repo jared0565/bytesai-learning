@@ -11,8 +11,9 @@ export const ALISON_PROVIDER_ID = 'prov-alison';
 
 export const ALISON_FETCH_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
   'Accept-Language': 'en-GB,en;q=0.9',
+  'Cache-Control': 'no-cache',
 };
 
 export interface AlisonCourseDetail {
@@ -47,11 +48,32 @@ export async function scrapeAlisonSearch(query: string): Promise<Array<{ slug: s
     try {
       const data = JSON.parse(nextMatch[1]);
       extractFromNextData(data, courses, seen, 0);
-      if (courses.length >= 3) return courses.slice(0, 12);
+      if (courses.length > 0) return courses.slice(0, 12);
     } catch { /* fall through */ }
   }
 
-  // Strategy 2: href="/course/{slug}" pattern
+  // Strategy 2: JSON-LD Course schema
+  const jsonLdRegex = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
+  let jm: RegExpExecArray | null;
+  while ((jm = jsonLdRegex.exec(html)) !== null) {
+    try {
+      const ld = JSON.parse(jm[1]);
+      const items: unknown[] = Array.isArray(ld) ? ld : [ld];
+      for (const item of items) {
+        const it = item as Record<string, unknown>;
+        if (it['@type'] === 'Course' && typeof it.url === 'string' && typeof it.name === 'string') {
+          const slug = it.url.replace(/^https?:\/\/alison\.com\/course\//, '').replace(/[?#].*$/, '');
+          if (slug && !seen.has(slug)) {
+            seen.add(slug);
+            courses.push({ slug, title: it.name });
+          }
+        }
+      }
+    } catch { /* ignore */ }
+  }
+  if (courses.length > 0) return courses.slice(0, 12);
+
+  // Strategy 3: href="/course/{slug}" pattern
   const hrefRegex = /href="\/course\/([a-z0-9][a-z0-9-]+)"/gi;
   let m: RegExpExecArray | null;
   while ((m = hrefRegex.exec(html)) !== null) {
