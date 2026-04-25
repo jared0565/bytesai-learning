@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Check, Copy, Mail, Download, Loader2 } from 'lucide-react';
 
 /* ── Social icons (inline SVGs for zero deps) ───────────────────────────── */
@@ -35,25 +35,31 @@ interface SharePanelProps {
 export default function SharePanel({ url, title, description, compact, labeled, ogSlug }: SharePanelProps) {
   const [copied, setCopied] = useState(false);
   const [downloadingImage, setDownloadingImage] = useState(false);
+  const [shortUrl, setShortUrl] = useState(url);
+
+  useEffect(() => {
+    fetch('/api/shorten', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { shortUrl?: string } | null) => { if (data?.shortUrl) setShortUrl(data.shortUrl); })
+      .catch(() => {});
+  }, [url]);
 
   const handleDownloadImage = useCallback(async () => {
     if (!ogSlug) return;
     setDownloadingImage(true);
     try {
       const res = await fetch(`/api/og?slug=${encodeURIComponent(ogSlug)}&type=course`);
-      const svgText = await res.text();
-      const svgBase64 = btoa(unescape(encodeURIComponent(svgText)));
-      const img = new Image();
-      img.src = `data:image/svg+xml;base64,${svgBase64}`;
-      await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = reject; });
-      const canvas = document.createElement('canvas');
-      canvas.width = 1200;
-      canvas.height = 630;
-      canvas.getContext('2d')!.drawImage(img, 0, 0, 1200, 630);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = `bytesai-${ogSlug}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = url;
       link.click();
+      URL.revokeObjectURL(url);
     } catch {
       // silent fail
     } finally {
@@ -65,7 +71,7 @@ export default function SharePanel({ url, title, description, compact, labeled, 
     ? `${title} — ${description}`
     : `${title} — Free on BytesAI Learning`;
 
-  const encodedUrl = encodeURIComponent(url);
+  const encodedUrl = encodeURIComponent(shortUrl);
   const encodedText = encodeURIComponent(shareText);
   const encodedTitle = encodeURIComponent(title);
 
@@ -80,7 +86,7 @@ export default function SharePanel({ url, title, description, compact, labeled, 
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shortUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {}

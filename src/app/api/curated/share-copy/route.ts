@@ -127,24 +127,27 @@ Rules (strictly follow ALL):
 - NO URL (appended separately), no hashtags
 - Return ONLY the message text — no quotes, no explanation`,
 
-  facebook: (title, summary, why, what) => `Write a Facebook post for this AI insight from BytesAI Learning. The URL is appended automatically — do not include it.
+  facebook: (title, summary, why, what) => `Write a Facebook post for this AI insight from BytesAI Learning. The URL is appended separately — do not include it.
 
 Article: "${title}"
-Key insight: ${(summary || why || what).slice(0, 200)}
+Key insight: ${(summary || why || what).slice(0, 300)}
 
-FORMAT — exactly 3 lines, no extras. Total post must be under 80 characters (all 3 lines combined):
-Line 1 — Teaser: 27–40 characters. MUST start with "You", "Your", or "You're". Use one of these hook formulas:
-  • Curiosity gap: reveal a consequence without the cause ("You're losing X without knowing it")
-  • Before/after: contrast two states ("Your old approach is costing you results")
-  • Pattern interrupt: challenge an assumption ("Your team doesn't need more AI tools")
-  Write this so someone would forward it to a friend — the Facebook algorithm rewards private shares to Messenger above all else.
-Line 2 — CTA: rotate — pick exactly one of: "It's free 👇" / "Read it free 👇" / "Start free 👇"
-Line 3 — Hashtag: one niche hashtag specific to the article topic — NOT #AI, #Tech, or any broad generic tag. 1 hashtag only — more than 2 looks like spam in 2026.
+PURPOSE: This post must work on two levels: engage Facebook users in their feed AND be indexable by AI search engines that retrieve factual content from social posts (AEO/GEO). Lead with a specific, extractable claim — not a teaser that hides the subject.
 
-RULES:
-- 0–1 emoji in the teaser only (none in lines 2 or 3 except the CTA emoji)
-- No markdown, no quotes, no labels, no rhetorical questions, no superlatives
-- Return ONLY the 3 lines. Nothing else.`,
+FORMAT — exactly 4 parts, separated by newlines, nothing else:
+Part 1 — Lead claim (90–130 chars): One declarative sentence naming the specific AI concept and stating a concrete finding, implication, or change. Put the subject first: "[Technology/concept] [does/is/has] [specific outcome]." Do not start with "You" or a curiosity gap.
+Part 2 — Consequence (60–90 chars): One sentence adding the "so what" — a concrete outcome, a team impact, or a market shift. Keep it factual and direct.
+Part 3 — CTA: rotate — pick one of: "It's free 👇" / "Read it free 👇" / "Start free 👇"
+Part 4 — Hashtag: one niche hashtag specific to the article mechanism or buyer workflow. NOT #AI, #Tech, or #Innovation.
+
+RULES (all mandatory):
+- Plain text only. No markdown, no quotes, no em dashes.
+- No superlatives: no "groundbreaking," "revolutionary," "powerful," "game-changing."
+- Factual over atmospheric: state what the technology does, not how exciting it is.
+- Use contractions naturally: it's, don't, you'll, they've.
+- AEO requirement: Part 1 must be a standalone extractable factual claim that answers a search query.
+- No rhetorical questions anywhere.
+- Return ONLY the 4 parts. Nothing else.`,
 };
 
 export async function POST(req: NextRequest) {
@@ -211,7 +214,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model,
         messages,
-        max_tokens: platform === 'linkedin' ? 1500 : platform === 'facebook' ? 100 : 1000,
+        max_tokens: platform === 'linkedin' ? 1500 : platform === 'facebook' ? 500 : 1000,
         temperature: platform === 'linkedin' ? 0.95 : 0.85,
       }),
       signal: AbortSignal.timeout(22_000),

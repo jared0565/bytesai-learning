@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title: page.og_title ?? page.title,
       description: page.og_description ?? page.summary ?? undefined,
-      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+      images: [{ url: ogImageUrl, width: 1200, height: 1200 }],
       type: 'article',
     },
     twitter: {

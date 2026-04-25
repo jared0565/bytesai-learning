@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Share2, X, Copy, Check, ExternalLink, Loader2, AlertCircle, Download } from 'lucide-react';
 
 interface Props {
@@ -21,14 +21,14 @@ const PLATFORMS: {
   { id: 'twitter', label: 'X / Twitter', shortLabel: 'X', color: '#1d9bf0', abbr: '𝕏', charRange: [240, 260] },
   { id: 'linkedin', label: 'LinkedIn', shortLabel: 'LinkedIn', color: '#0a66c2', abbr: 'in', charRange: [1800, 2400] },
   { id: 'whatsapp', label: 'WhatsApp', shortLabel: 'WhatsApp', color: '#25d366', abbr: '💬', charRange: [300, 400] },
-  { id: 'facebook', label: 'Facebook', shortLabel: 'Facebook', color: '#1877f2', abbr: 'f', charRange: [40, 80] },
+  { id: 'facebook', label: 'Facebook', shortLabel: 'Facebook', color: '#1877f2', abbr: 'f', charRange: [180, 380] },
 ];
 
-function buildShareUrl(platform: Platform, slug: string, copy: string): string {
+function buildShareUrl(platform: Platform, slug: string, copy: string, shareableUrl?: string): string {
   const utmMap: Record<Platform, string> = {
     twitter: 'twitter', linkedin: 'linkedin', whatsapp: 'whatsapp', facebook: 'facebook',
   };
-  const articleUrl = `https://learn.bytesai.uk/curated/${slug}?utm_source=${utmMap[platform]}&utm_medium=social&utm_campaign=share`;
+  const articleUrl = shareableUrl ?? `https://learn.bytesai.uk/curated/${slug}?utm_source=${utmMap[platform]}&utm_medium=social&utm_campaign=share`;
   const fullText = copy + '\n\n' + articleUrl;
 
   switch (platform) {
@@ -52,6 +52,20 @@ export default function CuratedSharePanel({ slug, title }: Props) {
   const [loading, setLoading] = useState<Platform | null>(null);
   const [copied, setCopied] = useState(false);
   const [downloadingImage, setDownloadingImage] = useState(false);
+  const [shortUrl, setShortUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || shortUrl) return;
+    const canonicalUrl = `https://learn.bytesai.uk/curated/${slug}`;
+    fetch('/api/shorten', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: canonicalUrl }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { shortUrl?: string } | null) => { if (data?.shortUrl) setShortUrl(data.shortUrl); })
+      .catch(() => {});
+  }, [open, slug, shortUrl]);
 
   const selectPlatform = useCallback(async (p: Platform) => {
     setSelected(p);
@@ -82,19 +96,13 @@ export default function CuratedSharePanel({ slug, title }: Props) {
     setDownloadingImage(true);
     try {
       const res = await fetch(`/api/og?slug=${encodeURIComponent(slug)}&type=article`);
-      const svgText = await res.text();
-      const svgBase64 = btoa(unescape(encodeURIComponent(svgText)));
-      const img = new Image();
-      img.src = `data:image/svg+xml;base64,${svgBase64}`;
-      await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = reject; });
-      const canvas = document.createElement('canvas');
-      canvas.width = 1200;
-      canvas.height = 630;
-      canvas.getContext('2d')!.drawImage(img, 0, 0, 1200, 630);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = `bytesai-${slug}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = url;
       link.click();
+      URL.revokeObjectURL(url);
     } catch {
       // silent fail
     } finally {
@@ -107,12 +115,12 @@ export default function CuratedSharePanel({ slug, title }: Props) {
     const utmMap: Record<Platform, string> = {
       twitter: 'twitter', linkedin: 'linkedin', whatsapp: 'whatsapp', facebook: 'facebook',
     };
-    const articleUrl = `https://learn.bytesai.uk/curated/${slug}?utm_source=${utmMap[selected]}&utm_medium=social&utm_campaign=share`;
-    const fullText = copies[selected]! + '\n\n' + articleUrl;
+    const shareableUrl = shortUrl ?? `https://learn.bytesai.uk/curated/${slug}?utm_source=${utmMap[selected]}&utm_medium=social&utm_campaign=share`;
+    const fullText = copies[selected]! + '\n\n' + shareableUrl;
     await navigator.clipboard.writeText(fullText).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
-  }, [selected, copies, slug]);
+  }, [selected, copies, slug, shortUrl]);
 
   const selectedMeta = PLATFORMS.find(p => p.id === selected);
   const copy = selected ? copies[selected] : undefined;
@@ -247,6 +255,24 @@ export default function CuratedSharePanel({ slug, title }: Props) {
                 </div>
               </div>
 
+              {/* OG card preview — shown once a platform is selected */}
+              {selected && (
+                <div>
+                  <p style={{
+                    fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)',
+                    textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem',
+                  }}>
+                    Link preview card
+                  </p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/og?slug=${encodeURIComponent(slug)}&type=article`}
+                    alt="Article share card"
+                    style={{ width: '100%', borderRadius: 'var(--radius-md)', display: 'block', border: '1px solid var(--border)' }}
+                  />
+                </div>
+              )}
+
               {/* Generated copy area */}
               {selected && (
                 <div>
@@ -331,12 +357,12 @@ export default function CuratedSharePanel({ slug, title }: Props) {
                           {copied ? 'Copied!' : 'Copy text + link'}
                         </button>
                         <a
-                          href={buildShareUrl(selected, slug, copy)}
+                          href={buildShareUrl(selected, slug, copy, shortUrl ?? undefined)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="btn btn-outline btn-sm"
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
-                          onClick={selected === 'linkedin' ? handleCopy : undefined}
+                          onClick={selected === 'linkedin' || selected === 'facebook' ? handleCopy : undefined}
                         >
                           <ExternalLink size={13} />
                           Open {selectedMeta?.shortLabel}

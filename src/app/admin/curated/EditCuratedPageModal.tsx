@@ -300,6 +300,9 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   const [resolving, setResolving] = useState(false);
   const [resolveResult, setResolveResult] = useState<{ title: string; imported: boolean } | null>(null);
   const [resolveError, setResolveError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<Array<{ alisonSlug: string; title: string; alisonUrl: string; dbSlug: string | null }>>([]);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
   const [editorialStatus, setEditorialStatus] = useState('draft');
@@ -472,6 +475,51 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
       setResolving(false);
     }
   }, [resolveUrl]);
+
+  // ── AI course suggestions ────────────────────────────────────────────────────
+  const handleSuggest = useCallback(async () => {
+    if (!title.trim()) return;
+    setSuggesting(true);
+    setSuggestError(null);
+    setSuggestions([]);
+    try {
+      const res = await fetch('/api/admin/curated/suggest-courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { setSuggestError(data.error ?? 'Failed to fetch suggestions.'); return; }
+      if (data.suggestions.length === 0) { setSuggestError('No matching courses found on Alison for this topic.'); return; }
+      setSuggestions(data.suggestions);
+    } catch {
+      setSuggestError('Network error — could not reach the server.');
+    } finally {
+      setSuggesting(false);
+    }
+  }, [title]);
+
+  const handleUseSuggestion = useCallback(async (alisonUrl: string) => {
+    setResolving(true);
+    setResolveError(null);
+    setResolveResult(null);
+    setSuggestions([]);
+    try {
+      const res = await fetch('/api/admin/course-resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: alisonUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { setResolveError(data.error ?? 'Failed to link course.'); return; }
+      setPrimaryCourse(data.slug);
+      setResolveResult({ title: data.title, imported: data.imported });
+    } catch {
+      setResolveError('Network error — could not reach the server.');
+    } finally {
+      setResolving(false);
+    }
+  }, []);
 
   // ── Styles ──────────────────────────────────────────────────────────────────
 
@@ -813,6 +861,57 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.4rem', display: 'block' }}>
                   Paste an Alison URL or type a keyword (e.g. "AI Governance") — course is imported if not already in the DB.
                 </span>
+              </div>
+
+              {/* AI course suggestions */}
+              <div style={{ marginBottom: '1.125rem', padding: '0.875rem 1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle, var(--bg))' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: (suggestions.length > 0 || suggestError) ? '0.75rem' : 0 }}>
+                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                    <Sparkles size={13} /> AI course suggestions
+                  </label>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={handleSuggest}
+                    disabled={suggesting || resolving || !title.trim()}
+                    style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                  >
+                    {suggesting
+                      ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Searching…</>
+                      : 'Suggest from article'
+                    }
+                  </button>
+                </div>
+                {suggestError && (
+                  <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'flex-start' }}>
+                    <AlertCircle size={12} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span style={{ fontSize: '0.72rem', color: 'var(--rose)' }}>{suggestError}</span>
+                  </div>
+                )}
+                {suggestions.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                    {suggestions.map(s => (
+                      <div key={s.alisonSlug} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', padding: '0.45rem 0.625rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg)' }}>
+                        <div style={{ minWidth: 0 }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-primary)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
+                          {s.dbSlug && <span style={{ fontSize: '0.68rem', color: 'var(--green, #22c55e)' }}>Already in DB</span>}
+                        </div>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={() => handleUseSuggestion(s.alisonUrl)}
+                          disabled={resolving}
+                          style={{ flexShrink: 0 }}
+                        >
+                          Use this
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!suggesting && suggestions.length === 0 && !suggestError && (
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    Searches Alison for courses relevant to this article&apos;s topic.
+                  </span>
+                )}
               </div>
 
               <div style={{ marginBottom: '1.125rem' }}>

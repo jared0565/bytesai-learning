@@ -21,8 +21,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!db || !isValidSlug(slug)) return { title: 'Course Not Found' };
   const course = await getCourseBySlug(db, slug).catch(() => null);
   if (!course) return { title: 'Course Not Found' };
-  const PROD_URL = 'https://learn.bytesai.uk';
-  const ogImage = course.og_image_url ?? `${PROD_URL}/og/${slug}.png`;
+  const ogImage = course.og_image_url ?? `/api/og?slug=${slug}&type=course`;
   return {
     title: course.meta_title ?? course.title,
     description: course.meta_description ?? course.snippet ?? undefined,
