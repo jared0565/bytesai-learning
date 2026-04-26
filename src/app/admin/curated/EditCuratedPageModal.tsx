@@ -500,9 +500,10 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         return;
       }
       if (!res.ok || data.error) { setSuggestError((data.error as string) ?? 'Failed to fetch suggestions.'); return; }
-      if (data.suggestions.length === 0) { setSuggestError('No matching courses found on Alison for this topic.'); return; }
-      setSuggestions(data.suggestions);
-      if (data.categories?.length) setSuggestedCategories(data.categories);
+      const suggestions = data.suggestions as Array<{ alisonSlug: string; title: string; alisonUrl: string; dbSlug: string | null; category: string }>;
+      if (!suggestions?.length) { setSuggestError('No matching courses found on Alison for this topic.'); return; }
+      setSuggestions(suggestions);
+      if (Array.isArray(data.categories) && data.categories.length) setSuggestedCategories(data.categories as string[]);
     } catch {
       setSuggestError('Network error — could not reach the server.');
     } finally {
