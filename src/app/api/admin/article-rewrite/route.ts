@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   // Resolve API key + model
   let apiKey = '';
-  let model = 'google/gemini-flash-1.5';
+  let model = 'google/gemini-3.1-flash-lite-preview';
   try {
     const ctx = await getCloudflareContext();
     const env = ctx.env as Record<string, string>;

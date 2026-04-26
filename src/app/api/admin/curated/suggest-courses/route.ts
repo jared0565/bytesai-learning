@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
   if (!title?.trim()) return NextResponse.json({ error: 'title is required.' }, { status: 422 });
 
   let apiKey = '';
-  let model = 'deepseek/deepseek-v4-flash';
+  let model = 'google/gemini-3.1-flash-lite-preview';
   try {
     const ctx = await getCloudflareContext();
     const env = ctx.env as Record<string, string>;
