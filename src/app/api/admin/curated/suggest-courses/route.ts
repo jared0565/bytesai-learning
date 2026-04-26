@@ -138,9 +138,9 @@ export async function POST(req: NextRequest) {
         const rows = await db.prepare(
           `SELECT slug, title, destination_url FROM courses
            WHERE is_alison = 1 AND published_status = 'published'
-           AND (LOWER(title) LIKE LOWER(?) OR LOWER(category) LIKE LOWER(?) OR LOWER(snippet) LIKE LOWER(?))
+           AND (title LIKE ? OR category LIKE ?)
            LIMIT 12`
-        ).bind(kw, kw, kw).all<{ slug: string; title: string; destination_url: string | null }>();
+        ).bind(kw, kw).all<{ slug: string; title: string; destination_url: string | null }>();
         for (const row of (rows.results ?? [])) {
           const m = row.destination_url?.match(/\/course\/([a-z0-9][a-z0-9-]+)/i);
           if (!m) continue;

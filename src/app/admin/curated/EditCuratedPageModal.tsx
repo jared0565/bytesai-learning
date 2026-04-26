@@ -473,13 +473,16 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
       }
       setPrimaryCourse(data.slug as string);
       setResolveResult({ title: data.title as string, imported: data.imported as boolean });
+      if (!primaryCourseRationale.trim() && data.snippet) {
+        setPrimaryCourseRationale(data.snippet as string);
+      }
       setResolveUrl('');
     } catch {
       setResolveError('Network error — could not reach the server.');
     } finally {
       setResolving(false);
     }
-  }, [resolveUrl]);
+  }, [resolveUrl, primaryCourseRationale]);
 
   // ── AI course suggestions ────────────────────────────────────────────────────
   const handleSuggest = useCallback(async () => {
@@ -500,10 +503,10 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         return;
       }
       if (!res.ok || data.error) { setSuggestError((data.error as string) ?? 'Failed to fetch suggestions.'); return; }
+      if (Array.isArray(data.categories) && data.categories.length) setSuggestedCategories(data.categories as string[]);
       const suggestions = data.suggestions as Array<{ alisonSlug: string; title: string; alisonUrl: string; dbSlug: string | null; category: string }>;
       if (!suggestions?.length) { setSuggestError('No matching courses found on Alison for this topic.'); return; }
       setSuggestions(suggestions);
-      if (Array.isArray(data.categories) && data.categories.length) setSuggestedCategories(data.categories as string[]);
     } catch {
       setSuggestError('Network error — could not reach the server.');
     } finally {
@@ -530,12 +533,15 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
       if (!res.ok || data.error) { setResolveError((data.error as string) ?? 'Failed to link course.'); return; }
       setPrimaryCourse(data.slug as string);
       setResolveResult({ title: data.title as string, imported: data.imported as boolean });
+      if (!primaryCourseRationale.trim() && data.snippet) {
+        setPrimaryCourseRationale(data.snippet as string);
+      }
     } catch {
       setResolveError('Network error — could not reach the server.');
     } finally {
       setResolving(false);
     }
-  }, []);
+  }, [primaryCourseRationale]);
 
   // ── Styles ──────────────────────────────────────────────────────────────────
 
