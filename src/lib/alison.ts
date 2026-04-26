@@ -53,16 +53,18 @@ export async function scrapeAlisonSearch(query: string): Promise<Array<{ slug: s
   }
 
   // Strategy 2: JSON-LD Course schema
-  const jsonLdRegex = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
-  let jm: RegExpExecArray | null;
-  while ((jm = jsonLdRegex.exec(html)) !== null) {
+  const jsonLdBlocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+  for (const block of jsonLdBlocks) {
     try {
-      const ld = JSON.parse(jm[1]);
+      const ld = JSON.parse(block[1]);
       const items: unknown[] = Array.isArray(ld) ? ld : [ld];
       for (const item of items) {
         const it = item as Record<string, unknown>;
         if (it['@type'] === 'Course' && typeof it.url === 'string' && typeof it.name === 'string') {
-          const slug = it.url.replace(/^https?:\/\/alison\.com\/course\//, '').replace(/[?#].*$/, '');
+          const slug = it.url
+            .replace(/^https?:\/\/alison\.com\/course\//, '')
+            .replace(/[?#].*$/, '')
+            .replace(/\/[0-9]+$/, '');
           if (slug && !seen.has(slug)) {
             seen.add(slug);
             courses.push({ slug, title: it.name });
@@ -71,13 +73,13 @@ export async function scrapeAlisonSearch(query: string): Promise<Array<{ slug: s
       }
     } catch { /* ignore */ }
   }
-  if (courses.length > 0) return courses.slice(0, 12);
+  if (courses.length >= 3) return courses.slice(0, 12);
 
-  // Strategy 3: href="/course/{slug}" pattern
-  const hrefRegex = /href="\/course\/([a-z0-9][a-z0-9-]+)"/gi;
+  // Strategy 3: href="/course/{slug}" or "/course/{slug}/{id}" pattern
+  const hrefRegex = /href="\/course\/([a-z0-9][a-z0-9-]+(?:\/[0-9]+)?)"/gi;
   let m: RegExpExecArray | null;
   while ((m = hrefRegex.exec(html)) !== null) {
-    const slug = m[1];
+    const slug = m[1].replace(/\/[0-9]+$/, '');
     if (seen.has(slug)) continue;
     seen.add(slug);
     const ctxStart = Math.max(0, m.index - 200);
@@ -111,7 +113,9 @@ function extractTitle(ctx: string, slug: string): string {
     /title="([^"]{5,120})"/,
     /aria-label="([^"]{5,120})"/,
     /"name"\s*:\s*"([^"]{5,120})"/,
+    /alt="([^"]{5,120})"/,
     /<h[1-6][^>]*>([^<]{5,120})<\/h[1-6]>/i,
+    /<(?:p|span)[^>]*class="[^"]*(?:title|name|course-title|card-title)[^"]*"[^>]*>([^<]{5,120})<\//i,
   ];
   for (const p of patterns) {
     const m = ctx.match(p);
