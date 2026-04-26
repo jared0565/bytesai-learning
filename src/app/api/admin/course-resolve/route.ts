@@ -64,8 +64,8 @@ async function handlePost(req: NextRequest) {
 
   // Check if already in DB
   const existing = await db.prepare(
-    `SELECT slug, title, snippet FROM courses WHERE destination_url LIKE ? AND is_alison = 1 LIMIT 1`
-  ).bind(`%/course/${alisonSlug}%`).first<{ slug: string; title: string; snippet: string | null }>();
+    `SELECT slug, title, snippet FROM courses WHERE official_link = ? AND is_alison = 1 LIMIT 1`
+  ).bind(`https://alison.com/course/${alisonSlug}`).first<{ slug: string; title: string; snippet: string | null }>();
 
   if (existing) {
     return NextResponse.json({ ok: true, slug: existing.slug, title: existing.title, snippet: existing.snippet, imported: false });

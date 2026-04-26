@@ -160,8 +160,8 @@ export async function POST(req: NextRequest) {
       let dbSlug: string | null = null;
       if (db) {
         const found = await db.prepare(
-          `SELECT slug FROM courses WHERE destination_url LIKE ? OR official_link LIKE ? LIMIT 1`
-        ).bind(`%${r.slug}%`, `%${r.slug}%`).first<{ slug: string }>();
+          `SELECT slug FROM courses WHERE official_link = ? LIMIT 1`
+        ).bind(`https://alison.com/course/${r.slug}`).first<{ slug: string }>();
         dbSlug = found?.slug ?? null;
       }
       return { alisonSlug: r.slug, title: r.title, alisonUrl, dbSlug, category: r.category };
