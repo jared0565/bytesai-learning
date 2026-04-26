@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, Loader2, ExternalLink, AlertCircle, Sparkles,
   Printer, Copy, CheckCircle2, Maximize2, Minimize2,
-  BookOpen, Save, Link2,
+  Save, Link2,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -295,11 +295,14 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   const [primaryCourseRationale, setPrimaryCourseRationale] = useState('');
   const [primaryCourse, setPrimaryCourse] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
-  const [relatedCourses, setRelatedCourses] = useState('');
-  const [resolveUrl, setResolveUrl] = useState('');
+  const [relatedSlugs, setRelatedSlugs] = useState<string[]>([]);
+  const [relatedInput, setRelatedInput] = useState('');
+  const [courseInput, setCourseInput] = useState('');
+  const [linkedCourseTitle, setLinkedCourseTitle] = useState<string | null>(null);
+  const [showResolveInput, setShowResolveInput] = useState(false);
   const [resolving, setResolving] = useState(false);
-  const [resolveResult, setResolveResult] = useState<{ title: string; imported: boolean } | null>(null);
   const [resolveError, setResolveError] = useState<string | null>(null);
+  const [resolveResult, setResolveResult] = useState<{ title: string; imported: boolean } | null>(null);
   const [suggestions, setSuggestions] = useState<Array<{ alisonSlug: string; title: string; alisonUrl: string; dbSlug: string | null; category: string }>>([]);
   const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
   const [suggesting, setSuggesting] = useState(false);
@@ -331,7 +334,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         setMetaDescription(p.meta_description ?? '');
         const relSlugs: string[] = p.related_course_slugs_json
           ? JSON.parse(p.related_course_slugs_json) : [];
-        setRelatedCourses(relSlugs.join(', '));
+        setRelatedSlugs(relSlugs);
         const cats: string[] = p.categories_json ? JSON.parse(p.categories_json) : [];
         setCategories(cats);
       })
@@ -400,7 +403,6 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
     setSaveSuccess(false);
     if (!title.trim() || !slug.trim()) { setSaveError('Title and slug are required.'); return; }
 
-    const relatedArr = relatedCourses.split(',').map(s => s.trim()).filter(Boolean);
     setSaving(true);
     try {
       const res = await fetch(`/api/admin/curated?id=${pageId}`, {
@@ -415,7 +417,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
           primary_course_rationale: primaryCourseRationale.trim() || null,
           primary_course_slug: primaryCourse.trim() || null,
           categories_json: categories.length ? JSON.stringify(categories) : null,
-          related_course_slugs: relatedArr,
+          related_course_slugs: relatedSlugs,
           meta_title: metaTitle.trim() || null,
           meta_description: metaDescription.trim() || null,
           editorial_review_status: editorialStatus,
@@ -436,7 +438,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
     } finally {
       setSaving(false);
     }
-  }, [pageId, title, slug, summary, whyItMatters, whatChanged, executiveImplications, primaryCourseRationale, primaryCourse, relatedCourses, metaTitle, metaDescription, editorialStatus, publishedStatus, onSaved]);
+  }, [pageId, title, slug, summary, whyItMatters, whatChanged, executiveImplications, primaryCourseRationale, primaryCourse, relatedSlugs, metaTitle, metaDescription, editorialStatus, publishedStatus, onSaved]);
 
   // Ctrl/Cmd+S to save
   useEffect(() => {
@@ -452,7 +454,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
 
   // ── Course URL resolver ──────────────────────────────────────────────────────
   const handleResolve = useCallback(async () => {
-    if (!resolveUrl.trim()) return;
+    if (!courseInput.trim()) return;
     setResolving(true);
     setResolveError(null);
     setResolveResult(null);
@@ -460,7 +462,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
       const res = await fetch('/api/admin/course-resolve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input: resolveUrl.trim() }),
+        body: JSON.stringify({ input: courseInput.trim() }),
       });
       let data: Record<string, unknown>;
       try { data = await res.json(); } catch {
@@ -472,17 +474,19 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         return;
       }
       setPrimaryCourse(data.slug as string);
+      setLinkedCourseTitle(data.title as string);
       setResolveResult({ title: data.title as string, imported: data.imported as boolean });
       if (!primaryCourseRationale.trim() && data.snippet) {
         setPrimaryCourseRationale(data.snippet as string);
       }
-      setResolveUrl('');
+      setCourseInput('');
+      setShowResolveInput(false);
     } catch {
       setResolveError('Network error — could not reach the server.');
     } finally {
       setResolving(false);
     }
-  }, [resolveUrl, primaryCourseRationale]);
+  }, [courseInput, primaryCourseRationale]);
 
   // ── AI course suggestions ────────────────────────────────────────────────────
   const handleSuggest = useCallback(async () => {
@@ -532,16 +536,41 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
       }
       if (!res.ok || data.error) { setResolveError((data.error as string) ?? 'Failed to link course.'); return; }
       setPrimaryCourse(data.slug as string);
+      setLinkedCourseTitle(data.title as string);
       setResolveResult({ title: data.title as string, imported: data.imported as boolean });
       if (!primaryCourseRationale.trim() && data.snippet) {
         setPrimaryCourseRationale(data.snippet as string);
       }
+      setSuggestions([]);
+      setSuggestedCategories([]);
     } catch {
       setResolveError('Network error — could not reach the server.');
     } finally {
       setResolving(false);
     }
   }, [primaryCourseRationale]);
+
+  const handleClearCourse = useCallback(() => {
+    setPrimaryCourse('');
+    setLinkedCourseTitle(null);
+    setResolveResult(null);
+    setResolveError(null);
+    setSuggestions([]);
+    setSuggestedCategories([]);
+    setShowResolveInput(false);
+    setCourseInput('');
+  }, []);
+
+  const handleAddRelatedSlug = useCallback((val: string) => {
+    const s = val.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    if (!s) return;
+    setRelatedSlugs(prev => prev.includes(s) ? prev : [...prev, s]);
+    setRelatedInput('');
+  }, []);
+
+  const handleRemoveRelatedSlug = useCallback((s: string) => {
+    setRelatedSlugs(prev => prev.filter(x => x !== s));
+  }, []);
 
   // ── Styles ──────────────────────────────────────────────────────────────────
 
@@ -841,127 +870,148 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
               {/* ── Course linking ── */}
               <span style={sectionLabel}>Course links</span>
 
-              {/* Resolve from URL */}
-              <div style={{ marginBottom: '1.125rem', padding: '0.875rem 1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle, var(--bg))' }}>
-                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.5rem' }}>
-                  <Link2 size={13} /> Link course by URL or keyword
-                </label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <input
-                    className="input"
-                    value={resolveUrl}
-                    onChange={e => { setResolveUrl(e.target.value); setResolveError(null); setResolveResult(null); }}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleResolve(); } }}
-                    placeholder="alison.com/course/... or keyword e.g. AI Governance"
-                    style={{ ...inputSm, flex: 1 }}
-                    disabled={resolving}
-                  />
-                  <button
-                    className="btn btn-outline btn-sm"
-                    onClick={handleResolve}
-                    disabled={resolving || !resolveUrl.trim()}
-                    style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                  >
-                    {resolving ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : 'Resolve & link'}
-                  </button>
-                </div>
-                {resolveError && (
-                  <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'flex-start', marginTop: '0.5rem' }}>
-                    <AlertCircle size={12} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
-                    <span style={{ fontSize: '0.72rem', color: 'var(--rose)' }}>{resolveError}</span>
+              {/* Primary course — unified card */}
+              <div style={{ marginBottom: '1.125rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+
+                {/* Linked state chip */}
+                {primaryCourse && (
+                  <div style={{ padding: '0.625rem 0.875rem', background: 'rgba(34,197,94,0.05)', borderBottom: showResolveInput ? '1px solid var(--border)' : undefined }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <CheckCircle2 size={13} color="var(--green, #22c55e)" style={{ flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {linkedCourseTitle && (
+                          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {linkedCourseTitle}
+                          </span>
+                        )}
+                        <code style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{primaryCourse}</code>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+                        <a
+                          href={`/learn/${primaryCourse}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-outline btn-sm"
+                          style={{ padding: '0.2rem 0.4rem', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center' }}
+                          title="Preview course page"
+                        >
+                          <ExternalLink size={11} />
+                        </a>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={() => { setShowResolveInput(v => !v); setResolveError(null); }}
+                          style={{ padding: '0.2rem 0.5rem', fontSize: '0.72rem' }}
+                        >
+                          {showResolveInput ? 'Cancel' : 'Change'}
+                        </button>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={handleClearCourse}
+                          style={{ padding: '0.2rem 0.4rem', fontSize: '0.72rem', color: 'var(--rose)', borderColor: 'rgba(239,68,68,0.3)' }}
+                          title="Remove linked course"
+                        >
+                          <X size={11} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
-                {resolveResult && (
-                  <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'flex-start', marginTop: '0.5rem' }}>
-                    <CheckCircle2 size={12} color="var(--green, #22c55e)" style={{ flexShrink: 0, marginTop: 1 }} />
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                      {resolveResult.imported ? 'Imported & linked: ' : 'Found & linked: '}
-                      <strong>{resolveResult.title}</strong>
+
+                {/* Resolve input — always shown when no course, or when Change is open */}
+                {(!primaryCourse || showResolveInput) && (
+                  <div style={{ padding: '0.75rem 0.875rem' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.5rem' }}>
+                      <Link2 size={12} /> {primaryCourse ? 'Link a different course' : 'Link a course'}
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input
+                        className="input"
+                        value={courseInput}
+                        onChange={e => { setCourseInput(e.target.value); setResolveError(null); }}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleResolve(); } }}
+                        placeholder="Alison URL, keyword (e.g. AI Governance), or slug"
+                        style={{ ...inputSm, flex: 1 }}
+                        disabled={resolving}
+                        autoFocus={showResolveInput}
+                      />
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={handleResolve}
+                        disabled={resolving || !courseInput.trim()}
+                        style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                      >
+                        {resolving
+                          ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                          : 'Resolve & link'}
+                      </button>
+                    </div>
+                    {resolveError && (
+                      <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'flex-start', marginTop: '0.45rem' }}>
+                        <AlertCircle size={12} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
+                        <span style={{ fontSize: '0.72rem', color: 'var(--rose)' }}>{resolveError}</span>
+                      </div>
+                    )}
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.35rem', display: 'block' }}>
+                      Paste an Alison URL, type a keyword, or enter a slug directly — course is imported if not already in the DB.
                     </span>
                   </div>
                 )}
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.4rem', display: 'block' }}>
-                  Paste an Alison URL or type a keyword (e.g. "AI Governance") — course is imported if not already in the DB.
-                </span>
-              </div>
 
-              {/* AI course suggestions */}
-              <div style={{ marginBottom: '1.125rem', padding: '0.875rem 1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--bg-subtle, var(--bg))' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: (suggestions.length > 0 || suggestError) ? '0.75rem' : 0 }}>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                    <Sparkles size={13} /> AI course suggestions
-                  </label>
-                  <button
-                    className="btn btn-outline btn-sm"
-                    onClick={handleSuggest}
-                    disabled={suggesting || resolving || !title.trim()}
-                    style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                  >
-                    {suggesting
-                      ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Searching…</>
-                      : 'Suggest from article'
-                    }
-                  </button>
-                </div>
-                {suggestError && (
-                  <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'flex-start' }}>
-                    <AlertCircle size={12} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
-                    <span style={{ fontSize: '0.72rem', color: 'var(--rose)' }}>{suggestError}</span>
-                  </div>
-                )}
-                {suggestions.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                    {suggestedCategories.length > 0 && (
-                      <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
-                        {suggestedCategories.map(c => (
-                          <span key={c} style={{ fontSize: '0.68rem', fontWeight: 600, padding: '0.15rem 0.5rem', borderRadius: 99, background: 'var(--accent-subtle, rgba(99,102,241,0.1))', color: 'var(--accent, #6366f1)', border: '1px solid var(--accent-border, rgba(99,102,241,0.25))' }}>
-                            {c}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    {suggestions.map(s => (
-                      <div key={s.alisonSlug} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', padding: '0.45rem 0.625rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg)' }}>
-                        <div style={{ minWidth: 0 }}>
-                          <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-primary)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
-                          <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center', marginTop: '0.1rem' }}>
-                            <span style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>{s.category}</span>
-                            {s.dbSlug && <span style={{ fontSize: '0.67rem', color: 'var(--green, #22c55e)' }}>· Already in DB</span>}
-                          </div>
-                        </div>
-                        <button
-                          className="btn btn-outline btn-sm"
-                          onClick={() => handleUseSuggestion(s.alisonUrl)}
-                          disabled={resolving}
-                          style={{ flexShrink: 0 }}
-                        >
-                          Use this
-                        </button>
-                      </div>
+                {/* AI suggestions strip */}
+                <div style={{ padding: '0.625rem 0.875rem', borderTop: '1px solid var(--border)', background: 'var(--bg-subtle, var(--bg))' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={handleSuggest}
+                      disabled={suggesting || resolving || !title.trim()}
+                      style={{ whiteSpace: 'nowrap', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                    >
+                      {suggesting
+                        ? <><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> Searching…</>
+                        : <><Sparkles size={12} /> Suggest from article</>
+                      }
+                    </button>
+                    {suggestedCategories.map(c => (
+                      <span key={c} style={{ fontSize: '0.67rem', fontWeight: 700, padding: '0.1rem 0.45rem', borderRadius: 99, background: 'rgba(99,102,241,0.08)', color: 'var(--accent, #6366f1)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                        {c}
+                      </span>
                     ))}
                   </div>
-                )}
-                {!suggesting && suggestions.length === 0 && !suggestError && (
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    Classifies the article by topic, then searches Alison for matching courses.
-                  </span>
-                )}
-              </div>
-
-              <div style={{ marginBottom: '1.125rem' }}>
-                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.3rem' }}>
-                  <BookOpen size={13} /> Primary course slug
-                </label>
-                <input
-                  className="input"
-                  value={primaryCourse}
-                  onChange={e => setPrimaryCourse(e.target.value)}
-                  placeholder="e.g. introduction-to-ai-alison"
-                  style={inputSm}
-                />
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
-                  Auto-filled by "Resolve & link" above, or enter a slug manually. Embedded mid-article as "Recommended course".
-                </span>
+                  {suggestError && (
+                    <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'flex-start', marginTop: '0.45rem' }}>
+                      <AlertCircle size={12} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
+                      <span style={{ fontSize: '0.72rem', color: 'var(--rose)' }}>{suggestError}</span>
+                    </div>
+                  )}
+                  {!suggesting && suggestions.length === 0 && !suggestError && (
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.35rem', display: 'block' }}>
+                      Classifies the article by topic, then searches Alison for matching courses.
+                    </span>
+                  )}
+                  {suggestions.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.5rem' }}>
+                      {suggestions.map(s => (
+                        <div key={s.alisonSlug} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', padding: '0.4rem 0.625rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg)' }}>
+                          <div style={{ minWidth: 0 }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-primary)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
+                            <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', marginTop: '0.1rem' }}>
+                              <span style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>{s.category}</span>
+                              {s.dbSlug && <span style={{ fontSize: '0.67rem', color: 'var(--green, #22c55e)', fontWeight: 600 }}>· In DB</span>}
+                            </div>
+                          </div>
+                          <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => handleUseSuggestion(s.alisonUrl)}
+                            disabled={resolving}
+                            style={{ flexShrink: 0, fontSize: '0.75rem' }}
+                          >
+                            {resolving ? <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> : 'Use'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <SmartTextarea
@@ -974,19 +1024,42 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                 articleTitle={title}
               />
 
+              {/* Related courses — chip tag input */}
               <div style={{ marginBottom: '1.125rem' }}>
                 <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
                   Related course slugs
                 </label>
-                <input
-                  className="input"
-                  value={relatedCourses}
-                  onChange={e => setRelatedCourses(e.target.value)}
-                  placeholder="slug-one, slug-two, slug-three"
-                  style={inputSm}
-                />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', padding: '0.35rem 0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--bg)', minHeight: 38, alignItems: 'center', cursor: 'text' }}
+                  onClick={e => { if (e.target === e.currentTarget) (e.currentTarget.querySelector('input') as HTMLInputElement | null)?.focus(); }}
+                >
+                  {relatedSlugs.map(s => (
+                    <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.75rem', fontFamily: 'monospace', padding: '0.1rem 0.4rem', borderRadius: 'var(--radius)', background: 'var(--bg-subtle, rgba(0,0,0,0.05))', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                      {s}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRelatedSlug(s)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 0, display: 'inline-flex', lineHeight: 1 }}
+                      >
+                        <X size={9} />
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    value={relatedInput}
+                    onChange={e => setRelatedInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); handleAddRelatedSlug(relatedInput); }
+                      if (e.key === 'Backspace' && !relatedInput && relatedSlugs.length > 0) {
+                        handleRemoveRelatedSlug(relatedSlugs[relatedSlugs.length - 1]);
+                      }
+                    }}
+                    onBlur={() => { if (relatedInput.trim()) handleAddRelatedSlug(relatedInput); }}
+                    placeholder={relatedSlugs.length === 0 ? 'Type a slug and press Enter…' : ''}
+                    style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.78rem', fontFamily: 'monospace', flex: 1, minWidth: 80, padding: '0.1rem 0.2rem' }}
+                  />
+                </div>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
-                  Comma-separated — shown as a grid after the article
+                  Press <kbd style={{ fontFamily: 'monospace', fontSize: '0.67rem', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 3, padding: '0 3px' }}>Enter</kbd> or comma to add · Backspace removes last · Shown as a course grid after the article
                 </span>
               </div>
 
