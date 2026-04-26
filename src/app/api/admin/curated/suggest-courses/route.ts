@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
   if (!title?.trim()) return NextResponse.json({ error: 'title is required.' }, { status: 422 });
 
   let apiKey = '';
-  let model = 'google/gemini-flash-1.5';
+  let model = 'deepseek/deepseek-v4-flash';
   try {
     const ctx = await getCloudflareContext();
     const env = ctx.env as Record<string, string>;
@@ -124,28 +124,14 @@ export async function POST(req: NextRequest) {
     }
   };
 
-  // Step 1: search the LLM-chosen categories in parallel
+  // Search the LLM-chosen categories in parallel
   const primaryResults = await Promise.all(primaryCategories.map(searchCategory));
   primaryResults.forEach(addResults);
-
-  // Step 2: if not enough results, try remaining categories sequentially until we hit 6
-  if (allResults.length < 3) {
-    const remaining = CATEGORIES.filter(c => !primaryCategories.includes(c));
-    for (const category of remaining) {
-      if (allResults.length >= 6) break;
-      addResults(await searchCategory(category));
-    }
-  }
-
-  // Step 3: broad fallback
-  if (allResults.length === 0) {
-    addResults(await searchCategory('artificial intelligence'));
-  }
 
   const db = await getDB();
 
   const suggestions = await Promise.all(
-    allResults.slice(0, 6).map(async (r) => {
+    allResults.map(async (r) => {
       const alisonUrl = `https://alison.com/course/${r.slug}?${ALISON_AFFILIATE_PARAMS}`;
       let dbSlug: string | null = null;
       if (db) {
