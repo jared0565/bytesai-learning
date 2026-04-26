@@ -462,13 +462,17 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input: resolveUrl.trim() }),
       });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        setResolveError(data.error ?? 'Failed to resolve course.');
+      let data: Record<string, unknown>;
+      try { data = await res.json(); } catch {
+        setResolveError(`Server error (${res.status}) — please try again.`);
         return;
       }
-      setPrimaryCourse(data.slug);
-      setResolveResult({ title: data.title, imported: data.imported });
+      if (!res.ok || data.error) {
+        setResolveError((data.error as string) ?? 'Failed to resolve course.');
+        return;
+      }
+      setPrimaryCourse(data.slug as string);
+      setResolveResult({ title: data.title as string, imported: data.imported as boolean });
       setResolveUrl('');
     } catch {
       setResolveError('Network error — could not reach the server.');
@@ -490,8 +494,12 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: title.trim(), summary, whyItMatters }),
       });
-      const data = await res.json();
-      if (!res.ok || data.error) { setSuggestError(data.error ?? 'Failed to fetch suggestions.'); return; }
+      let data: Record<string, unknown>;
+      try { data = await res.json(); } catch {
+        setSuggestError(`Server error (${res.status}) — please try again.`);
+        return;
+      }
+      if (!res.ok || data.error) { setSuggestError((data.error as string) ?? 'Failed to fetch suggestions.'); return; }
       if (data.suggestions.length === 0) { setSuggestError('No matching courses found on Alison for this topic.'); return; }
       setSuggestions(data.suggestions);
       if (data.categories?.length) setSuggestedCategories(data.categories);
@@ -513,10 +521,14 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input: alisonUrl }),
       });
-      const data = await res.json();
-      if (!res.ok || data.error) { setResolveError(data.error ?? 'Failed to link course.'); return; }
-      setPrimaryCourse(data.slug);
-      setResolveResult({ title: data.title, imported: data.imported });
+      let data: Record<string, unknown>;
+      try { data = await res.json(); } catch {
+        setResolveError(`Server error (${res.status}) — please try again.`);
+        return;
+      }
+      if (!res.ok || data.error) { setResolveError((data.error as string) ?? 'Failed to link course.'); return; }
+      setPrimaryCourse(data.slug as string);
+      setResolveResult({ title: data.title as string, imported: data.imported as boolean });
     } catch {
       setResolveError('Network error — could not reach the server.');
     } finally {

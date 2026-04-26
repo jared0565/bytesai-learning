@@ -130,6 +130,30 @@ export async function POST(req: NextRequest) {
 
   const db = await getDB();
 
+  // Alison scraping returned nothing — fall back to DB keyword search
+  if (allResults.length === 0 && db) {
+    for (const category of primaryCategories) {
+      const kw = `%${category}%`;
+      try {
+        const rows = await db.prepare(
+          `SELECT slug, title, destination_url FROM courses
+           WHERE is_alison = 1 AND published_status = 'published'
+           AND (LOWER(title) LIKE LOWER(?) OR LOWER(category) LIKE LOWER(?) OR LOWER(snippet) LIKE LOWER(?))
+           LIMIT 12`
+        ).bind(kw, kw, kw).all<{ slug: string; title: string; destination_url: string | null }>();
+        for (const row of (rows.results ?? [])) {
+          const m = row.destination_url?.match(/\/course\/([a-z0-9][a-z0-9-]+)/i);
+          if (!m) continue;
+          const alisonSlug = m[1];
+          if (!seen.has(alisonSlug)) {
+            seen.add(alisonSlug);
+            allResults.push({ slug: alisonSlug, title: row.title, category });
+          }
+        }
+      } catch { /* DB fallback failed — skip */ }
+    }
+  }
+
   const suggestions = await Promise.all(
     allResults.map(async (r) => {
       const alisonUrl = `https://alison.com/course/${r.slug}?${ALISON_AFFILIATE_PARAMS}`;

@@ -26,6 +26,14 @@ function extractAlisonSlug(url: string): string | null {
 // Body: { url: string }  — any Alison course URL
 // Returns: { slug, title, snippet } — the DB slug (existing or newly imported)
 export async function POST(req: NextRequest) {
+  try {
+    return await handlePost(req);
+  } catch (err) {
+    return NextResponse.json({ error: `Unexpected error: ${err instanceof Error ? err.message : String(err)}` }, { status: 500 });
+  }
+}
+
+async function handlePost(req: NextRequest) {
   const session = await requireAdmin(req);
   if (!session) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
 
@@ -137,3 +145,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `DB insert failed: ${String(err)}` }, { status: 500 });
   }
 }
+
