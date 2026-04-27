@@ -12,20 +12,6 @@ async function requireAdmin(req: NextRequest) {
   return session;
 }
 
-// Maps editorial categories to Alison-friendly search terms.
-// These are the terms Alison's search engine actually understands.
-const CATEGORY_ALISON_QUERY: Record<string, string> = {
-  'AI Governance':           'AI governance responsible',
-  'AI Safety':               'AI safety risk',
-  'Ethics & Bias':           'AI ethics bias',
-  'Regulation & Compliance': 'AI regulation compliance',
-  'Foundation Models':       'generative AI large language models',
-  'Research & Models':       'machine learning deep learning',
-  'Technical Implementation':'machine learning python',
-  'AI Tooling':              'AI tools productivity',
-  'AI Workflow':             'AI workflow automation',
-  'AI in Business':          'artificial intelligence business',
-};
 
 export async function POST(req: NextRequest) {
   const session = await requireAdmin(req);
@@ -88,7 +74,7 @@ export async function POST(req: NextRequest) {
 
   // Search Alison via Firecrawl for each category using human-readable search terms
   const searches = primaryCategories.map(cat => {
-    const query = CATEGORY_ALISON_QUERY[cat] ?? cat;
+    const query = cat;
     return scrapeAlisonSearchWithFirecrawl(query, firecrawlKey)
       .then(results => addResults(results, cat))
       .catch(() => { /* skip failed searches */ });
