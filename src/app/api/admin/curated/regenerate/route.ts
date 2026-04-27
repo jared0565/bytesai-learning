@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 import { getDB, logAdminAction } from '@/lib/db';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { classifyArticle } from '@/lib/classify-article';
 
 async function requireAdmin(req: NextRequest) {
   const token = req.cookies.get(COOKIE_NAME)?.value;
@@ -195,6 +196,7 @@ export async function POST(req: NextRequest) {
     executive_implications: string | null;
     meta_description: string | null;
     source_references_json: string | null;
+    categories_json: string | null;
   };
 
   let pages: PageRow[];
@@ -203,7 +205,7 @@ export async function POST(req: NextRequest) {
     const placeholders = body.ids.map(() => '?').join(',');
     const result = await db.prepare(
       `SELECT id, title, summary, why_it_matters, what_changed, executive_implications,
-              meta_description, source_references_json
+              meta_description, source_references_json, categories_json
        FROM curated_pages WHERE id IN (${placeholders})`
     ).bind(...body.ids).all<PageRow>();
     pages = result.results;
@@ -211,7 +213,7 @@ export async function POST(req: NextRequest) {
     // Auto-pick next batch with missing fields
     const result = await db.prepare(
       `SELECT id, title, summary, why_it_matters, what_changed, executive_implications,
-              meta_description, source_references_json
+              meta_description, source_references_json, categories_json
        FROM curated_pages
        WHERE why_it_matters IS NULL OR what_changed IS NULL
           OR executive_implications IS NULL OR meta_description IS NULL
@@ -254,6 +256,19 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
+    // Auto-classify categories if not already set
+    let categoriesJson = page.categories_json;
+    if (!categoriesJson) {
+      const cats = await classifyArticle(
+        page.title,
+        structured.summary,
+        structured.why_it_matters,
+        apiKey,
+        model,
+      );
+      if (cats.length > 0) categoriesJson = JSON.stringify(cats);
+    }
+
     try {
       await db.prepare(`
         UPDATE curated_pages SET
@@ -262,6 +277,7 @@ export async function POST(req: NextRequest) {
           what_changed = ?,
           executive_implications = ?,
           meta_description = ?,
+          categories_json = ?,
           updated_at = ?
         WHERE id = ?
       `).bind(
@@ -270,6 +286,7 @@ export async function POST(req: NextRequest) {
         structured.what_changed || null,
         structured.executive_implications || null,
         structured.meta_description || null,
+        categoriesJson,
         now,
         page.id,
       ).run();

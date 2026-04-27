@@ -481,6 +481,15 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
     }
   }, [title, summary, whyItMatters]);
 
+  // Auto-classify categories on load when content is present but no categories set
+  const autoClassifiedRef = useRef(false);
+  useEffect(() => {
+    if (!loading && !autoClassifiedRef.current && categories.length === 0 && (summary || whyItMatters) && title) {
+      autoClassifiedRef.current = true;
+      handleAutoAssignCategories();
+    }
+  }, [loading, categories.length, summary, whyItMatters, title, handleAutoAssignCategories]);
+
   // ── Course URL resolver ──────────────────────────────────────────────────────
   const handleResolve = useCallback(async () => {
     if (!courseInput.trim()) return;
