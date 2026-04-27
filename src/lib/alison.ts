@@ -33,21 +33,42 @@ export interface AlisonCourseDetail {
 
 // ── Search ────────────────────────────────────────────────────────────────────
 
-export async function scrapeAlisonSearch(query: string): Promise<Array<{ slug: string; title: string }>> {
-  const url = `https://alison.com/courses?query=${encodeURIComponent(query)}`;
-  const res = await fetch(url, { headers: ALISON_FETCH_HEADERS, signal: AbortSignal.timeout(10_000) });
-  if (!res.ok) throw new Error(`Alison search returned ${res.status}`);
+// Use Firecrawl to render Alison's JS-heavy search page and extract course results.
+// Alison's search results are not in the static HTML — they require JS execution.
+export async function scrapeAlisonSearchWithFirecrawl(
+  query: string,
+  firecrawlApiKey: string,
+): Promise<Array<{ slug: string; title: string }>> {
+  const alisonUrl = `https://alison.com/courses?query=${encodeURIComponent(query)}`;
 
-  const html = await res.text();
+  let html = '';
+  try {
+    const res = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${firecrawlApiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: alisonUrl, formats: ['html'], waitFor: 3000 }),
+      signal: AbortSignal.timeout(35_000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json() as { success?: boolean; data?: { html?: string } };
+    html = data.data?.html ?? '';
+  } catch { return []; }
+
+  if (!html) return [];
+  return parseAlisonSearchHTML(html);
+}
+
+// Shared HTML parser — works on both raw static HTML and Firecrawl-rendered HTML.
+function parseAlisonSearchHTML(html: string): Array<{ slug: string; title: string }> {
   const courses: Array<{ slug: string; title: string }> = [];
   const seen = new Set<string>();
 
-  // Strategy 1: __NEXT_DATA__
+  // Strategy 1: __NEXT_DATA__ JSON
   const nextMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
   if (nextMatch) {
     try {
-      const data = JSON.parse(nextMatch[1]);
-      extractFromNextData(data, courses, seen, 0);
+      const d = JSON.parse(nextMatch[1]);
+      extractFromNextData(d, courses, seen, 0);
       if (courses.length > 0) return courses.slice(0, 12);
     } catch { /* fall through */ }
   }
@@ -61,35 +82,35 @@ export async function scrapeAlisonSearch(query: string): Promise<Array<{ slug: s
       for (const item of items) {
         const it = item as Record<string, unknown>;
         if (it['@type'] === 'Course' && typeof it.url === 'string' && typeof it.name === 'string') {
-          const slug = it.url
-            .replace(/^https?:\/\/alison\.com\/course\//, '')
-            .replace(/[?#].*$/, '')
-            .replace(/\/[0-9]+$/, '');
-          if (slug && !seen.has(slug)) {
-            seen.add(slug);
-            courses.push({ slug, title: it.name });
-          }
+          const slug = (it.url as string).replace(/^https?:\/\/alison\.com\/course\//, '').replace(/[?#].*$/, '').replace(/\/[0-9]+$/, '');
+          if (slug && !seen.has(slug)) { seen.add(slug); courses.push({ slug, title: it.name as string }); }
         }
       }
     } catch { /* ignore */ }
   }
   if (courses.length >= 3) return courses.slice(0, 12);
 
-  // Strategy 3: href="/course/{slug}" or "/course/{slug}/{id}" pattern
+  // Strategy 3: href="/course/{slug}" pattern (works on Firecrawl-rendered HTML)
   const hrefRegex = /href="\/course\/([a-z0-9][a-z0-9-]+(?:\/[0-9]+)?)"/gi;
   let m: RegExpExecArray | null;
   while ((m = hrefRegex.exec(html)) !== null) {
     const slug = m[1].replace(/\/[0-9]+$/, '');
     if (seen.has(slug)) continue;
     seen.add(slug);
-    const ctxStart = Math.max(0, m.index - 200);
-    const ctx = html.slice(ctxStart, m.index + 400);
+    const ctx = html.slice(Math.max(0, m.index - 200), m.index + 400);
     const title = extractTitle(ctx, slug);
     if (title) courses.push({ slug, title });
     if (courses.length >= 12) break;
   }
 
   return courses.slice(0, 12);
+}
+
+export async function scrapeAlisonSearch(query: string): Promise<Array<{ slug: string; title: string }>> {
+  const url = `https://alison.com/courses?query=${encodeURIComponent(query)}`;
+  const res = await fetch(url, { headers: ALISON_FETCH_HEADERS, signal: AbortSignal.timeout(10_000) });
+  if (!res.ok) throw new Error(`Alison search returned ${res.status}`);
+  return parseAlisonSearchHTML(await res.text());
 }
 
 function extractFromNextData(obj: unknown, out: Array<{ slug: string; title: string }>, seen: Set<string>, depth: number) {

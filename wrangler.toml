@@ -44,6 +44,7 @@ CHATBOT_MODEL = "google/gemini-3.1-flash-lite-preview"
 # Set these as Cloudflare secrets (never in source):
 # JWT_SECRET
 # OPENROUTER_API_KEY
+# FIRECRAWL_API_KEY
 # SEED_ADMIN_EMAIL
 # SEED_ADMIN_PASSWORD
 # SEED_ADMIN_NAME

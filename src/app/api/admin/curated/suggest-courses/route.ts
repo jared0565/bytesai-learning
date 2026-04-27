@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 import { getDB } from '@/lib/db';
-import { scrapeAlisonSearch, ALISON_AFFILIATE_PARAMS } from '@/lib/alison';
+import { scrapeAlisonSearchWithFirecrawl, ALISON_AFFILIATE_PARAMS } from '@/lib/alison';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { classifyArticle, ARTICLE_CATEGORIES } from '@/lib/classify-article';
 
@@ -12,14 +12,20 @@ async function requireAdmin(req: NextRequest) {
   return session;
 }
 
-async function searchQuery(query: string, label: string): Promise<Array<{ slug: string; title: string; category: string }>> {
-  try {
-    const results = await scrapeAlisonSearch(query);
-    return results.map(r => ({ ...r, category: label }));
-  } catch {
-    return [];
-  }
-}
+// Maps editorial categories to Alison-friendly search terms.
+// These are the terms Alison's search engine actually understands.
+const CATEGORY_ALISON_QUERY: Record<string, string> = {
+  'AI Governance':           'AI governance responsible',
+  'AI Safety':               'AI safety risk',
+  'Ethics & Bias':           'AI ethics bias',
+  'Regulation & Compliance': 'AI regulation compliance',
+  'Foundation Models':       'generative AI large language models',
+  'Research & Models':       'machine learning deep learning',
+  'Technical Implementation':'machine learning python',
+  'AI Tooling':              'AI tools productivity',
+  'AI Workflow':             'AI workflow automation',
+  'AI in Business':          'artificial intelligence business',
+};
 
 export async function POST(req: NextRequest) {
   const session = await requireAdmin(req);
@@ -31,8 +37,7 @@ export async function POST(req: NextRequest) {
   const { title, summary = '', whyItMatters = '', categories: providedCategories } = body;
   if (!title?.trim()) return NextResponse.json({ error: 'title is required.' }, { status: 422 });
 
-  // If categories are pre-set by the admin, use them directly — skip AI classification.
-  // Otherwise fall back to classifying the article content.
+  // Use admin-assigned categories if present; otherwise classify via AI
   let primaryCategories: string[];
   if (Array.isArray(providedCategories) && providedCategories.length > 0) {
     primaryCategories = providedCategories.filter(c => (ARTICLE_CATEGORIES as readonly string[]).includes(c));
@@ -54,60 +59,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No categories set — assign categories first using "Auto-assign" in the Categories section.' }, { status: 422 });
   }
 
+  // Get Firecrawl API key
+  let firecrawlKey = '';
+  try {
+    const ctx = await getCloudflareContext();
+    const env = ctx.env as Record<string, string>;
+    firecrawlKey = env.FIRECRAWL_API_KEY ?? '';
+  } catch {
+    firecrawlKey = process.env.FIRECRAWL_API_KEY ?? '';
+  }
+
+  if (!firecrawlKey) {
+    return NextResponse.json({ error: 'Firecrawl API key not configured.' }, { status: 503 });
+  }
+
+  const db = await getDB();
   const seen = new Set<string>();
   const allResults: Array<{ slug: string; title: string; category: string }> = [];
 
-  const addResults = (results: Array<{ slug: string; title: string; category: string }>) => {
+  const addResults = (results: Array<{ slug: string; title: string }>, label: string) => {
     for (const r of results) {
       if (!seen.has(r.slug)) {
         seen.add(r.slug);
-        allResults.push(r);
+        allResults.push({ ...r, category: label });
       }
     }
   };
 
-  // Search Alison: use the article title first (best signal), then each category label.
-  // Category labels like "AI Governance" are editorial terms — not effective Alison search queries.
-  // The article title (e.g. "Managing AI Governance with ISO 42001") is far more descriptive.
-  const articleTitle = title.trim().slice(0, 100);
-  const titleLabel = primaryCategories[0] ?? 'Related';
-  const [titleResults, ...categoryResults] = await Promise.all([
-    searchQuery(articleTitle, titleLabel),
-    ...primaryCategories.map(cat => searchQuery(cat, cat)),
-  ]);
-  addResults(titleResults);
-  categoryResults.forEach(addResults);
-
-  const db = await getDB();
-
-  // Alison scraping returned nothing — fall back to DB keyword search using title words
-  if (allResults.length === 0 && db) {
-    const titleWords = articleTitle.split(/\s+/).filter(w => w.length > 3);
-    const searchTerms = titleWords.length > 0
-      ? [`%${titleWords.slice(0, 4).join(' ')}%`, ...primaryCategories.map(c => `%${c}%`)]
-      : primaryCategories.map(c => `%${c}%`);
-
-    for (const kw of searchTerms) {
-      const label = primaryCategories[0] ?? 'Related';
-      try {
-        const rows = await db.prepare(
-          `SELECT slug, title, destination_url FROM courses
-           WHERE is_alison = 1 AND published_status = 'published'
-           AND (title LIKE ? OR category LIKE ?)
-           LIMIT 12`
-        ).bind(kw, kw).all<{ slug: string; title: string; destination_url: string | null }>();
-        for (const row of (rows.results ?? [])) {
-          const m = row.destination_url?.match(/\/course\/([a-z0-9][a-z0-9-]+)/i);
-          if (!m) continue;
-          const alisonSlug = m[1];
-          if (!seen.has(alisonSlug)) {
-            seen.add(alisonSlug);
-            allResults.push({ slug: alisonSlug, title: row.title, category: label });
-          }
-        }
-      } catch { /* DB fallback failed — skip */ }
-    }
-  }
+  // Search Alison via Firecrawl for each category using human-readable search terms
+  const searches = primaryCategories.map(cat => {
+    const query = CATEGORY_ALISON_QUERY[cat] ?? cat;
+    return scrapeAlisonSearchWithFirecrawl(query, firecrawlKey)
+      .then(results => addResults(results, cat))
+      .catch(() => { /* skip failed searches */ });
+  });
+  await Promise.all(searches);
 
   const suggestions = await Promise.all(
     allResults.map(async (r) => {
