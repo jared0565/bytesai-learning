@@ -12,10 +12,10 @@ async function requireAdmin(req: NextRequest) {
   return session;
 }
 
-async function searchCategory(category: string): Promise<Array<{ slug: string; title: string; category: string }>> {
+async function searchQuery(query: string, label: string): Promise<Array<{ slug: string; title: string; category: string }>> {
   try {
-    const results = await scrapeAlisonSearch(category);
-    return results.map(r => ({ ...r, category }));
+    const results = await scrapeAlisonSearch(query);
+    return results.map(r => ({ ...r, category: label }));
   } catch {
     return [];
   }
@@ -66,16 +66,29 @@ export async function POST(req: NextRequest) {
     }
   };
 
-  // Search the categories in parallel (Alison scrape)
-  const primaryResults = await Promise.all(primaryCategories.map(searchCategory));
-  primaryResults.forEach(addResults);
+  // Search Alison: use the article title first (best signal), then each category label.
+  // Category labels like "AI Governance" are editorial terms — not effective Alison search queries.
+  // The article title (e.g. "Managing AI Governance with ISO 42001") is far more descriptive.
+  const articleTitle = title.trim().slice(0, 100);
+  const titleLabel = primaryCategories[0] ?? 'Related';
+  const [titleResults, ...categoryResults] = await Promise.all([
+    searchQuery(articleTitle, titleLabel),
+    ...primaryCategories.map(cat => searchQuery(cat, cat)),
+  ]);
+  addResults(titleResults);
+  categoryResults.forEach(addResults);
 
   const db = await getDB();
 
-  // Alison scraping returned nothing — fall back to DB keyword search
+  // Alison scraping returned nothing — fall back to DB keyword search using title words
   if (allResults.length === 0 && db) {
-    for (const category of primaryCategories) {
-      const kw = `%${category}%`;
+    const titleWords = articleTitle.split(/\s+/).filter(w => w.length > 3);
+    const searchTerms = titleWords.length > 0
+      ? [`%${titleWords.slice(0, 4).join(' ')}%`, ...primaryCategories.map(c => `%${c}%`)]
+      : primaryCategories.map(c => `%${c}%`);
+
+    for (const kw of searchTerms) {
+      const label = primaryCategories[0] ?? 'Related';
       try {
         const rows = await db.prepare(
           `SELECT slug, title, destination_url FROM courses
@@ -89,7 +102,7 @@ export async function POST(req: NextRequest) {
           const alisonSlug = m[1];
           if (!seen.has(alisonSlug)) {
             seen.add(alisonSlug);
-            allResults.push({ slug: alisonSlug, title: row.title, category });
+            allResults.push({ slug: alisonSlug, title: row.title, category: label });
           }
         }
       } catch { /* DB fallback failed — skip */ }
