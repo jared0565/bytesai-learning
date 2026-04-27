@@ -307,6 +307,8 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
   const [suggesting, setSuggesting] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
+  const [classifying, setClassifying] = useState(false);
+  const [classifyError, setClassifyError] = useState<string | null>(null);
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
   const [editorialStatus, setEditorialStatus] = useState('draft');
@@ -452,6 +454,33 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
     return () => document.removeEventListener('keydown', handleKey);
   }, [handleSave]);
 
+  // ── Auto-assign categories ───────────────────────────────────────────────────
+  const handleAutoAssignCategories = useCallback(async () => {
+    if (!title.trim()) return;
+    setClassifying(true);
+    setClassifyError(null);
+    try {
+      const res = await fetch('/api/admin/curated/classify-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), summary, whyItMatters }),
+      });
+      let data: Record<string, unknown>;
+      try { data = await res.json(); } catch {
+        setClassifyError(`Server error (${res.status})`);
+        return;
+      }
+      if (!res.ok || data.error) { setClassifyError((data.error as string) ?? 'Classification failed.'); return; }
+      const cats = data.categories as string[];
+      if (!cats?.length) { setClassifyError('Could not classify — add a summary or why-it-matters first.'); return; }
+      setCategories(cats);
+    } catch {
+      setClassifyError('Network error — could not reach the server.');
+    } finally {
+      setClassifying(false);
+    }
+  }, [title, summary, whyItMatters]);
+
   // ── Course URL resolver ──────────────────────────────────────────────────────
   const handleResolve = useCallback(async () => {
     if (!courseInput.trim()) return;
@@ -491,6 +520,10 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   // ── AI course suggestions ────────────────────────────────────────────────────
   const handleSuggest = useCallback(async () => {
     if (!title.trim()) return;
+    if (!categories.length) {
+      setSuggestError('Assign categories first — click "Auto-assign ✨" in the Categories section above.');
+      return;
+    }
     setSuggesting(true);
     setSuggestError(null);
     setSuggestions([]);
@@ -499,7 +532,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
       const res = await fetch('/api/admin/curated/suggest-courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), summary, whyItMatters }),
+        body: JSON.stringify({ title: title.trim(), summary, whyItMatters, categories }),
       });
       let data: Record<string, unknown>;
       try { data = await res.json(); } catch {
@@ -516,7 +549,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
     } finally {
       setSuggesting(false);
     }
-  }, [title, summary, whyItMatters]);
+  }, [title, summary, whyItMatters, categories]);
 
   const handleUseSuggestion = useCallback(async (alisonUrl: string) => {
     setResolving(true);
@@ -826,7 +859,26 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
               <div style={divider} />
 
               {/* ── Categories ── */}
-              <span style={sectionLabel}>Categories</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem' }}>
+                <span style={{ ...sectionLabel, marginBottom: 0 }}>Categories</span>
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={handleAutoAssignCategories}
+                  disabled={classifying || !title.trim()}
+                  style={{ fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}
+                >
+                  {classifying
+                    ? <><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> Classifying…</>
+                    : <><Sparkles size={12} /> Auto-assign</>
+                  }
+                </button>
+              </div>
+              {classifyError && (
+                <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                  <AlertCircle size={12} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span style={{ fontSize: '0.72rem', color: 'var(--rose)' }}>{classifyError}</span>
+                </div>
+              )}
               <div style={{ marginBottom: '1.25rem' }}>
                 <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                   {categories.map(cat => (
@@ -861,7 +913,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                   ))}
                 </div>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.4rem', display: 'block' }}>
-                  Click to add · Click a tag to remove. AI assigns these automatically on generation.
+                  "Auto-assign" uses AI to detect categories from the article · These categories also drive "Suggest from article" below
                 </span>
               </div>
 
