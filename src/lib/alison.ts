@@ -90,16 +90,24 @@ function parseAlisonSearchHTML(html: string): Array<{ slug: string; title: strin
   }
   if (courses.length >= 3) return courses.slice(0, 12);
 
-  // Strategy 3: href="/course/{slug}" pattern (works on Firecrawl-rendered HTML)
-  const hrefRegex = /href="\/course\/([a-z0-9][a-z0-9-]+(?:\/[0-9]+)?)"/gi;
+  // Strategy 3: match base-URL "More Info" links (no fragment/query) — title is in h3 ~2500 chars earlier
+  const hrefRegex = /href="(?:https:\/\/alison\.com)?\/course\/([a-z0-9][a-z0-9-]+)(?:\/[0-9]+)?"/gi;
   let m: RegExpExecArray | null;
   while ((m = hrefRegex.exec(html)) !== null) {
-    const slug = m[1].replace(/\/[0-9]+$/, '');
+    const slug = m[1];
     if (seen.has(slug)) continue;
     seen.add(slug);
-    const ctx = html.slice(Math.max(0, m.index - 200), m.index + 400);
-    const title = extractTitle(ctx, slug);
-    if (title) courses.push({ slug, title });
+    // Scan back up to 4000 chars and take the last h3 found (closest = this card's title)
+    const lookback = html.slice(Math.max(0, m.index - 4000), m.index);
+    const h3Matches = [...lookback.matchAll(/<h3>([^<]{5,120})<\/h3>/gi)];
+    const rawTitle = h3Matches.length > 0
+      ? h3Matches[h3Matches.length - 1][1].trim()
+      : slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    const title = rawTitle
+      .replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ')
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+      .replace(/\s+/g, ' ').trim();
+    courses.push({ slug, title });
     if (courses.length >= 12) break;
   }
 
@@ -127,22 +135,6 @@ function extractFromNextData(obj: unknown, out: Array<{ slug: string; title: str
   for (const val of Object.values(r)) {
     if (val && typeof val === 'object') { extractFromNextData(val, out, seen, depth + 1); if (out.length >= 12) return; }
   }
-}
-
-function extractTitle(ctx: string, slug: string): string {
-  const patterns = [
-    /title="([^"]{5,120})"/,
-    /aria-label="([^"]{5,120})"/,
-    /"name"\s*:\s*"([^"]{5,120})"/,
-    /alt="([^"]{5,120})"/,
-    /<h[1-6][^>]*>([^<]{5,120})<\/h[1-6]>/i,
-    /<(?:p|span)[^>]*class="[^"]*(?:title|name|course-title|card-title)[^"]*"[^>]*>([^<]{5,120})<\//i,
-  ];
-  for (const p of patterns) {
-    const m = ctx.match(p);
-    if (m) return m[1].trim();
-  }
-  return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 // ── Detail ────────────────────────────────────────────────────────────────────
