@@ -577,7 +577,6 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         setPrimaryCourseRationale(data.snippet as string);
       }
       setSuggestions([]);
-      setSuggestedCategories([]);
     } catch {
       setResolveError('Network error — could not reach the server.');
     } finally {
@@ -591,7 +590,6 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
     setResolveResult(null);
     setResolveError(null);
     setSuggestions([]);
-    setSuggestedCategories([]);
     setShowResolveInput(false);
     setCourseInput('');
   }, []);
