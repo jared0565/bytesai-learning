@@ -122,20 +122,19 @@ export default async function CoursesPage({ searchParams }: PageProps) {
                 </p>
 
                 {/* Sort */}
-                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="label" htmlFor="sort-select">Sort by</label>
-                  <select
-                    id="sort-select"
-                    name="sort"
-                    className="input"
-                    style={{ fontSize: '0.875rem' }}
-                    defaultValue={sort}
-                    onChange={undefined}
-                  >
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <p className="label">Sort by</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                     {SORT_OPTIONS.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
+                      <Link
+                        key={o.value}
+                        href={buildUrl({ sort: o.value })}
+                        style={{ fontSize: '0.8125rem', padding: '0.375rem 0.625rem', borderRadius: 6, background: sort === o.value ? 'var(--accent-soft)' : 'transparent', color: sort === o.value ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: sort === o.value ? 700 : 400 }}
+                      >
+                        {o.label}
+                      </Link>
                     ))}
-                  </select>
+                  </div>
                 </div>
 
                 {/* Category */}

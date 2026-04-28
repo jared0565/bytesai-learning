@@ -241,7 +241,7 @@ export default async function HomePage() {
                 {Array.from({ length: 4 }).map((_, i) => <CourseCardSkeleton key={i} />)}
               </div>
             )}
-            <div style={{ marginTop: '1.25rem', padding: '0.75rem 1rem', background: 'var(--amber-soft)', borderRadius: 'var(--radius-md)', fontSize: '0.8125rem', color: '#92400e' }} className="dark-hide">
+            <div style={{ marginTop: '1.25rem', padding: '0.75rem 1rem', background: 'var(--amber-soft)', borderRadius: 'var(--radius-md)', fontSize: '0.8125rem', color: '#d97706' }}>
               💡 <strong>Affiliate note:</strong> Some cards above link to Alison courses (marked with an Alison badge). We may earn a commission if you purchase a certificate — the course itself is always free.
             </div>
           </div>
