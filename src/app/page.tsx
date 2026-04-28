@@ -171,28 +171,46 @@ export default async function HomePage() {
               ))}
 
               {/* Course preview strip — shows 2 featured courses as a concrete product preview */}
-              {featuredCourses.slice(0, 2).map(course => (
-                <a
-                  key={course.id}
-                  href={course.destination_url ?? course.affiliate_url ?? course.official_link ?? '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="card card-glass"
-                  style={{ padding: '0.875rem 1rem', display: 'flex', gap: '0.75rem', alignItems: 'center', textDecoration: 'none' }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 700, color: 'white', fontSize: '0.8125rem', lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {course.title}
-                    </p>
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.15rem' }}>
-                      {course.provider_id ?? course.author_or_source}
-                    </p>
-                  </div>
-                  <span style={{ fontSize: '0.6875rem', fontWeight: 700, background: 'rgba(52,211,153,0.18)', color: '#6ee7b7', border: '1px solid rgba(52,211,153,0.25)', borderRadius: 'var(--radius-full)', padding: '0.2rem 0.5rem', flexShrink: 0 }}>
-                    FREE
-                  </span>
-                </a>
-              ))}
+              {featuredCourses.slice(0, 2).map(course => {
+                const isAlison = course.is_alison === 1;
+                const cardStyle = { padding: '0.875rem 1rem', display: 'flex', gap: '0.75rem', alignItems: 'center', textDecoration: 'none' } as const;
+                const inner = (
+                  <>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 700, color: 'white', fontSize: '0.8125rem', lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {course.title}
+                      </p>
+                      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.15rem' }}>
+                        {course.provider_id ?? course.author_or_source}
+                      </p>
+                    </div>
+                    <span style={{ fontSize: '0.6875rem', fontWeight: 700, background: 'rgba(52,211,153,0.18)', color: '#6ee7b7', border: '1px solid rgba(52,211,153,0.25)', borderRadius: 'var(--radius-full)', padding: '0.2rem 0.5rem', flexShrink: 0 }}>
+                      FREE
+                    </span>
+                  </>
+                );
+                return isAlison ? (
+                  <a
+                    key={course.id}
+                    href={course.affiliate_url ?? course.official_link ?? '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="card card-glass"
+                    style={cardStyle}
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <Link
+                    key={course.id}
+                    href={`/courses/${course.slug}`}
+                    className="card card-glass"
+                    style={cardStyle}
+                  >
+                    {inner}
+                  </Link>
+                );
+              })}
 
               {featuredCourses.length > 0 && (
                 <Link href="/courses" style={{ textAlign: 'center', fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', padding: '0.25rem' }}>
