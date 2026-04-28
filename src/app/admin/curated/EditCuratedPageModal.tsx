@@ -304,8 +304,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [resolveResult, setResolveResult] = useState<{ title: string; imported: boolean } | null>(null);
   const [suggestions, setSuggestions] = useState<Array<{ alisonSlug: string; title: string; alisonUrl: string; dbSlug: string | null; category: string }>>([]);
-  const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
-  const [suggesting, setSuggesting] = useState(false);
+  const [searchingCategory, setSearchingCategory] = useState<string | null>(null);
   const [suggestError, setSuggestError] = useState<string | null>(null);
   const [classifying, setClassifying] = useState(false);
   const [classifyError, setClassifyError] = useState<string | null>(null);
@@ -527,21 +526,16 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   }, [courseInput, primaryCourseRationale]);
 
   // ── AI course suggestions ────────────────────────────────────────────────────
-  const handleSuggest = useCallback(async () => {
+  const handleSuggestByCategory = useCallback(async (cat: string) => {
     if (!title.trim()) return;
-    if (!categories.length) {
-      setSuggestError('Assign categories first — click "Auto-assign ✨" in the Categories section above.');
-      return;
-    }
-    setSuggesting(true);
+    setSearchingCategory(cat);
     setSuggestError(null);
     setSuggestions([]);
-    setSuggestedCategories([]);
     try {
       const res = await fetch('/api/admin/curated/suggest-courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), summary, whyItMatters, categories }),
+        body: JSON.stringify({ title: title.trim(), summary, whyItMatters, categories: [cat] }),
       });
       let data: Record<string, unknown>;
       try { data = await res.json(); } catch {
@@ -549,16 +543,15 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         return;
       }
       if (!res.ok || data.error) { setSuggestError((data.error as string) ?? 'Failed to fetch suggestions.'); return; }
-      if (Array.isArray(data.categories) && data.categories.length) setSuggestedCategories(data.categories as string[]);
-      const suggestions = data.suggestions as Array<{ alisonSlug: string; title: string; alisonUrl: string; dbSlug: string | null; category: string }>;
-      if (!suggestions?.length) { setSuggestError('No matching courses found on Alison for this topic.'); return; }
-      setSuggestions(suggestions);
+      const results = data.suggestions as Array<{ alisonSlug: string; title: string; alisonUrl: string; dbSlug: string | null; category: string }>;
+      if (!results?.length) { setSuggestError('No matching courses found on Alison for this topic.'); return; }
+      setSuggestions(results);
     } catch {
       setSuggestError('Network error — could not reach the server.');
     } finally {
-      setSuggesting(false);
+      setSearchingCategory(null);
     }
-  }, [title, summary, whyItMatters, categories]);
+  }, [title, summary, whyItMatters]);
 
   const handleUseSuggestion = useCallback(async (alisonUrl: string) => {
     setResolving(true);
@@ -1018,36 +1011,41 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                   </div>
                 )}
 
-                {/* AI suggestions strip */}
+                {/* Course search via categories */}
                 <div style={{ padding: '0.625rem 0.875rem', borderTop: '1px solid var(--border)', background: 'var(--bg-subtle, var(--bg))' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <button
-                      className="btn btn-outline btn-sm"
-                      onClick={handleSuggest}
-                      disabled={suggesting || resolving || !title.trim()}
-                      style={{ whiteSpace: 'nowrap', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
-                    >
-                      {suggesting
-                        ? <><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> Searching…</>
-                        : <><Sparkles size={12} /> Suggest from article</>
-                      }
-                    </button>
-                    {suggestedCategories.map(c => (
-                      <span key={c} style={{ fontSize: '0.67rem', fontWeight: 700, padding: '0.1rem 0.45rem', borderRadius: 99, background: 'rgba(99,102,241,0.08)', color: 'var(--accent, #6366f1)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                        {c}
-                      </span>
-                    ))}
-                  </div>
+                  {categories.length > 0 ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Search by:</span>
+                      {categories.map(c => (
+                        <button
+                          key={c}
+                          onClick={() => handleSuggestByCategory(c)}
+                          disabled={searchingCategory !== null || resolving}
+                          style={{
+                            fontSize: '0.67rem', fontWeight: 700,
+                            padding: '0.1rem 0.45rem', borderRadius: 99,
+                            background: searchingCategory === c ? 'rgba(99,102,241,0.18)' : 'rgba(99,102,241,0.08)',
+                            color: 'var(--accent, #6366f1)',
+                            border: '1px solid rgba(99,102,241,0.2)',
+                            cursor: searchingCategory !== null ? 'wait' : 'pointer',
+                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                          }}
+                        >
+                          {searchingCategory === c && <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} />}
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                      Assign categories above to search Alison for matching courses.
+                    </span>
+                  )}
                   {suggestError && (
                     <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'flex-start', marginTop: '0.45rem' }}>
                       <AlertCircle size={12} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
                       <span style={{ fontSize: '0.72rem', color: 'var(--rose)' }}>{suggestError}</span>
                     </div>
-                  )}
-                  {!suggesting && suggestions.length === 0 && !suggestError && (
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.35rem', display: 'block' }}>
-                      Classifies the article by topic, then searches Alison for matching courses.
-                    </span>
                   )}
                   {suggestions.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.5rem' }}>
