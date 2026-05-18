@@ -102,7 +102,7 @@ export default async function HomePage() {
               </div>
             </div>
             <div className="hero-visual">
-              <HeroCardGrid />
+              <HeroCardGrid courses={featuredCourses} />
             </div>
           </div>
         </section>
