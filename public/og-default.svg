@@ -74,7 +74,7 @@
   <rect width="1200" height="1200" fill="url(#gAtmMid)"/>
 
   <!-- Soft glow blob behind headline -->
-  <ellipse cx="590" cy="455" rx="480" ry="310" fill="#1a3a8f" opacity="0.09" filter="url(#fBlob)"/>
+  <ellipse cx="590" cy="527" rx="480" ry="310" fill="#1a3a8f" opacity="0.09" filter="url(#fBlob)"/>
   <!-- Secondary teal blob bottom-right -->
   <ellipse cx="980" cy="920" rx="320" ry="220" fill="#0e7490" opacity="0.07" filter="url(#fBlob)"/>
 
@@ -175,54 +175,54 @@
   <line x1="80" y1="162" x2="1120" y2="162" stroke="#ffffff" stroke-opacity="0.07" stroke-width="1"/>
 
   <!-- ========== TRUST BADGE PILL ========== -->
-  <rect x="262" y="190" width="676" height="54" rx="27" fill="url(#gBadge)" stroke="#6284f9" stroke-opacity="0.32" stroke-width="1"/>
-  <text x="600" y="224" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="21" font-weight="500" fill="#c7d2fe" text-anchor="middle" letter-spacing="0.2">&#9733;  100+ Free AI Courses  ·  Verified  ·  No Paywalls</text>
+  <rect x="262" y="170" width="676" height="54" rx="27" fill="url(#gBadge)" stroke="#6284f9" stroke-opacity="0.32" stroke-width="1"/>
+  <text x="600" y="204" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="21" font-weight="500" fill="#c7d2fe" text-anchor="middle" letter-spacing="0.2">&#9733;  100+ Free AI Courses  ·  Verified  ·  No Paywalls</text>
 
   <!-- ========== MAIN HEADLINE ========== -->
   <!-- Line 1 -->
-  <text x="80" y="338" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="91" font-weight="800" fill="#f0f4ff" letter-spacing="-3.5">The best free</text>
+  <text x="80" y="410" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="91" font-weight="800" fill="#f0f4ff" letter-spacing="-3.5">The best free</text>
   <!-- Line 2 -->
-  <text x="80" y="444" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="91" font-weight="800" fill="#f0f4ff" letter-spacing="-3.5">AI courses,</text>
+  <text x="80" y="516" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="91" font-weight="800" fill="#f0f4ff" letter-spacing="-3.5">AI courses,</text>
   <!-- Line 3 — gradient accent -->
-  <text x="80" y="550" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="91" font-weight="800" fill="url(#gHeadline)" letter-spacing="-3.5">curated for you.</text>
+  <text x="80" y="622" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="91" font-weight="800" fill="url(#gHeadline)" letter-spacing="-3.5">curated for you.</text>
 
   <!-- ========== SUBTITLE ========== -->
-  <text x="80" y="607" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="26" font-weight="400" fill="#94a3b8" letter-spacing="-0.4">Stop hunting across 20 tabs. Free AI learning from Google, Microsoft,</text>
-  <text x="80" y="645" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="26" font-weight="400" fill="#94a3b8" letter-spacing="-0.4">Anthropic and NVIDIA — curated, verified, no paywalls.</text>
+  <text x="80" y="674" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="26" font-weight="400" fill="#94a3b8" letter-spacing="-0.4">Stop hunting across 20 tabs. Free AI learning from Google, Microsoft,</text>
+  <text x="80" y="712" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="26" font-weight="400" fill="#94a3b8" letter-spacing="-0.4">Anthropic and NVIDIA — curated, verified, no paywalls.</text>
 
   <!-- Divider -->
-  <line x1="80" y1="683" x2="1120" y2="683" stroke="#ffffff" stroke-opacity="0.07" stroke-width="1"/>
+  <line x1="80" y1="750" x2="1120" y2="750" stroke="#ffffff" stroke-opacity="0.07" stroke-width="1"/>
 
   <!-- ========== PROVIDERS STRIP ========== -->
-  <text x="600" y="726" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#475569" text-anchor="middle" letter-spacing="2.5">COURSES FROM</text>
-  <text x="600" y="772" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="25" font-weight="500" fill="#94a3b8" text-anchor="middle" letter-spacing="-0.2">Google  ·  Microsoft  ·  Anthropic  ·  NVIDIA  ·  DeepLearning.AI</text>
+  <text x="600" y="790" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#475569" text-anchor="middle" letter-spacing="2.5">COURSES FROM</text>
+  <text x="600" y="836" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="25" font-weight="500" fill="#94a3b8" text-anchor="middle" letter-spacing="-0.2">Google  ·  Microsoft  ·  Anthropic  ·  NVIDIA  ·  DeepLearning.AI</text>
 
   <!-- ========== STAT CARDS ========== -->
   <!-- Card 1 — Free Courses -->
-  <rect x="80" y="820" width="316" height="138" rx="20" fill="url(#gCard)" stroke="#6284f9" stroke-opacity="0.25" stroke-width="1" filter="url(#fCardShadow)"/>
+  <rect x="80" y="880" width="316" height="138" rx="20" fill="url(#gCard)" stroke="#6284f9" stroke-opacity="0.25" stroke-width="1" filter="url(#fCardShadow)"/>
   <!-- Top accent line on card -->
-  <rect x="80" y="820" width="316" height="3" rx="20" fill="url(#gBar)" opacity="0.55"/>
-  <text x="238" y="886" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="50" font-weight="800" fill="url(#gHeadline)" text-anchor="middle">100+</text>
-  <text x="238" y="932" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="500" fill="#64748b" text-anchor="middle">Free Courses</text>
+  <rect x="80" y="880" width="316" height="3" rx="20" fill="url(#gBar)" opacity="0.55"/>
+  <text x="238" y="946" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="50" font-weight="800" fill="url(#gHeadline)" text-anchor="middle">100+</text>
+  <text x="238" y="992" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="500" fill="#64748b" text-anchor="middle">Free Courses</text>
 
   <!-- Card 2 — Providers -->
-  <rect x="442" y="820" width="316" height="138" rx="20" fill="url(#gCard)" stroke="#22d3ee" stroke-opacity="0.25" stroke-width="1" filter="url(#fCardShadow)"/>
-  <rect x="442" y="820" width="316" height="3" rx="20" fill="url(#gBar)" opacity="0.55"/>
-  <text x="600" y="886" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="50" font-weight="800" fill="url(#gHeadline)" text-anchor="middle">28</text>
-  <text x="600" y="932" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="500" fill="#64748b" text-anchor="middle">Trusted Providers</text>
+  <rect x="442" y="880" width="316" height="138" rx="20" fill="url(#gCard)" stroke="#22d3ee" stroke-opacity="0.25" stroke-width="1" filter="url(#fCardShadow)"/>
+  <rect x="442" y="880" width="316" height="3" rx="20" fill="url(#gBar)" opacity="0.55"/>
+  <text x="600" y="946" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="50" font-weight="800" fill="url(#gHeadline)" text-anchor="middle">28</text>
+  <text x="600" y="992" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="500" fill="#64748b" text-anchor="middle">Trusted Providers</text>
 
   <!-- Card 3 — Cost -->
-  <rect x="804" y="820" width="316" height="138" rx="20" fill="url(#gCard)" stroke="#6284f9" stroke-opacity="0.25" stroke-width="1" filter="url(#fCardShadow)"/>
-  <rect x="804" y="820" width="316" height="3" rx="20" fill="url(#gBar)" opacity="0.55"/>
-  <text x="962" y="886" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="50" font-weight="800" fill="url(#gHeadline)" text-anchor="middle">$0</text>
-  <text x="962" y="932" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="500" fill="#64748b" text-anchor="middle">Cost to Start</text>
+  <rect x="804" y="880" width="316" height="138" rx="20" fill="url(#gCard)" stroke="#6284f9" stroke-opacity="0.25" stroke-width="1" filter="url(#fCardShadow)"/>
+  <rect x="804" y="880" width="316" height="3" rx="20" fill="url(#gBar)" opacity="0.55"/>
+  <text x="962" y="946" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="50" font-weight="800" fill="url(#gHeadline)" text-anchor="middle">$0</text>
+  <text x="962" y="992" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="500" fill="#64748b" text-anchor="middle">Cost to Start</text>
 
   <!-- ========== URL / CTA AREA ========== -->
-  <text x="600" y="1035" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="31" font-weight="600" fill="url(#gCenter)" text-anchor="middle" letter-spacing="-0.4">learn.bytesai.uk</text>
+  <text x="600" y="1055" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="31" font-weight="600" fill="url(#gCenter)" text-anchor="middle" letter-spacing="-0.4">learn.bytesai.uk</text>
   <!-- Underline -->
-  <line x1="400" y1="1044" x2="800" y2="1044" stroke="url(#gCenter)" stroke-width="1.5" opacity="0.45"/>
+  <line x1="400" y1="1064" x2="800" y2="1064" stroke="url(#gCenter)" stroke-width="1.5" opacity="0.45"/>
 
-  <text x="600" y="1092" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="400" fill="#475569" text-anchor="middle">Start learning today — no credit card, no paywalls, just courses.</text>
+  <text x="600" y="1112" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="400" fill="#475569" text-anchor="middle">Start learning today — no credit card, no paywalls, just courses.</text>
 
   <!-- ========== BOTTOM GRADIENT BAR ========== -->
   <rect x="0" y="1157" width="1200" height="6" fill="url(#gBar)" opacity="0.80"/>
