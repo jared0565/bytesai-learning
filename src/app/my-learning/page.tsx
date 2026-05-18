@@ -65,15 +65,15 @@ export default async function MyLearningPage({ searchParams }: PageProps) {
 
       <main style={{ minHeight: 'calc(100dvh - 64px)', background: 'var(--bg)' }}>
         {/* Header bar */}
-        <div style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '2.5rem 0 2rem', color: 'white' }}>
+        <div style={{ background: 'var(--bg-alt)', padding: '2.5rem 0 2rem', color: 'var(--text-primary)' }}>
           <div className="container">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.75rem' }}>
               <BookOpen size={20} style={{ opacity: 0.7 }} />
-              <Link href="/dashboard" style={{ fontSize: '0.875rem', color: '#94a3b8', textDecoration: 'none' }}>Dashboard</Link>
-              <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>/</span>
-              <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>My Learning</span>
+              <Link href="/dashboard" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', textDecoration: 'none' }}>Dashboard</Link>
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>/</span>
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>My Learning</span>
             </div>
-            <h1 className="text-display" style={{ color: 'white' }}>
+            <h1 className="text-display" style={{ color: 'var(--text-primary)' }}>
               My Learning
             </h1>
           </div>

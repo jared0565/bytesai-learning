@@ -5,6 +5,7 @@ import Chatbot from '@/components/Chatbot/Chatbot';
 import BottomNav from '@/components/layout/BottomNav';
 import CookieConsent, { type TrackingCode } from '@/components/CookieConsent/CookieConsent';
 import Starfield from '@/components/Starfield/Starfield';
+import ThemeProvider from '@/components/ThemeProvider/ThemeProvider';
 import { getDB } from '@/lib/db';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 import AnalyticsProvider from '@/components/Analytics/AnalyticsProvider';
@@ -33,8 +34,6 @@ async function getLayoutSession() {
 }
 
 const SITE_NAME = 'BytesAI Learning';
-// IMPORTANT: This MUST be the production URL (absolute) — social crawlers need it.
-// process.env.NEXT_PUBLIC_SITE_URL is overridden by .env.local at build time, so we hardcode it.
 const PROD_URL = 'https://learn.bytesai.uk';
 
 export const metadata: Metadata = {
@@ -71,12 +70,20 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
 };
 
-// Required for env(safe-area-inset-*) to work on iPhone notch/home bar
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
 };
+
+// Inline script to set dark class before first paint (avoids flash of wrong theme)
+const THEME_INIT_SCRIPT = `
+(function(){
+  var t=localStorage.getItem('bytesai-theme');
+  if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme:dark)').matches)){
+    document.documentElement.classList.add('dark')
+  }
+})()`;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [{ trackingCodes }, session] = await Promise.all([
@@ -87,35 +94,26 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Theme init script — runs before paint to prevent flash. Content is a static string, not user input. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
-        {/* Starfield — fixed canvas, z-index:-1, paints its own dark background */}
-        <Starfield />
+        <ThemeProvider>
+          <Starfield />
 
-        {/*
-          App Shell: on mobile (≤768px) → position:fixed, 100dvh flex column
-                     on desktop → transparent block passthrough (no layout effect)
-          IMPORTANT: No transform/filter/backdrop-filter on .app-shell —
-          would trap position:fixed children like <Chatbot> inside its stacking context.
-        */}
-        <div className="app-shell">
-          {/* Scrollable content pane — page content (Header + page + Footer) scrolls here */}
-          <div className="app-content">
-            {children}
+          <div className="app-shell">
+            <div className="app-content">
+              {children}
+            </div>
+            <BottomNav userRole={session?.role ?? null} />
           </div>
-          {/* Bottom nav — visible on mobile only via CSS */}
-          <BottomNav userRole={session?.role ?? null} />
-        </div>
 
-        {/*
-          These components live OUTSIDE .app-shell so their position:fixed works
-          relative to the viewport, not a stacking context created by the shell.
-        */}
-        <Chatbot />
-        <CookieConsent trackingCodes={trackingCodes} />
-        <AnalyticsProvider />
+          <Chatbot />
+          <CookieConsent trackingCodes={trackingCodes} />
+          <AnalyticsProvider />
+        </ThemeProvider>
       </body>
     </html>
   );

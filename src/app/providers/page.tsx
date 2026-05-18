@@ -42,12 +42,12 @@ export default async function ProvidersPage() {
 
       <main>
         {/* Header */}
-        <section className="courses-header" style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '3rem 0 2rem', color: 'white' }}>
+        <section className="courses-header" style={{ background: 'var(--bg-alt)', padding: '3rem 0 2rem', color: 'var(--text-primary)' }}>
           <div className="container-sm" style={{ textAlign: 'center' }}>
-            <h1 className="text-display" style={{ color: 'white', marginBottom: '1rem' }}>
+            <h1 className="text-display" style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>
               Learn from the best
             </h1>
-            <p style={{ color: '#cbd5e1', fontSize: 'clamp(0.9375rem, 2.5vw, 1.125rem)', lineHeight: 1.6, marginBottom: '2rem' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.9375rem, 2.5vw, 1.125rem)', lineHeight: 1.6, marginBottom: '2rem' }}>
               Browse our curated collection of free AI courses from top technology companies, universities, and platforms.
             </p>
           </div>

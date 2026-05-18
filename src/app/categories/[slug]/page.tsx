@@ -107,25 +107,25 @@ export default async function CategoryPage({ params }: PageProps) {
 
       <main>
         {/* Hero */}
-        <section style={{ background: 'transparent', padding: '3.5rem 0 2.5rem', color: 'white' }}>
+        <section style={{ background: 'transparent', padding: '3.5rem 0 2.5rem', color: 'var(--text-primary)' }}>
           <div className="container">
             <div style={{ marginBottom: '1rem' }}>
-              <Link href="/categories" style={{ color: '#94a3b8', fontSize: '0.875rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
+              <Link href="/categories" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
                 <ArrowLeft size={14} /> All categories
               </Link>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem', flexWrap: 'wrap' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 14, background: 'linear-gradient(135deg, #4f6ef720, #0ea5e920)', border: '1px solid #4f6ef730', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <LayoutGrid size={26} color="#4f6ef7" />
+              <div style={{ width: 56, height: 56, borderRadius: 14, background: 'linear-gradient(135deg, var(--accent-soft), var(--teal-soft))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <LayoutGrid size={26} color="var(--accent)" />
               </div>
               <div style={{ flex: 1 }}>
-                <h1 className="text-display" style={{ color: 'white', marginBottom: '0.625rem' }}>{cat.label}</h1>
-                <p style={{ color: '#cbd5e1', fontSize: '1.0625rem', maxWidth: 580, lineHeight: 1.65 }}>
+                <h1 className="text-display" style={{ color: 'var(--text-primary)', marginBottom: '0.625rem' }}>{cat.label}</h1>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '1.0625rem', maxWidth: 580, lineHeight: 1.65 }}>
                   {meta.description || meta.tagline}
                 </p>
                 {courses.length > 0 && (
-                  <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '0.75rem' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.75rem' }}>
                     {courses.length} course{courses.length !== 1 ? 's' : ''} · all free to start
                   </p>
                 )}

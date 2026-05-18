@@ -83,16 +83,16 @@ export default async function CoursesPage({ searchParams }: PageProps) {
 
       <main>
         {/* Page header */}
-        <div className="courses-header" style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '3rem 0 2rem', color: 'white' }}>
+        <div className="courses-header" style={{ background: 'var(--bg-alt)', padding: '3rem 0 2rem' }}>
           <div className="container">
-            <h1 className="text-display" style={{ color: 'white', marginBottom: '0.5rem' }}>Browse AI courses</h1>
-            <p style={{ color: '#94a3b8', fontSize: '1rem' }}>
+            <h1 className="text-display" style={{ marginBottom: '0.5rem' }}>Browse AI courses</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
               {total > 0 ? `${total} courses` : 'Loading courses…'} · all free to start
             </p>
 
             {/* Search bar */}
             <form method="GET" action="/courses" style={{ marginTop: '1.5rem', position: 'relative', maxWidth: 560, width: '100%' }}>
-              <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+              <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
                 id="course-search"
                 name="q"
@@ -100,7 +100,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
                 defaultValue={q}
                 placeholder="Search courses, providers, topics…"
                 className="input"
-                style={{ paddingLeft: '2.75rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'white' }}
+                style={{ paddingLeft: '2.75rem' }}
                 maxLength={200}
                 autoComplete="off"
               />

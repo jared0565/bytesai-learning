@@ -13,18 +13,17 @@ interface CourseCardProps {
   isGuest?: boolean;
 }
 
-// Category → gradient + icon
 const CATEGORY_STYLE: Record<string, { gradient: string; icon: React.ReactNode }> = {
-  'AI Foundations':              { gradient: 'linear-gradient(135deg,#4f6ef7,#818cf8)', icon: <Brain size={20} color="white" /> },
-  'LLMs / Generative AI':        { gradient: 'linear-gradient(135deg,#0ea5e9,#38bdf8)', icon: <Cpu size={20} color="white" /> },
-  'AI Agents':                   { gradient: 'linear-gradient(135deg,#8b5cf6,#c084fc)', icon: <Rss size={20} color="white" /> },
-  'Prompt Engineering':          { gradient: 'linear-gradient(135deg,#f59e0b,#fb923c)', icon: <MessageSquare size={20} color="white" /> },
-  'Governance / Responsible AI': { gradient: 'linear-gradient(135deg,#10b981,#34d399)', icon: <Shield size={20} color="white" /> },
-  'Data / ML':                   { gradient: 'linear-gradient(135deg,#3b82f6,#60a5fa)', icon: <Database size={20} color="white" /> },
-  'Programming Foundations':     { gradient: 'linear-gradient(135deg,#22c55e,#4ade80)', icon: <Code size={20} color="white" /> },
-  'Books / Reading Sources':     { gradient: 'linear-gradient(135deg,#64748b,#94a3b8)', icon: <BookOpen size={20} color="white" /> },
+  'AI Foundations':              { gradient: 'linear-gradient(135deg, oklch(0.52 0.20 265), oklch(0.60 0.18 275))', icon: <Brain size={20} color="white" /> },
+  'LLMs / Generative AI':        { gradient: 'linear-gradient(135deg, oklch(0.60 0.17 230), oklch(0.65 0.14 240))', icon: <Cpu size={20} color="white" /> },
+  'AI Agents':                   { gradient: 'linear-gradient(135deg, oklch(0.52 0.18 300), oklch(0.58 0.16 310))', icon: <Rss size={20} color="white" /> },
+  'Prompt Engineering':          { gradient: 'linear-gradient(135deg, oklch(0.78 0.16 85), oklch(0.74 0.18 70))', icon: <MessageSquare size={20} color="white" /> },
+  'Governance / Responsible AI': { gradient: 'linear-gradient(135deg, oklch(0.70 0.17 160), oklch(0.72 0.15 170))', icon: <Shield size={20} color="white" /> },
+  'Data / ML':                   { gradient: 'linear-gradient(135deg, oklch(0.55 0.20 265), oklch(0.60 0.18 255))', icon: <Database size={20} color="white" /> },
+  'Programming Foundations':     { gradient: 'linear-gradient(135deg, oklch(0.72 0.17 160), oklch(0.70 0.16 150))', icon: <Code size={20} color="white" /> },
+  'Books / Reading Sources':     { gradient: 'linear-gradient(135deg, oklch(0.55 0.02 270), oklch(0.60 0.02 270))', icon: <BookOpen size={20} color="white" /> },
 };
-const DEFAULT_STYLE = { gradient: 'linear-gradient(135deg,#4f6ef7,#0ea5e9)', icon: <Layers size={20} color="white" /> };
+const DEFAULT_STYLE = { gradient: 'linear-gradient(135deg, oklch(0.52 0.20 265), oklch(0.60 0.17 230))', icon: <Layers size={20} color="white" /> };
 
 function getCategoryStyle(category: string | null) {
   if (!category) return DEFAULT_STYLE;
@@ -62,7 +61,6 @@ export default function CourseCard({ course, featured = false, compact = false, 
 
   const cardClass = ['course-card', featured ? 'featured-card' : ''].filter(Boolean).join(' ');
 
-  // Shared inner content
   const inner = (
     <>
       {/* Header band */}
@@ -73,11 +71,11 @@ export default function CourseCard({ course, featured = false, compact = false, 
           overflow: 'hidden',
         }}>
           <div style={{ position: 'absolute', inset: 0, opacity: 0.08, backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")' }} />
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, backdropFilter: 'blur(4px)' }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'oklch(1.0 0 0 / 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {icon}
           </div>
           <div style={{ minWidth: 0 }}>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            <p style={{ color: 'oklch(1.0 0 0 / 0.7)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
               {course.category ?? 'Course'}
             </p>
             <p style={{ color: 'white', fontSize: '0.8125rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -120,7 +118,6 @@ export default function CourseCard({ course, featured = false, compact = false, 
     </>
   );
 
-  // Alison courses → open affiliate URL directly in a new tab
   if (isAlison) {
     const href = course.affiliate_url ?? course.official_link ?? 'https://alison.com/?utm_source=alison_user&utm_medium=affiliate&utm_campaign=27668723';
     return (
@@ -130,7 +127,6 @@ export default function CourseCard({ course, featured = false, compact = false, 
     );
   }
 
-  // All other courses → internal detail page
   return (
     <Link href={`/courses/${course.slug}`} className={cardClass} aria-label={`View course: ${course.title}`}>
       {inner}
@@ -138,7 +134,6 @@ export default function CourseCard({ course, featured = false, compact = false, 
   );
 }
 
-// ── Skeleton variant ──────────────────────────────────────────────────
 export function CourseCardSkeleton() {
   return (
     <div className="course-card" style={{ pointerEvents: 'none' }}>

@@ -77,31 +77,31 @@ export default async function HomePage() {
       <Header userRole={session?.role ?? null} displayName={session?.displayName} />
 
       <main>
-        {/* ── Hero ─────────────────────────────────────────────── */}
+        {/* Hero */}
         <section id="hero" className="hero">
           <div className="container" style={{ maxWidth: 700 }}>
-            <h1 className="text-hero" style={{ color: 'white', marginBottom: '1.25rem' }}>
+            <h1 className="text-hero" style={{ marginBottom: '1.25rem' }}>
               The best free AI courses, curated for you.
             </h1>
-            <p className="hero-subtitle" style={{ fontSize: '1.125rem', color: '#cbd5e1', lineHeight: 1.75, maxWidth: 540, marginBottom: '2rem' }}>
+            <p className="hero-subtitle" style={{ fontSize: '1.125rem', color: 'var(--text-secondary)', lineHeight: 1.75, maxWidth: 540, marginBottom: '2rem' }}>
               Stop hunting across 20 tabs. We curate and verify the best free AI learning from
-              Microsoft, Anthropic, Google, NVIDIA, DeepLearning.AI, and more — in one place.
+              Microsoft, Anthropic, Google, NVIDIA, DeepLearning.AI, and more, in one place.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.875rem' }}>
               <Link href="/courses" className="btn btn-primary btn-lg">
                 Explore free courses <ArrowRight size={18} />
               </Link>
               {!session && (
-                <AuthButton className="btn btn-outline btn-lg" style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>
-                  Save progress — it&apos;s free
+                <AuthButton className="btn btn-outline btn-lg">
+                  Save progress, it&apos;s free
                 </AuthButton>
               )}
             </div>
           </div>
         </section>
 
-        {/* ── Featured Above the Fold ───────────────────────────── */}
-        <section id="featured" className="section-sm" style={{ background: 'var(--bg)' }}>
+        {/* Featured Above the Fold */}
+        <section id="featured" className="section-sm" style={{ background: 'var(--bg-alt)' }}>
           <div className="container">
             <div className="section-header">
               <h2 className="section-header-title">Featured this week</h2>
@@ -120,14 +120,14 @@ export default async function HomePage() {
                 {Array.from({ length: 4 }).map((_, i) => <CourseCardSkeleton key={i} />)}
               </div>
             )}
-            <div style={{ marginTop: '1.25rem', padding: '0.75rem 1rem', background: 'var(--amber-soft)', borderRadius: 'var(--radius-md)', fontSize: '0.8125rem', color: '#d97706' }}>
-              <strong>Affiliate note:</strong> Some cards above link to Alison courses (marked with an Alison badge). We may earn a commission if you purchase a certificate — the course itself is always free.
+            <div style={{ marginTop: '1.25rem', padding: '0.75rem 1rem', background: 'var(--amber-soft)', borderRadius: 'var(--radius-md)', fontSize: '0.8125rem', color: 'var(--amber)' }}>
+              <strong>Affiliate note:</strong> Some cards above link to Alison courses (marked with an Alison badge). We may earn a commission if you purchase a certificate; the course itself is always free.
             </div>
           </div>
         </section>
 
-        {/* ── Trending ──────────────────────────────────────────── */}
-        <section id="trending" className="section" style={{ background: 'var(--bg-card)' }}>
+        {/* Trending */}
+        <section id="trending" className="section">
           <div className="container">
             <div className="section-header">
               <div>
@@ -152,15 +152,15 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── AI Insights ───────────────────────────────────────── */}
+        {/* AI Insights */}
         {insights.length > 0 && (
-          <section className="section-sm" style={{ background: 'var(--bg)' }}>
+          <section className="section-sm" style={{ background: 'var(--bg-alt)' }}>
             <div className="container">
               <div className="section-header">
                 <div>
                   <h2 className="section-header-title">AI Insights</h2>
                   <p className="text-sm" style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                    What&apos;s changing in AI — why it matters &amp; which courses to take
+                    What&apos;s changing in AI, why it matters and which courses to take
                   </p>
                 </div>
                 <Link href="/curated" className="section-viewall">
@@ -177,8 +177,8 @@ export default async function HomePage() {
                   >
                     <div style={{
                       width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-                      background: 'linear-gradient(135deg, rgba(79,110,247,0.15), rgba(20,184,166,0.1))',
-                      border: '1px solid rgba(79,110,247,0.2)',
+                      background: 'var(--accent-soft)',
+                      border: '1px solid oklch(0.52 0.20 265 / 0.15)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       <Lightbulb size={17} color="var(--accent)" />
@@ -203,7 +203,7 @@ export default async function HomePage() {
           </section>
         )}
 
-        {/* ── Category Grid ─────────────────────────────────────── */}
+        {/* Category Grid */}
         <section className="section">
           <div className="container">
             <div className="section-header">
@@ -231,21 +231,21 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── Sign-up CTA ───────────────────────────────────────── */}
+        {/* Sign-up CTA */}
         {!session && (
-          <section className="section" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)', color: 'white' }}>
+          <section className="section" style={{ background: 'var(--accent-soft)' }}>
             <div className="container-sm" style={{ textAlign: 'center' }}>
-              <h2 className="text-display" style={{ color: 'white', marginBottom: '1rem' }}>
+              <h2 className="text-display" style={{ marginBottom: '1rem' }}>
                 Track your progress, save courses
               </h2>
-              <p style={{ color: '#cbd5e1', fontSize: 'clamp(0.9375rem, 2.5vw, 1.0625rem)', marginBottom: '2rem', lineHeight: 1.7 }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '1.0625rem', marginBottom: '2rem', lineHeight: 1.7 }}>
                 Create a free account to save courses, track what you&apos;ve started, and get personalised recommendations.
               </p>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                 <AuthButton className="btn btn-primary btn-lg">
                   Get started free <ArrowRight size={18} />
                 </AuthButton>
-                <Link href="/courses" className="btn btn-outline btn-lg" style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>
+                <Link href="/courses" className="btn btn-outline btn-lg">
                   Browse without signing in
                 </Link>
               </div>

@@ -3,16 +3,17 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import {
-  BookOpen, Menu, X, ChevronDown, Sparkles, LayoutDashboard, LogIn, User, LogOut, Share2, Settings,
+  BookOpen, Menu, X, ChevronDown, Sparkles, LayoutDashboard, LogIn, User, LogOut, Share2, Settings, Sun, Moon,
 } from 'lucide-react';
 import AuthModal from '@/components/ui/AuthModal';
 import SharePanel from '@/components/ui/SharePanel';
 import FeedbackTab from '@/components/ui/FeedbackTab';
+import { useTheme } from '@/components/ThemeProvider/ThemeProvider';
 
 const NUDGE_MESSAGES = [
-  { emoji: '🆓', text: "100+ free AI courses from Google, Microsoft, Anthropic & NVIDIA — no paywalls, ever." },
-  { emoji: '✅', text: "Every course is verified free before it goes live. No bait-and-switch, no hidden fees." },
-  { emoji: '📚', text: "Courses from Microsoft, Google, Anthropic, NVIDIA, Stanford & more — all in one place." },
+  { emoji: '', text: "100+ free AI courses from Google, Microsoft, Anthropic and NVIDIA, no paywalls, ever." },
+  { emoji: '', text: "Every course is verified free before it goes live. No bait-and-switch, no hidden fees." },
+  { emoji: '', text: "Courses from Microsoft, Google, Anthropic, NVIDIA, Stanford and more, all in one place." },
 ];
 
 interface NavProps {
@@ -36,13 +37,13 @@ export default function Header({ userRole, displayName }: NavProps) {
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const { theme, toggle } = useTheme();
 
   useEffect(() => {
     const t = setInterval(() => setNudgeIndex(i => (i + 1) % NUDGE_MESSAGES.length), 4000);
     return () => clearInterval(t);
   }, []);
 
-  // Fetch avatar when logged in
   useEffect(() => {
     if (!userRole) return;
     fetch('/api/learner/profile')
@@ -56,15 +57,13 @@ export default function Header({ userRole, displayName }: NavProps) {
     <header style={{ position: 'sticky', top: 0, zIndex: 100 }}>
       {/* Announcement bar */}
       <div className="announcement-bar" style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)',
-        borderBottom: '1px solid rgba(79,110,247,0.3)',
         padding: '0.45rem 1rem',
         textAlign: 'center',
       }}>
-        <p style={{ fontSize: '0.8rem', color: '#c7d2fe', margin: 0, lineHeight: 1.4 }}>
+        <p style={{ fontSize: '0.8rem', color: 'white', margin: 0, lineHeight: 1.4 }}>
           {NUDGE_MESSAGES[nudgeIndex].emoji}{' '}
-          <strong style={{ color: 'white' }}>{NUDGE_MESSAGES[nudgeIndex].text}</strong>{' '}
-          <span className="hide-mobile" style={{ opacity: 0.65, fontSize: '0.75rem' }}>↘ Click the chat button below.</span>
+          <strong>{NUDGE_MESSAGES[nudgeIndex].text}</strong>{' '}
+          <span className="hide-mobile" style={{ opacity: 0.7, fontSize: '0.75rem' }}>Click the chat button below.</span>
         </p>
       </div>
       <nav className="nav">
@@ -73,12 +72,12 @@ export default function Header({ userRole, displayName }: NavProps) {
           <Link href="/#hero" className="nav-logo" style={{ color: 'var(--text-primary)' }}>
             <span style={{
               width: 32, height: 32, borderRadius: 8,
-              background: 'linear-gradient(135deg, var(--accent), var(--teal))',
+              background: 'var(--accent)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}>
               <BookOpen size={18} color="white" strokeWidth={2.5} />
             </span>
-            <span>BytesAI<span className="gradient-text" style={{ marginLeft: 2 }}>Learning</span></span>
+            <span>BytesAI <span style={{ color: 'var(--accent)', fontWeight: 800 }}>Learning</span></span>
           </Link>
 
           {/* Desktop links */}
@@ -91,7 +90,18 @@ export default function Header({ userRole, displayName }: NavProps) {
           </div>
 
           {/* Right section */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Theme toggle */}
+            <button
+              className="btn btn-ghost btn-sm"
+              style={{ padding: '0.5rem', borderRadius: 'var(--radius-full)' }}
+              onClick={toggle}
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            >
+              {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
+
             {/* Share button */}
             <div style={{ position: 'relative' }}>
               <button
@@ -149,7 +159,6 @@ export default function Header({ userRole, displayName }: NavProps) {
                   aria-label="User menu"
                 >
                   {avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={avatarUrl}
                       alt="Avatar"
@@ -158,7 +167,7 @@ export default function Header({ userRole, displayName }: NavProps) {
                   ) : (
                     <span style={{
                       width: 28, height: 28, borderRadius: '50%',
-                      background: 'linear-gradient(135deg, var(--accent), var(--teal))',
+                      background: 'var(--accent)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                     }}>
                       <User size={14} color="white" />
@@ -229,7 +238,7 @@ export default function Header({ userRole, displayName }: NavProps) {
       {menuOpen && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 150,
-          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+          background: 'oklch(0 0 0 / 0.3)',
         }} onClick={() => setMenuOpen(false)}>
           <nav style={{
             position: 'absolute', top: 64, left: 0, right: 0,
@@ -278,7 +287,7 @@ export default function Header({ userRole, displayName }: NavProps) {
       {!userRole && <AuthModal open={authModal !== null} onClose={() => setAuthModal(null)} initialTab={authModal ?? 'register'} />}
     </header>
 
-    {/* Global feedback tab — appears after 15s, fixed to right edge */}
+    {/* Global feedback tab */}
     <FeedbackTab />
     </>
   );

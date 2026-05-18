@@ -57,16 +57,16 @@ export default async function DashboardPage() {
         {session.emailVerified === false && <VerificationBanner email={session.email} />}
 
         {/* Header bar */}
-        <div style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', padding: '2.5rem 0 2rem', color: 'white' }}>
+        <div style={{ background: 'var(--bg-alt)', padding: '2.5rem 0 2rem', color: 'var(--text-primary)' }}>
           <div className="container">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.75rem' }}>
               <LayoutDashboard size={20} style={{ opacity: 0.7 }} />
-              <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Dashboard</span>
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Dashboard</span>
             </div>
-            <h1 className="text-heading" style={{ color: 'white' }}>
+            <h1 className="text-heading" style={{ color: 'var(--text-primary)' }}>
               Welcome back{session.displayName ? `, ${session.displayName.split(' ')[0]}` : ''} 👋
             </h1>
-            <p style={{ color: '#94a3b8', marginTop: '0.5rem', fontSize: '0.9375rem' }}>
+            <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem', fontSize: '0.9375rem' }}>
               Here&apos;s where you left off.
             </p>
           </div>

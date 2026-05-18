@@ -117,14 +117,14 @@ export default function SharePanel({ url, title, description, compact, labeled, 
           </a>
         ))}
         <a href={`mailto:?subject=${encodedTitle}&body=${encodedText}%0A%0A${encodedUrl}`} style={labeledBtnStyle} title="Share via email"
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; (e.currentTarget as HTMLElement).style.background = 'rgba(79,110,247,0.1)'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; (e.currentTarget as HTMLElement).style.background = 'var(--accent-soft)'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'var(--bg)'; }}
         >
           <Mail size={16} />
           {labeled && <span className="hide-mobile" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Email</span>}
         </a>
         <button onClick={handleCopy} style={labeledBtnStyle} title="Copy link"
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; (e.currentTarget as HTMLElement).style.background = 'rgba(79,110,247,0.1)'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; (e.currentTarget as HTMLElement).style.background = 'var(--accent-soft)'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'var(--bg)'; }}
         >
           {copied ? <Check size={16} /> : <Copy size={16} />}

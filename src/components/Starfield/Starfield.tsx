@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTheme } from '@/components/ThemeProvider/ThemeProvider';
 
 interface StaticStar {
   x: number;
@@ -27,11 +28,17 @@ const BG = '#030a1a';
 
 export default function Starfield() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { theme } = useTheme();
+  const runningRef = useRef(false);
+
+  // Start/stop the animation loop based on theme
+  useEffect(() => {
+    runningRef.current = theme === 'dark';
+  }, [theme]);
 
   useEffect(() => {
-    // Non-null assertion: element is guaranteed to be mounted when useEffect fires.
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const el = canvasRef.current!;
+    const el = canvasRef.current;
+    if (!el) return;
     const ctx = el.getContext('2d');
     if (!ctx) return;
 
@@ -81,13 +88,15 @@ export default function Starfield() {
     };
 
     const draw = () => {
-      if (document.hidden) { raf = requestAnimationFrame(draw); return; }
+      if (document.hidden || !runningRef.current) {
+        raf = requestAnimationFrame(draw);
+        return;
+      }
       frame++;
 
       ctx.fillStyle = BG;
       ctx.fillRect(0, 0, el.width, el.height);
 
-      // ── Static stars ──────────────────────────────────────────
       for (const s of stars) {
         const opacity = Math.max(0.05, s.baseOpacity + Math.sin(frame * s.twinkleSpeed + s.twinklePhase) * 0.18);
 
@@ -107,11 +116,9 @@ export default function Starfield() {
         ctx.fill();
       }
 
-      // ── Spawn meteors ─────────────────────────────────────────
       const active = meteors.filter(m => m.life < m.maxLife);
       if (frame % 110 === 0 && active.length < 3 && Math.random() < 0.75) spawnMeteor();
 
-      // ── Draw meteors ──────────────────────────────────────────
       for (const m of meteors) {
         if (m.life >= m.maxLife) continue;
         m.life++;
@@ -188,7 +195,8 @@ export default function Starfield() {
         height: '100%',
         zIndex: -1,
         pointerEvents: 'none',
-        display: 'block',
+        opacity: theme === 'dark' ? 1 : 0,
+        transition: 'opacity 0.4s ease',
       }}
     />
   );
