@@ -51,8 +51,8 @@ async function getHomeData() {
     ]);
 
     return {
-      featured: distributeCourses([...featuredNonAlison.results, ...featuredAlison.results]),
-      trending: distributeCourses([...trendingNonAlison.results, ...trendingAlison.results]),
+      featured: distributeCourses([...featuredNonAlison.results, ...featuredAlison.results], 4),
+      trending: distributeCourses([...trendingNonAlison.results, ...trendingAlison.results], 4),
       insights,
     };
   } catch {

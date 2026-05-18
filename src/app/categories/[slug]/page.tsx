@@ -150,7 +150,7 @@ export default async function CategoryPage({ params }: PageProps) {
             ) : (
               <>
                 <div className="grid-3">
-                  {distributeCourses(courses).map(course => (
+                  {distributeCourses(courses, 3).map(course => (
                     <CourseCard key={course.id} course={course} isGuest={!session} />
                   ))}
                 </div>

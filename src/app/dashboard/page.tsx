@@ -166,7 +166,7 @@ export default async function DashboardPage() {
                 <Link href="/courses" className="section-viewall">Browse all <ArrowRight size={14} /></Link>
               </div>
               <div className="grid-4">
-                {distributeCourses(trending).map(course => (
+                {distributeCourses(trending, 4).map(course => (
                   <CourseCard key={course.id} course={course} />
                 ))}
               </div>

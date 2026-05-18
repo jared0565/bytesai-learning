@@ -437,24 +437,60 @@ export async function purgeOldAuditLogs(db: D1Database): Promise<void> {
   ).bind(cutoff).run().catch(() => null);
 }
 
-/** Reorder courses so Alison items are interleaved with non-Alison items.
- *  This ensures that in a CSS grid no single row is dominated by Alison cards.
- *  Pattern: [non, alison, non, alison, …].  If one pool runs short, the other
- *  fills the remaining slots. */
-export function distributeCourses(courses: Course[]): Course[] {
-  return distributeWithAlisonLimit(courses, c => c.is_alison === 1);
+/** Reorder courses so no single grid row contains more than `maxAlisonPerRow` Alison items.
+ *  Non-Alison items are spread evenly across rows first; Alison items fill remaining
+ *  slots up to the cap. This keeps the visual mix consistent even when Alison
+ *  dominates the result set. */
+export function distributeCourses(courses: Course[], rowSize: number = 4): Course[] {
+  return distributeWithAlisonLimit(courses, c => c.is_alison === 1, rowSize, 2);
 }
 
-/** Generic interleaving helper: splits `items` by `isAlison`, then alternates
- *  one from each pool.  Keeps original order within each pool. */
-export function distributeWithAlisonLimit<T>(items: T[], isAlison: (item: T) => boolean): T[] {
+/** Row-aware interleaving: splits `items` by `isAlison`, distributes non-Alison
+ *  evenly across rows, then fills remaining slots with Alison up to the per-row cap. */
+export function distributeWithAlisonLimit<T>(
+  items: T[],
+  isAlison: (item: T) => boolean,
+  rowSize: number = 4,
+  maxAlisonPerRow: number = 2
+): T[] {
   const nonAlison = items.filter(item => !isAlison(item));
   const alison = items.filter(item => isAlison(item));
-  const result: T[] = [];
-  const maxLen = Math.max(nonAlison.length, alison.length);
-  for (let i = 0; i < maxLen; i++) {
-    if (nonAlison[i]) result.push(nonAlison[i]);
-    if (alison[i]) result.push(alison[i]);
+  const total = items.length;
+  if (total === 0) return [];
+
+  const numRows = Math.ceil(total / rowSize);
+  const rows: T[][] = [];
+
+  // Evenly distribute non-Alison across rows so every row gets a mix when possible
+  const baseNon = Math.floor(nonAlison.length / numRows);
+  const extraNon = nonAlison.length % numRows;
+
+  for (let r = 0; r < numRows; r++) {
+    const row: T[] = [];
+    const targetNon = baseNon + (r < extraNon ? 1 : 0);
+
+    // Place the target non-Alison for this row
+    for (let i = 0; i < targetNon && nonAlison.length > 0; i++) {
+      row.push(nonAlison.shift()!);
+    }
+
+    // Place Alison up to the per-row cap
+    for (let i = 0; i < maxAlisonPerRow && alison.length > 0; i++) {
+      row.push(alison.shift()!);
+    }
+
+    // Use any remaining non-Alison to keep Alison count low
+    while (row.length < rowSize && nonAlison.length > 0) {
+      row.push(nonAlison.shift()!);
+    }
+
+    // Fill remaining slots with Alison (cap may be exceeded when non-Alison are exhausted)
+    while (row.length < rowSize && alison.length > 0) {
+      row.push(alison.shift()!);
+    }
+
+    rows.push(row);
   }
-  return result;
+
+  return rows.flat();
 }

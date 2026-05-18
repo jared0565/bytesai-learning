@@ -513,7 +513,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
                 </Link>
               </div>
               <div className="grid-4">
-                {distributeCourses(related).map(c => (
+                {distributeCourses(related, 4).map(c => (
                   <CourseCard key={c.id} course={c} />
                 ))}
               </div>

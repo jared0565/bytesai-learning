@@ -56,7 +56,8 @@ export default async function MyLearningPage({ searchParams }: PageProps) {
   const courseMap = new Map(validCourses.map(c => [c.id, c]));
   const orderedItems = distributeWithAlisonLimit(
     displayItems.filter(p => courseMap.has(p.course_id)),
-    p => courseMap.get(p.course_id)?.is_alison === 1
+    p => courseMap.get(p.course_id)?.is_alison === 1,
+    3
   );
 
   return (

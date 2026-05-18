@@ -152,7 +152,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               </div>
             ) : (
               <div className="grid-4">
-                {distributeCourses(courses).map(course => (
+                {distributeCourses(courses, 4).map(course => (
                   <CourseCard key={course.id} course={course} isGuest={!session} />
                 ))}
               </div>

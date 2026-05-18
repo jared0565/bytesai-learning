@@ -208,7 +208,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
               ) : (
                 <>
                   <div className="grid-3">
-                    {distributeCourses(courses).map(course => (
+                    {distributeCourses(courses, 3).map(course => (
                       <CourseCard key={course.id} course={course} isGuest={!session} />
                     ))}
                   </div>
