@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: '100+ Free AI Courses — Curated from Google, Microsoft, Anthropic & More',
     description: 'Stop hunting across 20 tabs. 100+ free AI courses from the world\'s top providers — curated, verified, and ready to start now.',
-    images: [{ url: `${PROD_URL}/og-default.png`, width: 1200, height: 630, alt: '100+ Free AI Courses — BytesAI Learning' }],
+    images: [{ url: `${PROD_URL}/og-default.png`, width: 1200, height: 1200, alt: '100+ Free AI Courses — BytesAI Learning' }],
   },
   twitter: {
     card: 'summary_large_image',

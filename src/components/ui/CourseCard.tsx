@@ -14,7 +14,7 @@ interface CourseCardProps {
 }
 
 const CATEGORY_STYLE: Record<string, { gradient: string; icon: React.ReactNode }> = {
-  'AI Foundations':              { gradient: 'linear-gradient(135deg, oklch(0.52 0.20 265), oklch(0.60 0.18 275))', icon: <Brain size={20} color="white" /> },
+  'AI Foundations':              { gradient: 'linear-gradient(135deg, oklch(0.52 0.20 258), oklch(0.60 0.18 275))', icon: <Brain size={20} color="white" /> },
   'LLMs / Generative AI':        { gradient: 'linear-gradient(135deg, oklch(0.60 0.17 230), oklch(0.65 0.14 240))', icon: <Cpu size={20} color="white" /> },
   'AI Agents':                   { gradient: 'linear-gradient(135deg, oklch(0.52 0.18 300), oklch(0.58 0.16 310))', icon: <Rss size={20} color="white" /> },
   'Prompt Engineering':          { gradient: 'linear-gradient(135deg, oklch(0.78 0.16 85), oklch(0.74 0.18 70))', icon: <MessageSquare size={20} color="white" /> },
@@ -23,7 +23,7 @@ const CATEGORY_STYLE: Record<string, { gradient: string; icon: React.ReactNode }
   'Programming Foundations':     { gradient: 'linear-gradient(135deg, oklch(0.72 0.17 160), oklch(0.70 0.16 150))', icon: <Code size={20} color="white" /> },
   'Books / Reading Sources':     { gradient: 'linear-gradient(135deg, oklch(0.55 0.02 270), oklch(0.60 0.02 270))', icon: <BookOpen size={20} color="white" /> },
 };
-const DEFAULT_STYLE = { gradient: 'linear-gradient(135deg, oklch(0.52 0.20 265), oklch(0.60 0.17 230))', icon: <Layers size={20} color="white" /> };
+const DEFAULT_STYLE = { gradient: 'linear-gradient(135deg, oklch(0.52 0.20 258), oklch(0.60 0.17 230))', icon: <Layers size={20} color="white" /> };
 
 function getCategoryStyle(category: string | null) {
   if (!category) return DEFAULT_STYLE;

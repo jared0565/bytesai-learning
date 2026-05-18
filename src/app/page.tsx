@@ -5,6 +5,8 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard, { CourseCardSkeleton } from '@/components/ui/CourseCard';
 import AuthButton from '@/components/ui/AuthButton';
+import HeroCardGrid from '@/components/ui/HeroCardGrid';
+import ScrollReveal from '@/components/ui/ScrollReveal';
 import { getDB, getRecentPublishedCuratedPages, distributeCourses } from '@/lib/db';
 import { CATEGORIES } from '@/lib/ranking';
 import { cookies } from 'next/headers';
@@ -79,28 +81,34 @@ export default async function HomePage() {
       <main>
         {/* Hero */}
         <section id="hero" className="hero">
-          <div className="container" style={{ maxWidth: 700 }}>
-            <h1 className="text-hero" style={{ marginBottom: '1.25rem' }}>
-              The best free AI courses, curated for you.
-            </h1>
-            <p className="hero-subtitle" style={{ fontSize: '1.125rem', color: 'var(--text-secondary)', lineHeight: 1.75, maxWidth: 540, marginBottom: '2rem' }}>
-              Stop hunting across 20 tabs. We curate and verify the best free AI learning from
-              Microsoft, Anthropic, Google, NVIDIA, DeepLearning.AI, and more, in one place.
-            </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.875rem' }}>
-              <Link href="/courses" className="btn btn-primary btn-lg">
-                Explore free courses <ArrowRight size={18} />
-              </Link>
-              {!session && (
-                <AuthButton className="btn btn-outline btn-lg">
-                  Save progress, it&apos;s free
-                </AuthButton>
-              )}
+          <div className="container hero-grid">
+            <div className="hero-content">
+              <h1 className="text-hero" style={{ textWrap: 'balance' }}>
+                The best free AI courses, curated for you.
+              </h1>
+              <p className="hero-subtitle">
+                Stop hunting across 20 tabs. We curate and verify the best free AI learning from
+                Microsoft, Anthropic, Google, NVIDIA, DeepLearning.AI, and more, in one place.
+              </p>
+              <div className="hero-actions">
+                <Link href="/courses" className="btn btn-primary btn-lg">
+                  Explore free courses <ArrowRight size={18} />
+                </Link>
+                {!session && (
+                  <AuthButton className="btn btn-outline btn-lg">
+                    Save progress, it&apos;s free
+                  </AuthButton>
+                )}
+              </div>
+            </div>
+            <div className="hero-visual">
+              <HeroCardGrid />
             </div>
           </div>
         </section>
 
         {/* Featured Above the Fold */}
+        <ScrollReveal>
         <section id="featured" className="section-sm" style={{ background: 'var(--bg-alt)' }}>
           <div className="container">
             <div className="section-header">
@@ -125,8 +133,10 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+        </ScrollReveal>
 
         {/* Trending */}
+        <ScrollReveal delay={1}>
         <section id="trending" className="section">
           <div className="container">
             <div className="section-header">
@@ -151,8 +161,10 @@ export default async function HomePage() {
             )}
           </div>
         </section>
+        </ScrollReveal>
 
         {/* AI Insights */}
+        <ScrollReveal delay={1}>
         {insights.length > 0 && (
           <section className="section-sm" style={{ background: 'var(--bg-alt)' }}>
             <div className="container">
@@ -178,7 +190,7 @@ export default async function HomePage() {
                     <div style={{
                       width: 36, height: 36, borderRadius: 8, flexShrink: 0,
                       background: 'var(--accent-soft)',
-                      border: '1px solid oklch(0.52 0.20 265 / 0.15)',
+                      border: '1px solid oklch(0.52 0.20 258 / 0.15)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       <Lightbulb size={17} color="var(--accent)" />
@@ -202,8 +214,10 @@ export default async function HomePage() {
             </div>
           </section>
         )}
+        </ScrollReveal>
 
         {/* Category Grid */}
+        <ScrollReveal delay={1}>
         <section className="section">
           <div className="container">
             <div className="section-header">
@@ -230,8 +244,10 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+        </ScrollReveal>
 
         {/* Sign-up CTA */}
+        <ScrollReveal delay={1}>
         {!session && (
           <section className="section" style={{ background: 'var(--accent-soft)' }}>
             <div className="container-sm" style={{ textAlign: 'center' }}>
@@ -252,6 +268,7 @@ export default async function HomePage() {
             </div>
           </section>
         )}
+        </ScrollReveal>
       </main>
 
       <Footer />

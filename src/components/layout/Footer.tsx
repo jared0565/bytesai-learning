@@ -85,7 +85,7 @@ export default function Footer() {
         {/* Share CTA */}
         <div style={{
           margin: '2rem 0', padding: '1rem 1.25rem',
-          background: 'var(--accent-soft)', border: '1px solid oklch(0.52 0.20 265 / 0.1)',
+          background: 'var(--accent-soft)', border: '1px solid oklch(0.52 0.20 258 / 0.1)',
           borderRadius: 'var(--radius-md)', textAlign: 'center',
         }}>
           <p style={{ fontSize: '0.9375rem', fontWeight: 700, marginBottom: '0.375rem' }}>

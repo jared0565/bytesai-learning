@@ -416,7 +416,7 @@ export default function CuratedSharePanel({ slug, title }: Props) {
               <div style={{
                 padding: '0.875rem 1rem',
                 background: 'var(--accent-soft)',
-                border: '1px solid oklch(0.52 0.20 265 / 0.12)',
+                border: '1px solid oklch(0.52 0.20 258 / 0.12)',
                 borderRadius: 'var(--radius-md)',
               }}>
                 <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)', marginBottom: '0.5rem' }}>
