@@ -7,7 +7,7 @@ import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
-import { getUserProgress, getCourseById, getDB} from '@/lib/db';
+import { getUserProgress, getCourseById, getDB, distributeWithAlisonLimit } from '@/lib/db';
 
 export const metadata: Metadata = {
   title: 'My Learning — BytesAI Learning',
@@ -52,6 +52,12 @@ export default async function MyLearningPage({ searchParams }: PageProps) {
 
   const filter = params.filter === 'completed' ? 'completed' : 'started';
   const displayItems = filter === 'completed' ? completed : started;
+
+  const courseMap = new Map(validCourses.map(c => [c.id, c]));
+  const orderedItems = distributeWithAlisonLimit(
+    displayItems.filter(p => courseMap.has(p.course_id)),
+    p => courseMap.get(p.course_id)?.is_alison === 1
+  );
 
   return (
     <>
@@ -116,7 +122,7 @@ export default async function MyLearningPage({ searchParams }: PageProps) {
             </div>
           ) : (
             <div className="grid-3">
-              {displayItems.map(p => {
+              {orderedItems.map(p => {
                 const course = validCourses.find(c => c.id === p.course_id);
                 if (!course) return null;
                 return (

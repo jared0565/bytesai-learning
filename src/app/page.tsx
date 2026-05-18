@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard, { CourseCardSkeleton } from '@/components/ui/CourseCard';
 import AuthButton from '@/components/ui/AuthButton';
-import { getDB, getRecentPublishedCuratedPages } from '@/lib/db';
+import { getDB, getRecentPublishedCuratedPages, distributeCourses } from '@/lib/db';
 import { CATEGORIES } from '@/lib/ranking';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -15,23 +15,6 @@ export const metadata: Metadata = {
   description:
     'Discover the best free AI courses from Microsoft, Google, Anthropic, NVIDIA, and DeepLearning.AI. Curated, verified, and free to start today.',
 };
-
-/** Interleave non-Alison and Alison courses so each 4-card row has 2 of each.
- *  Pattern: [non, alison, non, alison, non, alison, …]
- *  If one pool runs short, remaining slots are filled from the other.
- */
-function interleaveCourses(
-  nonAlison: import('@/lib/db').Course[],
-  alison: import('@/lib/db').Course[],
-): import('@/lib/db').Course[] {
-  const result: import('@/lib/db').Course[] = [];
-  const maxLen = Math.max(nonAlison.length, alison.length);
-  for (let i = 0; i < maxLen; i++) {
-    if (nonAlison[i]) result.push(nonAlison[i]);
-    if (alison[i])    result.push(alison[i]);
-  }
-  return result;
-}
 
 async function getHomeData() {
   const db = await getDB();
@@ -66,8 +49,8 @@ async function getHomeData() {
     ]);
 
     return {
-      featured: interleaveCourses(featuredNonAlison.results, featuredAlison.results),
-      trending: interleaveCourses(trendingNonAlison.results, trendingAlison.results),
+      featured: distributeCourses([...featuredNonAlison.results, ...featuredAlison.results]),
+      trending: distributeCourses([...trendingNonAlison.results, ...trendingAlison.results]),
       insights,
     };
   } catch {

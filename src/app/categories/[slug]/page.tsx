@@ -5,7 +5,7 @@ import { ArrowLeft, LayoutGrid } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
-import { getCoursesByCategory, getDB} from '@/lib/db';
+import { getCoursesByCategory, getDB, distributeCourses } from '@/lib/db';
 import { getCategoryBySlug, CATEGORIES } from '@/lib/ranking';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -150,7 +150,7 @@ export default async function CategoryPage({ params }: PageProps) {
             ) : (
               <>
                 <div className="grid-3">
-                  {courses.map(course => (
+                  {distributeCourses(courses).map(course => (
                     <CourseCard key={course.id} course={course} isGuest={!session} />
                   ))}
                 </div>

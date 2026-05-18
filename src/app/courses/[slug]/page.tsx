@@ -5,7 +5,7 @@ import { ExternalLink, BookOpen, ArrowLeft, CheckCircle2, Info, Calendar, Bookma
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
-import { getCourseBySlug, getRelatedCourses, getProviderBySlug, getUserProgress, getCuratedPagesForCourse, getDB} from '@/lib/db';
+import { getCourseBySlug, getRelatedCourses, getProviderBySlug, getUserProgress, getCuratedPagesForCourse, getDB, distributeCourses } from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -513,7 +513,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
                 </Link>
               </div>
               <div className="grid-4">
-                {related.map(c => (
+                {distributeCourses(related).map(c => (
                   <CourseCard key={c.id} course={c} />
                 ))}
               </div>

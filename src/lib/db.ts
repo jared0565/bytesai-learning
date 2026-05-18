@@ -436,3 +436,25 @@ export async function purgeOldAuditLogs(db: D1Database): Promise<void> {
     'DELETE FROM admin_audit_logs WHERE created_at < ?'
   ).bind(cutoff).run().catch(() => null);
 }
+
+/** Reorder courses so Alison items are interleaved with non-Alison items.
+ *  This ensures that in a CSS grid no single row is dominated by Alison cards.
+ *  Pattern: [non, alison, non, alison, …].  If one pool runs short, the other
+ *  fills the remaining slots. */
+export function distributeCourses(courses: Course[]): Course[] {
+  return distributeWithAlisonLimit(courses, c => c.is_alison === 1);
+}
+
+/** Generic interleaving helper: splits `items` by `isAlison`, then alternates
+ *  one from each pool.  Keeps original order within each pool. */
+export function distributeWithAlisonLimit<T>(items: T[], isAlison: (item: T) => boolean): T[] {
+  const nonAlison = items.filter(item => !isAlison(item));
+  const alison = items.filter(item => isAlison(item));
+  const result: T[] = [];
+  const maxLen = Math.max(nonAlison.length, alison.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (nonAlison[i]) result.push(nonAlison[i]);
+    if (alison[i]) result.push(alison[i]);
+  }
+  return result;
+}

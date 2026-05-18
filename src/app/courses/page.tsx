@@ -4,7 +4,7 @@ import { Search, SlidersHorizontal, ArrowRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard, { CourseCardSkeleton } from '@/components/ui/CourseCard';
-import { searchCourses, getDB} from '@/lib/db';
+import { searchCourses, getDB, distributeCourses } from '@/lib/db';
 import { CATEGORIES, LEVELS, ACCESS_MODELS } from '@/lib/ranking';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -208,7 +208,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
               ) : (
                 <>
                   <div className="grid-3">
-                    {courses.map(course => (
+                    {distributeCourses(courses).map(course => (
                       <CourseCard key={course.id} course={course} isGuest={!session} />
                     ))}
                   </div>

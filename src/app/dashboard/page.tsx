@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
-import { getUserProgress, getTrendingCourses, getCoursesByIds, getDB} from '@/lib/db';
+import { getUserProgress, getTrendingCourses, getCoursesByIds, getDB, distributeCourses } from '@/lib/db';
 import type { Course, UserCourseProgress } from '@/lib/db';
 
 export const metadata: Metadata = {
@@ -166,7 +166,7 @@ export default async function DashboardPage() {
                 <Link href="/courses" className="section-viewall">Browse all <ArrowRight size={14} /></Link>
               </div>
               <div className="grid-4">
-                {trending.map(course => (
+                {distributeCourses(trending).map(course => (
                   <CourseCard key={course.id} course={course} />
                 ))}
               </div>

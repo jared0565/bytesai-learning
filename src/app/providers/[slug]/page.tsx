@@ -5,7 +5,7 @@ import { ArrowLeft, ExternalLink, Building2, BookOpen } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
-import { getProviderBySlug, getCoursesByProvider, getDB} from '@/lib/db';
+import { getProviderBySlug, getCoursesByProvider, getDB, distributeCourses } from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -152,7 +152,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               </div>
             ) : (
               <div className="grid-4">
-                {courses.map(course => (
+                {distributeCourses(courses).map(course => (
                   <CourseCard key={course.id} course={course} isGuest={!session} />
                 ))}
               </div>

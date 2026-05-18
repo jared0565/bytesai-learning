@@ -10,7 +10,7 @@ import MarkdownContent from '@/components/ui/MarkdownContent';
 import CuratedViewTracker from '@/components/ui/CuratedViewTracker';
 import CuratedSharePanel from '@/components/ui/CuratedSharePanel';
 import ArticleHelpfulness from '@/components/ui/ArticleHelpfulness';
-import { getCuratedPageBySlug, getCuratedPageBySlugAnyStatus, getCourseBySlug, getDB } from '@/lib/db';
+import { getCuratedPageBySlug, getCuratedPageBySlugAnyStatus, getCourseBySlug, getDB, distributeCourses } from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -261,7 +261,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
                   Related courses
                 </h2>
                 <div className="grid-4">
-                  {validRelated.map(course => (
+                  {distributeCourses(validRelated).map(course => (
                     <CourseCard key={course.id} course={course} isGuest={!session} />
                   ))}
                 </div>
