@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { Search, SlidersHorizontal, ArrowRight } from 'lucide-react';
+import ScrollToResults from './ScrollToResults';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard, { CourseCardSkeleton } from '@/components/ui/CourseCard';
@@ -111,6 +113,10 @@ export default async function CoursesPage({ searchParams }: PageProps) {
           </div>
         </div>
 
+        <Suspense>
+          <ScrollToResults />
+        </Suspense>
+
         <div className="container" style={{ paddingTop: '1.5rem', paddingBottom: '3rem' }}>
           <div className="layout-sidebar">
 
@@ -129,6 +135,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
                       <Link
                         key={o.value}
                         href={buildUrl({ sort: o.value })}
+                        scroll={false}
                         style={{ fontSize: '0.8125rem', padding: '0.375rem 0.625rem', borderRadius: 6, background: sort === o.value ? 'var(--accent-soft)' : 'transparent', color: sort === o.value ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: sort === o.value ? 700 : 400 }}
                       >
                         {o.label}
@@ -141,13 +148,14 @@ export default async function CoursesPage({ searchParams }: PageProps) {
                 <div style={{ marginBottom: '1.25rem' }}>
                   <p className="label">Category</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    <Link href={buildUrl({ category: undefined })} style={{ fontSize: '0.8125rem', padding: '0.375rem 0.625rem', borderRadius: 6, background: !category ? 'var(--accent-soft)' : 'transparent', color: !category ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: !category ? 700 : 400 }}>
+                    <Link href={buildUrl({ category: undefined })} scroll={false} style={{ fontSize: '0.8125rem', padding: '0.375rem 0.625rem', borderRadius: 6, background: !category ? 'var(--accent-soft)' : 'transparent', color: !category ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: !category ? 700 : 400 }}>
                       All categories
                     </Link>
                     {CATEGORIES.map(cat => (
                       <Link
                         key={cat.slug}
                         href={buildUrl({ category: cat.db })}
+                        scroll={false}
                         style={{ fontSize: '0.8125rem', padding: '0.375rem 0.625rem', borderRadius: 6, background: category === cat.db ? 'var(--accent-soft)' : 'transparent', color: category === cat.db ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: category === cat.db ? 700 : 400 }}
                       >
                         {cat.label}
@@ -160,13 +168,14 @@ export default async function CoursesPage({ searchParams }: PageProps) {
                 <div style={{ marginBottom: '1.25rem' }}>
                   <p className="label">Level</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    <Link href={buildUrl({ level: undefined })} style={{ fontSize: '0.8125rem', padding: '0.375rem 0.625rem', borderRadius: 6, background: !level ? 'var(--accent-soft)' : 'transparent', color: !level ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: !level ? 700 : 400 }}>
+                    <Link href={buildUrl({ level: undefined })} scroll={false} style={{ fontSize: '0.8125rem', padding: '0.375rem 0.625rem', borderRadius: 6, background: !level ? 'var(--accent-soft)' : 'transparent', color: !level ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: !level ? 700 : 400 }}>
                       All levels
                     </Link>
                     {['Beginner', 'Intermediate', 'Advanced'].map(l => (
                       <Link
                         key={l}
                         href={buildUrl({ level: l })}
+                        scroll={false}
                         style={{ fontSize: '0.8125rem', padding: '0.375rem 0.625rem', borderRadius: 6, background: level === l ? 'var(--accent-soft)' : 'transparent', color: level === l ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: level === l ? 700 : 400 }}
                       >
                         {l}
@@ -176,7 +185,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
                 </div>
 
                 {(q || category || level) && (
-                  <Link href="/courses" className="btn btn-outline btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
+                  <Link href="/courses" scroll={false} className="btn btn-outline btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
                     Clear filters
                   </Link>
                 )}
@@ -184,7 +193,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
             </aside>
 
             {/* ── Course grid ── */}
-            <div>
+            <div id="course-results">
               {q && (
                 <p style={{ marginBottom: '1.25rem', fontSize: '0.9375rem', color: 'var(--text-secondary)' }}>
                   Results for <strong style={{ color: 'var(--text-primary)' }}>&ldquo;{q}&rdquo;</strong>

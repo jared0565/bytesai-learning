@@ -91,7 +91,7 @@ export default async function HomePage() {
                 Microsoft, Anthropic, Google, NVIDIA, DeepLearning.AI, and more, in one place.
               </p>
               <div className="hero-actions">
-                <Link href="/courses" className="btn btn-primary btn-lg">
+                <Link href="/courses#course-results" className="btn btn-primary btn-lg">
                   Explore free courses <ArrowRight size={18} />
                 </Link>
                 {!session && (
@@ -113,7 +113,7 @@ export default async function HomePage() {
           <div className="container">
             <div className="section-header">
               <h2 className="section-header-title">Featured this week</h2>
-              <Link href="/courses?sort=featured" className="section-viewall">
+              <Link href="/courses?sort=featured#course-results" className="section-viewall">
                 See all <ArrowRight size={14} />
               </Link>
             </div>
@@ -144,7 +144,7 @@ export default async function HomePage() {
                 <h2 className="section-header-title">Trending courses</h2>
                 <p className="text-sm" style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>Ordered by learner activity in the last 30 days</p>
               </div>
-              <Link href="/courses?sort=popular" className="section-viewall">
+              <Link href="/courses?sort=popular#course-results" className="section-viewall">
                 View all <ArrowRight size={14} />
               </Link>
             </div>
@@ -228,7 +228,7 @@ export default async function HomePage() {
               {CATEGORIES.map(cat => (
                 <Link
                   key={cat.slug}
-                  href={`/courses?category=${encodeURIComponent(cat.db)}`}
+                  href={`/courses?category=${encodeURIComponent(cat.db)}#course-results`}
                   className="card"
                   style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '1rem 1.25rem', textDecoration: 'none' }}
                 >
@@ -261,7 +261,7 @@ export default async function HomePage() {
                 <AuthButton className="btn btn-primary btn-lg">
                   Get started free <ArrowRight size={18} />
                 </AuthButton>
-                <Link href="/courses" className="btn btn-outline btn-lg">
+                <Link href="/courses#course-results" className="btn btn-outline btn-lg">
                   Browse without signing in
                 </Link>
               </div>
