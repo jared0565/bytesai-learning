@@ -236,14 +236,14 @@ export async function getTrendingCourses(db: D1Database, limit = 8): Promise<Cou
 
 export async function getCoursesByCategory(db: D1Database, category: string, limit = 20): Promise<Course[]> {
   const result = await db.prepare(
-    'SELECT * FROM courses WHERE category = ? AND published_status = ? ORDER BY is_alison DESC, popularity_score DESC LIMIT ?'
+    'SELECT * FROM courses WHERE category = ? AND published_status = ? ORDER BY popularity_score DESC LIMIT ?'
   ).bind(category, 'published', limit).all<Course>();
   return result.results;
 }
 
 export async function getCoursesByProvider(db: D1Database, providerId: string, limit = 20): Promise<Course[]> {
   const result = await db.prepare(
-    'SELECT * FROM courses WHERE provider_id = ? AND published_status = ? ORDER BY is_alison DESC, popularity_score DESC LIMIT ?'
+    'SELECT * FROM courses WHERE provider_id = ? AND published_status = ? ORDER BY popularity_score DESC LIMIT ?'
   ).bind(providerId, 'published', limit).all<Course>();
   return result.results;
 }
@@ -278,11 +278,11 @@ export async function searchCourses(db: D1Database, opts: {
 
   const where = conditions.join(' AND ');
   const sortMap: Record<string, string> = {
-    popular: 'is_alison DESC, popularity_score DESC',
-    newest: 'is_alison DESC, created_at DESC',
-    title: 'is_alison DESC, title ASC',
-    featured: 'featured_priority DESC, is_alison DESC',
-    beginner: 'is_alison DESC, CASE WHEN level = "Beginner" THEN 0 ELSE 1 END, popularity_score DESC',
+    popular: 'popularity_score DESC',
+    newest: 'created_at DESC',
+    title: 'title ASC',
+    featured: 'featured_priority DESC, popularity_score DESC',
+    beginner: 'CASE WHEN level = "Beginner" THEN 0 ELSE 1 END, popularity_score DESC',
   };
   const orderBy = sortMap[opts.sort ?? 'popular'] ?? 'popularity_score DESC';
   const limit = Math.min(opts.limit ?? 20, 50);
@@ -437,16 +437,16 @@ export async function purgeOldAuditLogs(db: D1Database): Promise<void> {
   ).bind(cutoff).run().catch(() => null);
 }
 
-/** Reorder courses so no single grid row contains more than `maxAlisonPerRow` Alison items.
- *  Non-Alison items are spread evenly across rows first; Alison items fill remaining
- *  slots up to the cap. This keeps the visual mix consistent even when Alison
- *  dominates the result set. */
+/** Reorder courses so no single CSS grid row is dominated by Alison cards.
+ *  The per-row Alison cap is derived from `rowSize` (e.g. 4-col → max 2, 3-col → max 1). */
 export function distributeCourses(courses: Course[], rowSize: number = 4): Course[] {
-  return distributeWithAlisonLimit(courses, c => c.is_alison === 1, rowSize, 2);
+  const maxAlison = Math.max(1, Math.floor(rowSize / 2));
+  return distributeWithAlisonLimit(courses, c => c.is_alison === 1, rowSize, maxAlison);
 }
 
-/** Row-aware interleaving: splits `items` by `isAlison`, distributes non-Alison
- *  evenly across rows, then fills remaining slots with Alison up to the per-row cap. */
+/** Row-aware interleaving: fills each grid row left-to-right, placing at least
+ *  one non-Alison item first, then Alison up to the cap. Overflow Alison is
+ *  spread across rows that have the fewest Alison already. */
 export function distributeWithAlisonLimit<T>(
   items: T[],
   isAlison: (item: T) => boolean,
@@ -455,41 +455,50 @@ export function distributeWithAlisonLimit<T>(
 ): T[] {
   const nonAlison = items.filter(item => !isAlison(item));
   const alison = items.filter(item => isAlison(item));
-  const total = items.length;
-  if (total === 0) return [];
 
-  const numRows = Math.ceil(total / rowSize);
-  const rows: T[][] = [];
+  if (items.length === 0) return [];
 
-  // Evenly distribute non-Alison across rows so every row gets a mix when possible
-  const baseNon = Math.floor(nonAlison.length / numRows);
-  const extraNon = nonAlison.length % numRows;
+  const numRows = Math.ceil(items.length / rowSize);
+  const rows: T[][] = Array.from({ length: numRows }, () => []);
+  const aliCount = new Array(numRows).fill(0);
 
-  for (let r = 0; r < numRows; r++) {
-    const row: T[] = [];
-    const targetNon = baseNon + (r < extraNon ? 1 : 0);
+  // Phase 1: place non-Alison left-to-right, filling each row before the next
+  for (const item of nonAlison) {
+    for (let r = 0; r < numRows; r++) {
+      if (rows[r].length < rowSize) {
+        rows[r].push(item);
+        break;
+      }
+    }
+  }
 
-    // Place the target non-Alison for this row
-    for (let i = 0; i < targetNon && nonAlison.length > 0; i++) {
-      row.push(nonAlison.shift()!);
+  // Phase 2: place Alison under the per-row cap first
+  for (const item of alison) {
+    let placed = false;
+    for (let r = 0; r < numRows; r++) {
+      if (rows[r].length < rowSize && aliCount[r] < maxAlisonPerRow) {
+        rows[r].push(item);
+        aliCount[r]++;
+        placed = true;
+        break;
+      }
     }
 
-    // Place Alison up to the per-row cap
-    for (let i = 0; i < maxAlisonPerRow && alison.length > 0; i++) {
-      row.push(alison.shift()!);
+    // Fallback: add to the row with the fewest Alison that still has space
+    if (!placed) {
+      let bestRow = -1;
+      let bestAliCount = Infinity;
+      for (let r = 0; r < numRows; r++) {
+        if (rows[r].length < rowSize && aliCount[r] < bestAliCount) {
+          bestAliCount = aliCount[r];
+          bestRow = r;
+        }
+      }
+      if (bestRow >= 0) {
+        rows[bestRow].push(item);
+        aliCount[bestRow]++;
+      }
     }
-
-    // Use any remaining non-Alison to keep Alison count low
-    while (row.length < rowSize && nonAlison.length > 0) {
-      row.push(nonAlison.shift()!);
-    }
-
-    // Fill remaining slots with Alison (cap may be exceeded when non-Alison are exhausted)
-    while (row.length < rowSize && alison.length > 0) {
-      row.push(alison.shift()!);
-    }
-
-    rows.push(row);
   }
 
   return rows.flat();

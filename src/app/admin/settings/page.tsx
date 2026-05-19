@@ -14,6 +14,7 @@ interface TrackingCode {
 
 export default function AdminSettingsPage() {
   const [chatbotMode, setChatbotMode] = useState<'ai' | 'keyword'>('ai');
+  const [alisonFallback, setAlisonFallback] = useState<'firecrawl' | 'redirect'>('firecrawl');
   const [trackingCodes, setTrackingCodes] = useState<TrackingCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -27,6 +28,7 @@ export default function AdminSettingsPage() {
       const data = await res.json();
       const s = data.settings ?? {};
       setChatbotMode(s.chatbot_mode === 'keyword' ? 'keyword' : 'ai');
+      setAlisonFallback(s.alison_fallback_mode === 'redirect' ? 'redirect' : 'firecrawl');
       try {
         setTrackingCodes(JSON.parse(s.tracking_codes ?? '[]'));
       } catch { setTrackingCodes([]); }
@@ -49,6 +51,7 @@ export default function AdminSettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chatbot_mode: chatbotMode,
+          alison_fallback_mode: alisonFallback,
           tracking_codes: JSON.stringify(trackingCodes),
         }),
       });
@@ -179,6 +182,73 @@ export default function AdminSettingsPage() {
 
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
           Current mode: <strong style={{ color: chatbotMode === 'ai' ? 'var(--accent)' : 'var(--amber)' }}>{chatbotMode === 'ai' ? 'AI (LLM)' : 'Keyword'}</strong>. Change takes effect immediately after saving.
+        </p>
+      </div>
+
+      {/* ── Alison Fallback Mode ────────────────────────────────────── */}
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1rem' }}>
+          <Bot size={20} color="var(--amber)" />
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>Alison Fallback Mode</h2>
+        </div>
+
+        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.65 }}>
+          When a visitor searches for a topic not in the BytesAI catalog, the chatbot falls back to Alison.
+          Choose how those results are presented. <strong>Firecrawl</strong> fetches live Alison course cards
+          (uses Firecrawl credits, ~5–10s). <strong>Redirect</strong> shows a search button that opens alison.com
+          — instant, no credits.
+        </p>
+
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button
+            onClick={() => setAlisonFallback('firecrawl')}
+            style={{
+              flex: 1, padding: '1rem', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+              border: alisonFallback === 'firecrawl' ? '2px solid var(--amber)' : '1px solid var(--border)',
+              background: alisonFallback === 'firecrawl' ? 'rgba(245,158,11,0.08)' : 'var(--bg)',
+              transition: 'all 0.15s',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              {alisonFallback === 'firecrawl'
+                ? <ToggleRight size={22} color="var(--amber)" />
+                : <ToggleLeft size={22} color="var(--text-muted)" />}
+              <span style={{ fontWeight: 700, fontSize: '0.9375rem', color: alisonFallback === 'firecrawl' ? 'var(--amber)' : 'var(--text-primary)' }}>
+                Firecrawl (default)
+              </span>
+            </div>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Live Alison course cards shown inline with affiliate links. Uses Firecrawl credits per search.
+            </p>
+          </button>
+
+          <button
+            onClick={() => setAlisonFallback('redirect')}
+            style={{
+              flex: 1, padding: '1rem', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+              border: alisonFallback === 'redirect' ? '2px solid var(--accent)' : '1px solid var(--border)',
+              background: alisonFallback === 'redirect' ? 'rgba(79,110,247,0.08)' : 'var(--bg)',
+              transition: 'all 0.15s',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              {alisonFallback === 'redirect'
+                ? <ToggleRight size={22} color="var(--accent)" />
+                : <ToggleLeft size={22} color="var(--text-muted)" />}
+              <span style={{ fontWeight: 700, fontSize: '0.9375rem', color: alisonFallback === 'redirect' ? 'var(--accent)' : 'var(--text-primary)' }}>
+                Redirect button
+              </span>
+            </div>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Shows a &quot;Browse on Alison&quot; button with affiliate link. Instant, no API cost.
+            </p>
+          </button>
+        </div>
+
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
+          Current: <strong style={{ color: alisonFallback === 'firecrawl' ? 'var(--amber)' : 'var(--accent)' }}>
+            {alisonFallback === 'firecrawl' ? 'Firecrawl (live cards)' : 'Redirect button'}
+          </strong>. Change takes effect immediately after saving.
         </p>
       </div>
 

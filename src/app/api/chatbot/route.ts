@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { sanitizeText, detectPromptInjection, checkRateLimit, getRateLimitKey, rateLimitResponse } from '@/lib/security';
 import { getDB, searchCourses } from '@/lib/db';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
+import { scrapeAlisonSearchWithFirecrawl, ALISON_AFFILIATE_PARAMS } from '@/lib/alison';
 import { nanoid } from 'nanoid';
 
 const ChatSchema = z.object({
@@ -12,7 +13,6 @@ const ChatSchema = z.object({
 });
 
 // ─── Domain guard ─────────────────────────────────────────────────────────────
-// Topics entirely outside of AI/ML/learning that should be politely declined
 const OFF_TOPIC_PATTERNS = [
   /\b(recipe|cooking|cook|food|restaurant|meal)\b/i,
   /\b(sport|football|soccer|basketball|nba|nfl|cricket|tennis)\b/i,
@@ -28,13 +28,10 @@ const OFF_TOPIC_PATTERNS = [
 ];
 
 function isOffTopic(message: string): boolean {
-  // If it mentions learning/course/AI explicitly, always allow
   const allowTerms = /\b(ai|learn|course|class|tutorial|machine learning|ml|llm|genai|prompt|data|python|coding|model|agent|certificate|alison|skill)\b/i;
   if (allowTerms.test(message)) return false;
   return OFF_TOPIC_PATTERNS.some(p => p.test(message));
 }
-
-// (Off-topic replies now redirect to Alison search inline)
 
 // ─── Keyword fallback ─────────────────────────────────────────────────────────
 const KEYWORD_MAP: Array<{ terms: string[]; query: Partial<{ category: string; level: string; sort: string; provider: string }> }> = [
@@ -83,7 +80,6 @@ function buildFallbackReply(message: string, courseCount: number): string {
   return `Here are the best free courses for that — I've highlighted any with optional certificates first. All free to start! (${courseCount} found)`;
 }
 
-// Map a user message to the best browse URL + label when no courses found
 function buildBrowseUrl(message: string, llmSearchQuery: string | null): { browseUrl: string; browseLabel: string } | null {
   const lower = (llmSearchQuery ?? message).toLowerCase();
 
@@ -110,22 +106,35 @@ function buildBrowseUrl(message: string, llmSearchQuery: string | null): { brows
 type CourseResult = { title: string; slug: string; provider?: string; snippet?: string; is_affiliate: boolean; is_alison: boolean; affiliate_url?: string };
 
 function sortBalancedAffiliate(courses: CourseResult[]): CourseResult[] {
-  // Split into Alison, other-affiliate, and regular
   const alison = courses.filter(c => c.is_alison);
   const affiliate = courses.filter(c => !c.is_alison && c.is_affiliate);
   const regular = courses.filter(c => !c.is_alison && !c.is_affiliate);
 
-  // Take max 2 Alison, then affiliates, then regular — balanced mix
   const result: CourseResult[] = [];
   result.push(...alison.slice(0, 2));
   result.push(...affiliate.slice(0, 2));
-  // Fill remaining slots with regular courses (up to 4 total)
   const remaining = 4 - result.length;
   if (remaining > 0) result.push(...regular.slice(0, remaining));
-  // If still under 4, backfill from whichever pool has extras
   if (result.length < 4) result.push(...alison.slice(2, 2 + (4 - result.length)));
   if (result.length < 4) result.push(...affiliate.slice(2, 2 + (4 - result.length)));
   return result.slice(0, 4);
+}
+
+// ─── Alison live search (Firecrawl) ──────────────────────────────────────────
+async function fetchAlisonCourses(query: string, firecrawlKey: string): Promise<CourseResult[]> {
+  try {
+    const results = await scrapeAlisonSearchWithFirecrawl(query, firecrawlKey);
+    return results.slice(0, 4).map(r => ({
+      title: r.title,
+      slug: r.slug,
+      provider: 'alison',
+      is_affiliate: true,
+      is_alison: true,
+      affiliate_url: `https://alison.com/course/${r.slug}?${ALISON_AFFILIATE_PARAMS}`,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 // ─── Conversation persistence ─────────────────────────────────────────────────
@@ -141,7 +150,6 @@ async function persistMessages(
   if (!db) return;
   const now = new Date().toISOString();
   try {
-    // Upsert session
     await db.prepare(`
       INSERT INTO chatbot_sessions (id, visitor_id, user_id, started_at, last_message_at, message_count)
       VALUES (?, ?, ?, ?, ?, 1)
@@ -150,12 +158,10 @@ async function persistMessages(
         message_count = chatbot_sessions.message_count + 1
     `).bind(sessionId, sessionId, userId, now, now).run();
 
-    // Insert user message
     await db.prepare(
       'INSERT INTO chatbot_messages (id, session_id, role, content, off_topic, occurred_at) VALUES (?, ?, ?, ?, ?, ?)'
     ).bind(nanoid(), sessionId, 'user', userMessage, offTopic ? 1 : 0, now).run();
 
-    // Insert bot reply
     await db.prepare(
       'INSERT INTO chatbot_messages (id, session_id, role, content, courses_json, off_topic, occurred_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
     ).bind(nanoid(), sessionId, 'bot', botReply, courses.length ? JSON.stringify(courses.map(c => c.slug)) : null, 0, now).run();
@@ -190,12 +196,10 @@ export async function POST(req: NextRequest) {
   const rawMessage = sanitizeText(parsed.data.message);
   const sessionId = parsed.data.sessionId ?? nanoid();
 
-  // Get user from session cookie (optional — guest conversations also stored)
   const token = req.cookies.get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token).catch(() => null) : null;
   const userId = session?.userId ?? null;
 
-  // Prompt injection
   if (detectPromptInjection(rawMessage)) {
     return NextResponse.json({
       reply: "I'm here to help you find free AI courses! Ask me something like 'Find beginner AI courses' or 'Best prompt engineering courses'. 😊",
@@ -203,42 +207,58 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Domain guard — redirect obvious non-AI topics to Alison without burning an LLM call
-  const offTopic = isOffTopic(rawMessage);
-  if (offTopic) {
-    const reply = `Alison has free courses on that — check below! I can also help you find AI courses. 🎓`;
-    const db = await getDB();
-    await persistMessages(db, sessionId, userId, rawMessage, reply, [], true);
-    return NextResponse.json({ reply, courses: [], sessionId, ok: true, alisonRedirect: rawMessage });
-  }
-
+  // ─── DB + settings (read before off-topic check so fallback mode is known) ──
   const db = await getDB();
 
-  // ─── Check chatbot mode setting ──────────────────────────────────────────────
   let chatbotModeSetting: 'ai' | 'keyword' = 'ai';
+  let alisonFallbackMode: 'firecrawl' | 'redirect' = 'firecrawl';
   if (db) {
     try {
-      const row = await db.prepare("SELECT value FROM site_settings WHERE key = 'chatbot_mode'").first<{ value: string }>();
-      if (row?.value === 'keyword') chatbotModeSetting = 'keyword';
-    } catch { /* default to ai */ }
+      const rows = await db.prepare(
+        "SELECT key, value FROM site_settings WHERE key IN ('chatbot_mode', 'alison_fallback_mode')"
+      ).all<{ key: string; value: string }>();
+      for (const row of rows.results) {
+        if (row.key === 'chatbot_mode' && row.value === 'keyword') chatbotModeSetting = 'keyword';
+        if (row.key === 'alison_fallback_mode' && row.value === 'redirect') alisonFallbackMode = 'redirect';
+      }
+    } catch { /* defaults */ }
   }
 
-  // ─── Try LLM (via OpenRouter) — only in AI mode ─────────────────────────────
-  // Always read secrets from Cloudflare env bindings (process.env may not stringify correctly)
+  // ─── Read env vars ────────────────────────────────────────────────────────────
   let apiKey: string | undefined;
   let chatbotModel: string | undefined;
+  let firecrawlKey: string | undefined;
   try {
     const { getCloudflareContext } = await import('@opennextjs/cloudflare');
     const { env } = await getCloudflareContext({ async: true });
     const cfEnv = env as Record<string, unknown>;
     apiKey = String(cfEnv.OPENROUTER_API_KEY ?? '').trim() || undefined;
     chatbotModel = String(cfEnv.CHATBOT_MODEL ?? '').trim() || undefined;
+    firecrawlKey = String(cfEnv.FIRECRAWL_API_KEY ?? '').trim() || undefined;
   } catch {
-    // Local dev fallback
     apiKey = process.env.OPENROUTER_API_KEY?.trim();
     chatbotModel = process.env.CHATBOT_MODEL?.trim();
+    firecrawlKey = process.env.FIRECRAWL_API_KEY?.trim();
   }
 
+  // ─── Domain guard ─────────────────────────────────────────────────────────────
+  const offTopic = isOffTopic(rawMessage);
+  if (offTopic) {
+    if (alisonFallbackMode === 'firecrawl' && firecrawlKey) {
+      const alisonCourses = await fetchAlisonCourses(rawMessage, firecrawlKey);
+      if (alisonCourses.length > 0) {
+        const reply = `Found ${alisonCourses.length} free Alison course${alisonCourses.length === 1 ? '' : 's'} on that! All free to learn, optional paid certificate. 🎓`;
+        await persistMessages(db, sessionId, userId, rawMessage, reply, alisonCourses, true);
+        return NextResponse.json({ reply, courses: alisonCourses, sessionId, ok: true });
+      }
+    }
+    // Redirect fallback — or Firecrawl returned nothing
+    const reply = `Alison has free courses on that — check below! I can also help you find AI courses. 🎓`;
+    await persistMessages(db, sessionId, userId, rawMessage, reply, [], true);
+    return NextResponse.json({ reply, courses: [], sessionId, ok: true, alisonRedirect: rawMessage });
+  }
+
+  // ─── LLM (via OpenRouter) — AI mode only ─────────────────────────────────────
   let llmReply: string | null = null;
   let llmSearchQuery: string | null = null;
   let llmAlisonRedirect: string | null = null;
@@ -253,12 +273,11 @@ export async function POST(req: NextRequest) {
       ];
 
       const model = chatbotModel ?? 'google/gemini-3.1-flash-lite-preview';
-      const trimmedKey = String(apiKey).trim();
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: new Headers({
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${trimmedKey}`,
+          'Authorization': `Bearer ${String(apiKey).trim()}`,
           'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL ?? 'https://learn.bytesai.uk',
           'X-Title': 'BytesAI Learning',
         }),
@@ -269,34 +288,39 @@ export async function POST(req: NextRequest) {
         const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
         let content = data.choices?.[0]?.message?.content ?? '';
 
-        // Parse ALISON_REDIRECT — LLM signals this is a non-AI topic with corrected spelling
         const alisonMatch = content.match(/ALISON_REDIRECT:\s*(.+)/i);
         if (alisonMatch) {
           llmAlisonRedirect = alisonMatch[1].trim().replace(/["`*]/g, '');
           content = content.replace(/ALISON_REDIRECT:.+/i, '').trim();
         }
 
-        // Parse SEARCH_QUERY — LLM provides structured catalog search
         const searchMatch = content.match(/SEARCH_QUERY:\s*(\{.+\})/i);
         if (searchMatch) {
           content = content.replace(/SEARCH_QUERY:.+/i, '').trim();
           try { llmSearchQuery = JSON.parse(searchMatch[1]).q; } catch { /* ignore */ }
         }
 
-        // Clean up any stray URLs the LLM may have included
         llmReply = content.replace(/https?:\/\/\S+/g, '').trim() || null;
       }
     } catch { /* fall through to keyword fallback */ }
   }
 
-  // ─── If LLM redirected to Alison, return early with the button ──────────────
+  // ─── LLM Alison redirect ──────────────────────────────────────────────────────
   if (llmAlisonRedirect) {
+    if (alisonFallbackMode === 'firecrawl' && firecrawlKey) {
+      const alisonCourses = await fetchAlisonCourses(llmAlisonRedirect, firecrawlKey);
+      if (alisonCourses.length > 0) {
+        const reply = llmReply || `Found ${alisonCourses.length} free Alison course${alisonCourses.length === 1 ? '' : 's'} on that! 🎓`;
+        await persistMessages(db, sessionId, userId, rawMessage, reply, alisonCourses, true);
+        return NextResponse.json({ reply, courses: alisonCourses, sessionId, ok: true });
+      }
+    }
     const reply = llmReply || `Alison has free ${llmAlisonRedirect} courses — check them out below! 🎓`;
     await persistMessages(db, sessionId, userId, rawMessage, reply, [], true);
     return NextResponse.json({ reply, courses: [], sessionId, ok: true, alisonRedirect: llmAlisonRedirect });
   }
 
-  // ─── Course lookup (affiliate-prioritised) ───────────────────────────────────
+  // ─── Course lookup (DB, affiliate-prioritised) ────────────────────────────────
   let courses: CourseResult[] = [];
 
   if (db) {
@@ -316,18 +340,31 @@ export async function POST(req: NextRequest) {
         affiliate_url: c.affiliate_url ?? undefined,
       }));
 
-      // Balanced sort: max 2 Alison, then affiliates, then regular
       courses = sortBalancedAffiliate(raw);
     } catch { /* non-fatal */ }
   }
 
+  // ─── Alison fallback when DB has no results ───────────────────────────────────
+  if (courses.length === 0) {
+    if (alisonFallbackMode === 'firecrawl' && firecrawlKey) {
+      courses = await fetchAlisonCourses(llmSearchQuery ?? rawMessage, firecrawlKey);
+    }
+  }
+
   const reply = llmReply ?? buildFallbackReply(rawMessage, courses.length);
 
-  // When no courses found, include a browse CTA with pre-applied filter
+  // Browse CTA only when both DB and Alison fallback returned nothing
   const browseCta = courses.length === 0 ? buildBrowseUrl(rawMessage, llmSearchQuery) : null;
+  // Redirect button when in redirect mode and still no results
+  const alisonRedirect = courses.length === 0 && alisonFallbackMode === 'redirect'
+    ? (llmSearchQuery ?? rawMessage)
+    : null;
 
-  // Persist conversation
   await persistMessages(db, sessionId, userId, rawMessage, reply, courses, false);
 
-  return NextResponse.json({ reply, courses, sessionId, ok: true, ...browseCta });
+  return NextResponse.json({
+    reply, courses, sessionId, ok: true,
+    ...(alisonRedirect ? { alisonRedirect } : {}),
+    ...(browseCta ?? {}),
+  });
 }

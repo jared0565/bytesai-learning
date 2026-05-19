@@ -276,7 +276,7 @@ export default function Chatbot() {
           alisonSearchUrl: buildAlisonSearchUrl(data.alisonRedirect),
           alisonQuery: data.alisonRedirect,
         } : {}),
-        // Browse CTA when no catalog results found
+        // Browse CTA when no courses found
         ...(data.browseUrl ? { browseUrl: data.browseUrl, browseLabel: data.browseLabel } : {}),
       };
       setMessages(prev => [...prev, botMsg]);
