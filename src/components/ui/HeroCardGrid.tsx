@@ -51,6 +51,7 @@ export default function HeroCardGrid({ courses }: HeroCardGridProps) {
 
   return (
     <div
+      className="hero-card-grid"
       aria-hidden="true"
       style={{
         position: 'relative',

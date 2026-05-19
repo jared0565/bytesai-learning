@@ -276,7 +276,7 @@ h1, h2, h3 { text-wrap: balance; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 0.875rem; }
 .hero-visual { display: flex; justify-content: center; align-items: center; min-height: 380px; }
 @media (max-width: 1024px) {
-  .hero-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+  .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; }
   .hero-visual { order: -1; min-height: 300px; }
   .hero-content { max-width: 100%; text-align: center; }
   .hero-actions { justify-content: center; }
@@ -291,6 +291,17 @@ h1, h2, h3 { text-wrap: balance; }
 .hero-float-card {
   will-change: transform;
   backface-visibility: hidden;
+}
+@media (max-width: 600px) {
+  .hero { padding: 1.5rem 0 1.5rem; }
+  .hero-visual { min-height: 260px; overflow: hidden; }
+  .hero-card-grid {
+    transform: scale(0.72);
+    transform-origin: center top;
+    height: 270px !important;
+  }
+  .hero-content { text-align: left; }
+  .hero-actions { justify-content: flex-start; }
 }
 
 /* ─── Hero share row ─────────────────────────────────────────── */
@@ -491,7 +502,11 @@ h1, h2, h3 { text-wrap: balance; }
 .section-header-title { font-size: 1.375rem; font-weight: 700; }
 .section-viewall { font-size: 0.875rem; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 0.25rem; white-space: nowrap; flex-shrink: 0; }
 .section-viewall:hover { text-decoration: underline; }
-@media (max-width: 600px) { .section-header-title { font-size: 1.125rem; } .section-header { margin-bottom: 1.25rem; } }
+@media (max-width: 600px) {
+  .section-header-title { font-size: 1.125rem; }
+  .section-header { margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .course-card-body { padding: 1rem; gap: 0.5rem; }
+}
 
 /* ─── Footer ─────────────────────────────────────────────────── */
 footer { background: var(--bg-alt); color: var(--text-secondary); border-top: 1px solid var(--border); padding: 3rem 0 1.5rem; }

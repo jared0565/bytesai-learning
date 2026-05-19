@@ -16,6 +16,12 @@ export default function ScrollReveal({ children, className = '', delay = 0, thre
     const el = ref.current;
     if (!el) return;
 
+    // Inside the mobile app-shell, scrolling happens on .app-content, not the document.
+    const appContent = typeof document !== 'undefined' ? document.querySelector('.app-content') : null;
+    const isScrollContainer = appContent ?
+      (window.getComputedStyle(appContent).overflowY === 'auto' ||
+       window.getComputedStyle(appContent).overflowY === 'scroll') : false;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -23,7 +29,7 @@ export default function ScrollReveal({ children, className = '', delay = 0, thre
           observer.unobserve(el);
         }
       },
-      { threshold, rootMargin: '0px 0px -40px 0px' }
+      { threshold, rootMargin: '0px 0px -40px 0px', root: isScrollContainer ? appContent : null }
     );
 
     observer.observe(el);
