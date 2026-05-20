@@ -139,6 +139,10 @@ h1, h2, h3 { text-wrap: balance; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
 @media (max-width: 900px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-3 { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px) { .grid-4, .grid-3 { grid-template-columns: 1fr; gap: 1rem; } .grid-2 { grid-template-columns: 1fr; gap: 1rem; } }
+.courses-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+@media (max-width: 1400px) { .courses-grid { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; } }
+@media (max-width: 900px) { .courses-grid { grid-template-columns: repeat(2, 1fr); gap: 1.25rem; } }
+@media (max-width: 600px) { .courses-grid { grid-template-columns: 1fr; gap: 1rem; } }
 
 /* ─── Cards ──────────────────────────────────────────────────── */
 .card {

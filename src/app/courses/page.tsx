@@ -202,8 +202,8 @@ export default async function CoursesPage({ searchParams }: PageProps) {
               )}
 
               {courses.length === 0 && !db ? (
-                <div className="grid-3">
-                  {Array.from({ length: 9 }).map((_, i) => <CourseCardSkeleton key={i} />)}
+                <div className="courses-grid">
+                  {Array.from({ length: 8 }).map((_, i) => <CourseCardSkeleton key={i} />)}
                 </div>
               ) : courses.length === 0 ? (
                 <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
@@ -216,8 +216,8 @@ export default async function CoursesPage({ searchParams }: PageProps) {
                 </div>
               ) : (
                 <>
-                  <div className="grid-3">
-                    {distributeCourses(courses, 3).map(course => (
+                  <div className="courses-grid">
+                    {distributeCourses(courses, 4).map(course => (
                       <CourseCard key={course.id} course={course} isGuest={!session} />
                     ))}
                   </div>

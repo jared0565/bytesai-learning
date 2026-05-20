@@ -462,6 +462,10 @@ export function distributeWithAlisonLimit<T>(
   const rows: T[][] = Array.from({ length: numRows }, () => []);
   const aliCount = new Array(numRows).fill(0);
 
+  // Partial last row (e.g. 3 courses in a 4-col grid) gets capped at 1 Alison
+  const lastRowSize = items.length % rowSize || rowSize;
+  const rowCap = (r: number) => r === numRows - 1 && lastRowSize < rowSize ? 1 : maxAlisonPerRow;
+
   // Phase 1: place non-Alison left-to-right, filling each row before the next
   for (const item of nonAlison) {
     for (let r = 0; r < numRows; r++) {
@@ -476,7 +480,7 @@ export function distributeWithAlisonLimit<T>(
   for (const item of alison) {
     let placed = false;
     for (let r = 0; r < numRows; r++) {
-      if (rows[r].length < rowSize && aliCount[r] < maxAlisonPerRow) {
+      if (rows[r].length < rowSize && aliCount[r] < rowCap(r)) {
         rows[r].push(item);
         aliCount[r]++;
         placed = true;
