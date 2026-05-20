@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Check, X, RotateCcw, BookOpen, Trophy } from 'lucide-react';
+import { Check, X, RotateCcw, BookOpen, Trophy, Zap, Share2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
@@ -27,6 +27,7 @@ interface QuizResult {
   score: number;
   total: number;
   percentage: number;
+  difficulty: string;
   answers: GradedAnswer[];
   weakTopics: WeakTopic[];
   suggestions: Course[];
@@ -97,30 +98,84 @@ function ResultsContent() {
                   : 'Keep learning! We have recommended some courses below.'}
             </p>
 
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link href="/quiz" style={{
-                display: 'flex', alignItems: 'center', gap: '0.375rem',
-                padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border)', background: 'var(--bg)',
-                color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.875rem',
-                textDecoration: 'none',
-              }}>
-                <RotateCcw size={14} /> Try another
+            {/* Three primary actions */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+              {/* Same level */}
+              <Link
+                href={`/quiz/${result.difficulty}`}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                  padding: '0.75rem', borderRadius: 'var(--radius-sm)',
+                  border: '1.5px solid var(--border)', background: 'var(--bg)',
+                  color: 'var(--text)', fontWeight: 700, fontSize: '0.875rem',
+                  textDecoration: 'none', transition: 'all 0.12s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; (e.currentTarget as HTMLElement).style.background = 'var(--accent-soft)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.background = 'var(--bg)'; }}
+              >
+                <RotateCcw size={16} />
+                Same level
               </Link>
-              <Link href="/quiz/leaderboard" style={{
-                display: 'flex', alignItems: 'center', gap: '0.375rem',
-                padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border)', background: 'var(--bg)',
-                color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.875rem',
-                textDecoration: 'none',
-              }}>
-                <Trophy size={14} /> Leaderboard
-              </Link>
+
+              {/* Next level */}
+              {result.difficulty !== 'advanced' ? (
+                <Link
+                  href={`/quiz/${result.difficulty === 'beginner' ? 'intermediate' : 'advanced'}`}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                    padding: '0.75rem', borderRadius: 'var(--radius-sm)',
+                    border: '1.5px solid var(--accent)', background: 'var(--accent)',
+                    color: 'white', fontWeight: 700, fontSize: '0.875rem',
+                    textDecoration: 'none', transition: 'all 0.12s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.9'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                >
+                  <Zap size={16} />
+                  Next level
+                </Link>
+              ) : (
+                <Link
+                  href="/quiz"
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                    padding: '0.75rem', borderRadius: 'var(--radius-sm)',
+                    border: '1.5px solid var(--accent)', background: 'var(--accent)',
+                    color: 'white', fontWeight: 700, fontSize: '0.875rem',
+                    textDecoration: 'none', transition: 'all 0.12s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.9'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                >
+                  <RotateCcw size={16} />
+                  Start over
+                </Link>
+              )}
+
+              {/* Share */}
+              <button
+                onClick={() => {
+                  const el = document.getElementById('quiz-share-panel');
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                  padding: '0.75rem', borderRadius: 'var(--radius-sm)',
+                  border: '1.5px solid var(--border)', background: 'var(--bg)',
+                  color: 'var(--text)', fontWeight: 700, fontSize: '0.875rem',
+                  cursor: 'pointer', transition: 'all 0.12s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#1877f2'; (e.currentTarget as HTMLElement).style.background = 'rgba(24,119,242,0.08)'; (e.currentTarget as HTMLElement).style.color = '#1877f2'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.background = 'var(--bg)'; (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
+              >
+                <Share2 size={16} />
+                Share result
+              </button>
             </div>
           </div>
 
           {/* Share */}
-          <div style={{ marginBottom: '2rem' }}>
+          <div id="quiz-share-panel" style={{ marginBottom: '2rem', scrollMarginTop: '6rem' }}>
             <SharePanel url={shareUrl} title={shareText} compact labeled />
           </div>
 

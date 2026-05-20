@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
       score,
       total: answers.length,
       percentage: Math.round((score / answers.length) * 100),
+      difficulty,
       answers: gradedAnswers,
       weakTopics,
       suggestions,
