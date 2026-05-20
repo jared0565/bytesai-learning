@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Check, X, RotateCcw, BookOpen, Trophy, Zap, Share2 } from 'lucide-react';
+import { Check, X, RotateCcw, BookOpen, Trophy, Zap, Share2, UserPlus, Sparkles } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
@@ -62,7 +62,7 @@ function ResultsContent() {
 
   const shareText = `I scored ${result.score}/${result.total} on the BytesAI AI Knowledge Quiz — can you beat me?`;
   const shareUrl = `https://learn.bytesai.uk/quiz`;
-  const ogImageUrl = `https://learn.bytesai.uk/api/og?type=quiz&score=${result.score}&total=${result.total}&difficulty=beginner`;
+  const ogImageUrl = `https://learn.bytesai.uk/api/og?type=quiz&score=${result.score}&total=${result.total}&difficulty=${result.difficulty}`;
 
   const toggleExplanation = (id: string) => {
     setExpanded(prev => {
@@ -173,6 +173,52 @@ function ResultsContent() {
               </button>
             </div>
           </div>
+
+          {/* Guest CTA — save score / create account */}
+          {!result.savedAttemptId && (
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(79,110,247,0.08), rgba(20,184,166,0.06))',
+              border: '1.5px solid var(--accent)',
+              borderRadius: 'var(--radius-md)', padding: '1.5rem',
+              marginBottom: '2rem', textAlign: 'center',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <Sparkles size={18} color="var(--accent)" />
+                <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--accent)' }}>Great score! Save it?</span>
+              </div>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1rem', maxWidth: 420, margin: '0 auto 1rem' }}>
+                Create a free account to save this score to the leaderboard, track your progress across quizzes, and get personalised course recommendations.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Link
+                  href="/auth/register"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    padding: '0.625rem 1.25rem', borderRadius: 'var(--radius-sm)',
+                    border: 'none', background: 'var(--accent)',
+                    color: 'white', fontWeight: 700, fontSize: '0.875rem',
+                    textDecoration: 'none', transition: 'all 0.12s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '0.9'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                >
+                  <UserPlus size={16} /> Create free account
+                </Link>
+                <Link
+                  href="/auth/login"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    padding: '0.625rem 1.25rem', borderRadius: 'var(--radius-sm)',
+                    border: '1.5px solid var(--border)', background: 'var(--bg)',
+                    color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.875rem',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Sign in
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Share */}
           <div id="quiz-share-panel" style={{ marginBottom: '2rem', scrollMarginTop: '6rem' }}>
