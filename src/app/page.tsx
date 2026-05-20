@@ -87,12 +87,12 @@ export default async function HomePage() {
                 The best free AI courses, curated for you.
               </h1>
               <p className="hero-subtitle">
-                Stop hunting across 20 tabs. We curate and verify the best free AI learning from
+                Stop hunting across 20 tabs. We curate and verify the best AI learning from
                 Microsoft, Anthropic, Google, NVIDIA, DeepLearning.AI, and more, in one place.
               </p>
               <div className="hero-actions">
                 <Link href="/courses#course-results" className="btn btn-primary btn-lg">
-                  Explore free courses <ArrowRight size={18} />
+                  Explore courses <ArrowRight size={18} />
                 </Link>
                 {!session && (
                   <AuthButton className="btn btn-outline btn-lg">
