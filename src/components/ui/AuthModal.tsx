@@ -152,11 +152,6 @@ export default function AuthModal({ open, onClose, initialTab = 'register' }: Au
           {/* ─── REGISTER TAB ───────────────────────────────────────── */}
           {tab === 'register' && (
             <>
-              <h2 style={{ fontSize: '1.375rem', fontWeight: 800, marginBottom: '0.375rem' }}>Create your account</h2>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
-                Free to join — track learning, save courses, get recommendations.
-              </p>
-
               {regError && (
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.75rem', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 'var(--radius-md)', marginBottom: '1.25rem', fontSize: '0.8125rem', color: '#991b1b' }}>
                   <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> {regError}

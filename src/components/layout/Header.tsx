@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import {
   BookOpen, Menu, X, ChevronDown, Sparkles, LayoutDashboard, LogIn, User, LogOut, Share2, Settings, Sun, Moon,
 } from 'lucide-react';
@@ -38,6 +39,7 @@ export default function Header({ userRole, displayName }: NavProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const { theme, toggle } = useTheme();
+  const pathname = usePathname();
 
   useEffect(() => {
     const t = setInterval(() => setNudgeIndex(i => (i + 1) % NUDGE_MESSAGES.length), 4000);
@@ -51,6 +53,16 @@ export default function Header({ userRole, displayName }: NavProps) {
       .then(d => { if (d?.profile?.avatar_url) setAvatarUrl(d.profile.avatar_url); })
       .catch(() => null);
   }, [userRole]);
+
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (pathname === '/') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      if (window.location.hash) {
+        window.history.replaceState(null, '', '/');
+      }
+    }
+  };
 
   return (
     <>
@@ -69,7 +81,7 @@ export default function Header({ userRole, displayName }: NavProps) {
       <nav className="nav">
         <div className="container nav-inner">
           {/* Logo */}
-          <Link href="/" className="nav-logo" style={{ color: 'var(--text-primary)' }}>
+          <Link href="/" className="nav-logo" style={{ color: 'var(--text-primary)' }} onClick={handleLogoClick}>
             <span style={{
               width: 32, height: 32, borderRadius: 8,
               background: 'var(--accent)',

@@ -96,7 +96,7 @@ export default async function HomePage() {
                 </Link>
                 {!session && (
                   <AuthButton className="btn btn-outline btn-lg">
-                    Save progress, it&apos;s free
+                    Save progress
                   </AuthButton>
                 )}
               </div>
