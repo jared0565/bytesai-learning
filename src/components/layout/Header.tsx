@@ -24,6 +24,7 @@ interface NavProps {
 
 const MAIN_LINKS = [
   { href: '/courses', label: 'Courses' },
+  { href: '/quiz', label: 'Quiz', badge: 'New' },
   { href: '/#trending', label: 'Trending' },
   { href: '/#featured', label: 'Featured' },
   { href: '/providers', label: 'Providers', hideAtMd: true },
@@ -95,8 +96,15 @@ export default function Header({ userRole, displayName }: NavProps) {
           {/* Desktop links */}
           <div className="nav-links" style={{ gap: '0.125rem' }}>
             {MAIN_LINKS.map(link => (
-              <Link key={link.href} href={link.href} className={`nav-link${link.hideAtMd ? ' nav-link-hide-md' : ''}`}>
+              <Link key={link.href} href={link.href} className={`nav-link${link.hideAtMd ? ' nav-link-hide-md' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                 {link.label}
+                {link.badge && (
+                  <span style={{
+                    fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
+                    padding: '1px 6px', borderRadius: 99,
+                    background: 'var(--accent)', color: 'white',
+                  }}>{link.badge}</span>
+                )}
               </Link>
             ))}
           </div>
@@ -259,8 +267,15 @@ export default function Header({ userRole, displayName }: NavProps) {
           }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               {MAIN_LINKS.map(link => (
-                <Link key={link.href} href={link.href} className="nav-link" style={{ padding: '0.75rem 1rem' }} onClick={() => setMenuOpen(false)}>
+                <Link key={link.href} href={link.href} className="nav-link" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setMenuOpen(false)}>
                   {link.label}
+                  {link.badge && (
+                    <span style={{
+                      fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
+                      padding: '2px 7px', borderRadius: 99,
+                      background: 'var(--accent)', color: 'white',
+                    }}>{link.badge}</span>
+                  )}
                 </Link>
               ))}
               <hr style={{ margin: '0.75rem 0', border: 'none', borderTop: '1px solid var(--border)' }} />

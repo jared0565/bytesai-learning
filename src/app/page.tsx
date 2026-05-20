@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Lightbulb } from 'lucide-react';
+import { ArrowRight, BookOpen, Lightbulb, Brain, Zap } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard, { CourseCardSkeleton } from '@/components/ui/CourseCard';
@@ -106,6 +106,49 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Quiz CTA */}
+        <ScrollReveal>
+        <section className="section-sm" style={{ paddingTop: '1.5rem', paddingBottom: '1.5rem' }}>
+          <div className="container">
+            <Link
+              href="/quiz"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '1.25rem',
+                padding: '1.25rem 1.5rem', borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, rgba(79,110,247,0.06), rgba(20,184,166,0.04))',
+                border: '1.5px solid var(--accent)',
+                textDecoration: 'none', color: 'inherit',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(79,110,247,0.1), rgba(20,184,166,0.08))'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(79,110,247,0.06), rgba(20,184,166,0.04))'; }}
+            >
+              <div style={{
+                width: 48, height: 48, borderRadius: 12,
+                background: 'var(--accent-soft)', border: '1.5px solid var(--accent)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <Brain size={24} color="var(--accent)" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                  <span style={{ fontSize: '1rem', fontWeight: 800 }}>Test your AI knowledge</span>
+                  <span style={{
+                    fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em',
+                    padding: '2px 8px', borderRadius: 99,
+                    background: 'var(--accent)', color: 'white',
+                  }}>New</span>
+                </div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                  5 quick questions across beginner, intermediate, and advanced levels. See how you score and get course recommendations.
+                </p>
+              </div>
+              <Zap size={20} color="var(--accent)" style={{ flexShrink: 0 }} />
+            </Link>
+          </div>
+        </section>
+        </ScrollReveal>
 
         {/* Featured Above the Fold */}
         <ScrollReveal>
