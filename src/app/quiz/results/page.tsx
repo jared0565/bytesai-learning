@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Check, X, RotateCcw, BookOpen, Trophy, Zap, Share2, UserPlus, Sparkles } from 'lucide-react';
+import { Check, X, RotateCcw, BookOpen, Trophy, Zap, Share2, UserPlus, Sparkles, AlertTriangle, X as XIcon } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
@@ -40,10 +40,98 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   advanced: '#ef4444',
 };
 
+function UnsavedDataModal({ topic, onClose, onContinue }: { topic: string; onClose: () => void; onContinue: () => void }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 500,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '1rem',
+    }} onClick={onClose}>
+      <div style={{
+        position: 'relative',
+        background: 'var(--card)', border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-md)', padding: '1.5rem',
+        maxWidth: 420, width: '100%',
+        boxShadow: 'var(--shadow-lg)',
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: '50%',
+            background: 'var(--amber-soft)', border: '1.5px solid var(--amber)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <AlertTriangle size={18} color="var(--amber)" />
+          </div>
+          <div>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.25rem' }}>Your result is not saved</h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Create a free account to save this score, appear on the leaderboard, and get personalised course recommendations for <strong style={{ color: 'var(--text)' }}>{topic}</strong>.
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <Link
+            href="/auth/register"
+            onClick={() => { sessionStorage.setItem('quizPendingTopic', topic); }}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              padding: '0.625rem', borderRadius: 'var(--radius-sm)',
+              border: 'none', background: 'var(--accent)',
+              color: 'white', fontWeight: 700, fontSize: '0.875rem',
+              textDecoration: 'none', transition: 'all 0.12s',
+              textAlign: 'center',
+            }}
+          >
+            <UserPlus size={16} /> Create free account
+          </Link>
+          <Link
+            href="/auth/login"
+            onClick={() => { sessionStorage.setItem('quizPendingTopic', topic); }}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              padding: '0.625rem', borderRadius: 'var(--radius-sm)',
+              border: '1.5px solid var(--border)', background: 'var(--bg)',
+              color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.875rem',
+              textDecoration: 'none', textAlign: 'center',
+            }}
+          >
+            Sign in
+          </Link>
+          <button
+            onClick={onContinue}
+            style={{
+              padding: '0.625rem', borderRadius: 'var(--radius-sm)',
+              border: 'none', background: 'none',
+              color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem',
+              cursor: 'pointer', textAlign: 'center',
+            }}
+          >
+            Continue without saving
+          </button>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute', top: '1rem', right: '1rem',
+            padding: '0.25rem', borderRadius: 'var(--radius-sm)',
+            border: 'none', background: 'none',
+            color: 'var(--text-muted)', cursor: 'pointer',
+          }}
+          aria-label="Close"
+        >
+          <XIcon size={18} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ResultsContent() {
   const router = useRouter();
   const [result, setResult] = useState<QuizResult | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [pendingTopic, setPendingTopic] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = sessionStorage.getItem('quizResult');
@@ -57,6 +145,15 @@ function ResultsContent() {
       router.push('/quiz');
     }
   }, [router]);
+
+  const handleTopicClick = (topic: string) => {
+    if (!result) return;
+    if (result.savedAttemptId) {
+      router.push(`/courses?q=${encodeURIComponent(topic.replace(/-/g, ' '))}`);
+    } else {
+      setPendingTopic(topic);
+    }
+  };
 
   if (!result) return null;
 
@@ -233,18 +330,39 @@ function ResultsContent() {
               </h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {result.weakTopics.map(t => (
-                  <span key={t.tag} style={{
-                    fontSize: '0.8rem', fontWeight: 600,
-                    padding: '0.375rem 0.75rem', borderRadius: 99,
-                    background: 'var(--accent-soft)', color: 'var(--accent)',
-                    border: '1px solid var(--accent)20',
-                    textTransform: 'capitalize',
-                  }}>
+                  <button
+                    key={t.tag}
+                    onClick={() => handleTopicClick(t.tag)}
+                    style={{
+                      fontSize: '0.8rem', fontWeight: 600,
+                      padding: '0.375rem 0.75rem', borderRadius: 99,
+                      background: 'var(--accent-soft)', color: 'var(--accent)',
+                      border: '1px solid var(--accent)30',
+                      textTransform: 'capitalize', cursor: 'pointer',
+                      transition: 'all 0.12s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent)'; (e.currentTarget as HTMLElement).style.color = 'white'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-soft)'; (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
+                  >
                     {t.tag.replace(/-/g, ' ')}
-                  </span>
+                    {!result.savedAttemptId && <span style={{ marginLeft: '0.375rem', opacity: 0.7 }}>*</span>}
+                  </button>
                 ))}
               </div>
+              {!result.savedAttemptId && <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.375rem' }}>* Sign in to save and get personalised courses</p>}
             </div>
+          )}
+
+          {/* Unsaved data modal */}
+          {pendingTopic && (
+            <UnsavedDataModal
+              topic={pendingTopic.replace(/-/g, ' ')}
+              onClose={() => setPendingTopic(null)}
+              onContinue={() => {
+                router.push(`/courses?q=${encodeURIComponent(pendingTopic.replace(/-/g, ' '))}`);
+                setPendingTopic(null);
+              }}
+            />
           )}
 
           {/* Answer review */}
