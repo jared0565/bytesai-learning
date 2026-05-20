@@ -518,3 +518,125 @@ export function distributeWithAlisonLimit<T>(
 
   return result;
 }
+
+// ─── Quiz types and queries ────────────────────────────────────────────────────
+
+export interface QuizQuestion {
+  id: string;
+  quiz_id: string;
+  question_text: string;
+  options_json: string;
+  correct_index: number;
+  explanation: string | null;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  topic_tags_json: string | null;
+}
+
+export interface QuizAttempt {
+  id: string;
+  user_id: string | null;
+  quiz_id: string;
+  difficulty: string;
+  score: number;
+  total: number;
+  answers_json: string | null;
+  weak_topics_json: string | null;
+  completed_at: string;
+}
+
+export interface QuizQuestionForClient {
+  id: string;
+  question_text: string;
+  options: string[];
+  difficulty: string;
+}
+
+export async function getQuizQuestions(
+  db: D1Database,
+  difficulty: string,
+  limit: number = 5
+): Promise<QuizQuestionForClient[]> {
+  const stmt = db.prepare(
+    `SELECT id, question_text, options_json, difficulty
+     FROM quiz_questions
+     WHERE difficulty = ?
+     ORDER BY RANDOM()
+     LIMIT ?`
+  ).bind(difficulty, limit);
+  const { results } = await stmt.all<{ id: string; question_text: string; options_json: string; difficulty: string }>();
+  return results.map(r => ({
+    id: r.id,
+    question_text: r.question_text,
+    options: JSON.parse(r.options_json) as string[],
+    difficulty: r.difficulty,
+  }));
+}
+
+export async function getQuizCorrectAnswers(
+  db: D1Database,
+  questionIds: string[]
+): Promise<Array<{ id: string; correct_index: number; explanation: string | null; topic_tags_json: string | null }>> {
+  if (questionIds.length === 0) return [];
+  const placeholders = questionIds.map(() => '?').join(',');
+  const stmt = db.prepare(
+    `SELECT id, correct_index, explanation, topic_tags_json
+     FROM quiz_questions
+     WHERE id IN (${placeholders})`
+  ).bind(...questionIds);
+  const { results } = await stmt.all<{ id: string; correct_index: number; explanation: string | null; topic_tags_json: string | null }>();
+  return results;
+}
+
+export async function saveQuizAttempt(
+  db: D1Database,
+  attempt: Omit<QuizAttempt, 'completed_at'> & { completed_at?: string }
+): Promise<void> {
+  const now = new Date().toISOString();
+  await db.prepare(
+    `INSERT INTO quiz_attempts (id, user_id, quiz_id, difficulty, score, total, answers_json, weak_topics_json, completed_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(
+    attempt.id,
+    attempt.user_id ?? null,
+    attempt.quiz_id,
+    attempt.difficulty,
+    attempt.score,
+    attempt.total,
+    attempt.answers_json ?? null,
+    attempt.weak_topics_json ?? null,
+    attempt.completed_at ?? now
+  ).run();
+}
+
+export async function getQuizLeaderboard(
+  db: D1Database,
+  quizId: string,
+  difficulty: string,
+  limit: number = 20
+): Promise<Array<{ id: string; display_name: string | null; score: number; total: number; completed_at: string }>> {
+  const { results } = await db.prepare(
+    `SELECT qa.id, up.display_name, qa.score, qa.total, qa.completed_at
+     FROM quiz_attempts qa
+     LEFT JOIN user_profiles up ON up.user_id = qa.user_id
+     WHERE qa.quiz_id = ? AND qa.difficulty = ? AND qa.user_id IS NOT NULL
+     ORDER BY qa.score DESC, qa.completed_at ASC
+     LIMIT ?`
+  ).bind(quizId, difficulty, limit).all<{ id: string; display_name: string | null; score: number; total: number; completed_at: string }>();
+  return results;
+}
+
+export async function getUserQuizAttempts(
+  db: D1Database,
+  userId: string,
+  quizId?: string
+): Promise<QuizAttempt[]> {
+  let sql = `SELECT * FROM quiz_attempts WHERE user_id = ?`;
+  const bindings: unknown[] = [userId];
+  if (quizId) {
+    sql += ` AND quiz_id = ?`;
+    bindings.push(quizId);
+  }
+  sql += ` ORDER BY completed_at DESC`;
+  const { results } = await db.prepare(sql).bind(...bindings).all<QuizAttempt>();
+  return results;
+}

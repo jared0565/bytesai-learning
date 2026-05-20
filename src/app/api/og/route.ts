@@ -223,10 +223,78 @@ function buildCourseSvg(
 </svg>`;
 }
 
+// ── Quiz OG image ────────────────────────────────────────────────────────────
+function buildQuizSvg(score: number, total: number, difficulty: string): string {
+  const DIFFICULTY_COLORS: Record<string, string> = {
+    beginner: '#22c55e',
+    intermediate: '#f59e0b',
+    advanced: '#ef4444',
+  };
+  const accent = DIFFICULTY_COLORS[difficulty.toLowerCase()] ?? '#4f6ef7';
+  const label = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+  const percentage = Math.round((score / total) * 100);
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="${accent}"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="85%" cy="15%" r="40%">
+      <stop offset="0%" stop-color="${accent}" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="${accent}" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect width="1200" height="4" fill="url(#accent)"/>
+  ${Array.from({ length: 20 }, (_, i) => `<line x1="${i * 60}" y1="0" x2="${i * 60}" y2="630" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`).join('')}
+  ${Array.from({ length: 11 }, (_, i) => `<line x1="0" y1="${i * 60}" x2="1200" y2="${i * 60}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`).join('')}
+
+  <rect x="64" y="28" width="36" height="36" rx="8" fill="url(#accent)"/>
+  <text x="66" y="52" fill="white" font-size="18" font-weight="900" font-family="Inter,system-ui,sans-serif">B</text>
+  <text x="110" y="52" fill="white" font-size="20" font-weight="800" font-family="Inter,system-ui,sans-serif">BytesAI</text>
+  <text x="222" y="52" fill="#4f6ef7" font-size="20" font-weight="800" font-family="Inter,system-ui,sans-serif">Learning</text>
+
+  <rect x="64" y="72" width="120" height="28" rx="14" fill="${accent}20" stroke="${accent}60" stroke-width="1"/>
+  <text x="124" y="90" text-anchor="middle" fill="${accent}" font-size="12" font-weight="700" font-family="Inter,system-ui,sans-serif">${label}</text>
+
+  <circle cx="74" cy="160" r="4" fill="${accent}"/>
+  <text x="86" y="164" fill="${accent}" font-size="14" font-weight="700" font-family="Inter,system-ui,sans-serif" letter-spacing="1">AI KNOWLEDGE QUIZ</text>
+
+  <text x="64" y="240" fill="white" font-size="72" font-weight="800" font-family="Inter,system-ui,sans-serif" letter-spacing="-1">
+    ${score}/${total}
+  </text>
+
+  <text x="64" y="290" fill="#94a3b8" font-size="22" font-family="Inter,system-ui,sans-serif">
+    ${percentage}% — Test your knowledge at learn.bytesai.uk/quiz
+  </text>
+
+  <rect x="64" y="580" width="1072" height="1" fill="rgba(255,255,255,0.06)"/>
+  <text x="64" y="612" fill="#475569" font-size="15" font-weight="500" font-family="monospace">learn.bytesai.uk/quiz</text>
+</svg>`;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug');
   const type = searchParams.get('type');
+
+  // Quiz result image: ?type=quiz&score=4&total=5&difficulty=advanced
+  if (type === 'quiz') {
+    const score = parseInt(searchParams.get('score') ?? '0', 10);
+    const total = parseInt(searchParams.get('total') ?? '5', 10);
+    const difficulty = searchParams.get('difficulty') ?? 'beginner';
+    const svg = buildQuizSvg(score, total, difficulty);
+    return new Response(svg, {
+      headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400, s-maxage=604800' },
+    });
+  }
 
   if (!slug || !isValidSlug(slug)) {
     return new Response('Missing or invalid slug', { status: 400 });
