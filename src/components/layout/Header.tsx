@@ -69,7 +69,7 @@ export default function Header({ userRole, displayName }: NavProps) {
       <nav className="nav">
         <div className="container nav-inner">
           {/* Logo */}
-          <Link href="/#hero" className="nav-logo" style={{ color: 'var(--text-primary)' }}>
+          <Link href="/" className="nav-logo" style={{ color: 'var(--text-primary)' }}>
             <span style={{
               width: 32, height: 32, borderRadius: 8,
               background: 'var(--accent)',
