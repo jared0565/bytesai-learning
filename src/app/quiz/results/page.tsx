@@ -8,6 +8,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
 import SharePanel from '@/components/ui/SharePanel';
+import { getCategoryBySlug } from '@/lib/ranking';
 import type { Course } from '@/lib/db';
 
 interface GradedAnswer {
@@ -40,7 +41,7 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   advanced: '#ef4444',
 };
 
-function UnsavedDataModal({ topic, onClose, onContinue }: { topic: string; onClose: () => void; onContinue: () => void }) {
+function UnsavedDataModal({ topic, onClose, onContinue, topicUrl }: { topic: string; onClose: () => void; onContinue: () => void; topicUrl: string }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 500,
@@ -73,7 +74,7 @@ function UnsavedDataModal({ topic, onClose, onContinue }: { topic: string; onClo
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <Link
             href="/auth/register"
-            onClick={() => { sessionStorage.setItem('quizPendingTopic', topic); }}
+            onClick={() => { sessionStorage.setItem('quizPendingUrl', topicUrl); }}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
               padding: '0.625rem', borderRadius: 'var(--radius-sm)',
@@ -87,7 +88,7 @@ function UnsavedDataModal({ topic, onClose, onContinue }: { topic: string; onClo
           </Link>
           <Link
             href="/auth/login"
-            onClick={() => { sessionStorage.setItem('quizPendingTopic', topic); }}
+            onClick={() => { sessionStorage.setItem('quizPendingUrl', topicUrl); }}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
               padding: '0.625rem', borderRadius: 'var(--radius-sm)',
@@ -146,10 +147,18 @@ function ResultsContent() {
     }
   }, [router]);
 
+  const buildTopicUrl = (topic: string) => {
+    const cat = getCategoryBySlug(topic);
+    if (cat) {
+      return `/courses?category=${encodeURIComponent(cat.db)}#course-results`;
+    }
+    return `/courses?q=${encodeURIComponent(topic.replace(/-/g, ' '))}#course-results`;
+  };
+
   const handleTopicClick = (topic: string) => {
     if (!result) return;
     if (result.savedAttemptId) {
-      router.push(`/courses?q=${encodeURIComponent(topic.replace(/-/g, ' '))}`);
+      router.push(buildTopicUrl(topic));
     } else {
       setPendingTopic(topic);
     }
@@ -357,9 +366,10 @@ function ResultsContent() {
           {pendingTopic && (
             <UnsavedDataModal
               topic={pendingTopic.replace(/-/g, ' ')}
+              topicUrl={buildTopicUrl(pendingTopic)}
               onClose={() => setPendingTopic(null)}
               onContinue={() => {
-                router.push(`/courses?q=${encodeURIComponent(pendingTopic.replace(/-/g, ' '))}`);
+                router.push(buildTopicUrl(pendingTopic));
                 setPendingTopic(null);
               }}
             />
