@@ -116,13 +116,10 @@ export default async function HomePage() {
               style={{
                 display: 'flex', alignItems: 'center', gap: '1.25rem',
                 padding: '1.25rem 1.5rem', borderRadius: 'var(--radius-md)',
-                background: 'linear-gradient(135deg, rgba(79,110,247,0.06), rgba(20,184,166,0.04))',
+                background: 'linear-gradient(135deg, rgba(79,110,247,0.08), rgba(20,184,166,0.05))',
                 border: '1.5px solid var(--accent)',
                 textDecoration: 'none', color: 'inherit',
-                transition: 'all 0.15s',
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(79,110,247,0.1), rgba(20,184,166,0.08))'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(79,110,247,0.06), rgba(20,184,166,0.04))'; }}
             >
               <div style={{
                 width: 48, height: 48, borderRadius: 12,
