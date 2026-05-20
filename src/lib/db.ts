@@ -437,16 +437,15 @@ export async function purgeOldAuditLogs(db: D1Database): Promise<void> {
   ).bind(cutoff).run().catch(() => null);
 }
 
-/** Reorder courses so no single CSS grid row is dominated by Alison cards.
- *  The per-row Alison cap is derived from `rowSize` (e.g. 4-col → max 2, 3-col → max 1). */
+/** Reorder courses so each grid row contains up to `maxAlison` Alison cards,
+ *  interleaved with other providers. Partial last rows are capped at 1 Alison. */
 export function distributeCourses(courses: Course[], rowSize: number = 4): Course[] {
-  const maxAlison = Math.max(1, Math.floor(rowSize / 2));
-  return distributeWithAlisonLimit(courses, c => c.is_alison === 1, rowSize, maxAlison);
+  return distributeWithAlisonLimit(courses, c => c.is_alison === 1, rowSize, 2);
 }
 
-/** Row-aware interleaving: fills each grid row left-to-right, placing at least
- *  one non-Alison item first, then Alison up to the cap. Overflow Alison is
- *  spread across rows that have the fewest Alison already. */
+/** Interleaves Alison and non-Alison items so each row shows:
+ *    Non | Alison | Non | Alison  (up to maxAlisonPerRow per full row).
+ *  Alison are spread evenly across rows via round-robin before interleaving. */
 export function distributeWithAlisonLimit<T>(
   items: T[],
   isAlison: (item: T) => boolean,
@@ -457,53 +456,65 @@ export function distributeWithAlisonLimit<T>(
   const alison = items.filter(item => isAlison(item));
 
   if (items.length === 0) return [];
+  // Nothing to interleave
+  if (alison.length === 0 || nonAlison.length === 0) return items;
 
   const numRows = Math.ceil(items.length / rowSize);
-  const rows: T[][] = Array.from({ length: numRows }, () => []);
-  const aliCount = new Array(numRows).fill(0);
-
-  // Partial last row (e.g. 3 courses in a 4-col grid) gets capped at 1 Alison
   const lastRowSize = items.length % rowSize || rowSize;
-  const rowCap = (r: number) => r === numRows - 1 && lastRowSize < rowSize ? 1 : maxAlisonPerRow;
 
-  // Phase 1: place non-Alison left-to-right, filling each row before the next
-  for (const item of nonAlison) {
-    for (let r = 0; r < numRows; r++) {
-      if (rows[r].length < rowSize) {
-        rows[r].push(item);
-        break;
+  // Partial last row (fewer items than a full row) gets at most 1 Alison
+  const rowCap = (r: number) =>
+    r === numRows - 1 && lastRowSize < rowSize ? 1 : maxAlisonPerRow;
+
+  // Round-robin: distribute Alison evenly across rows (prevents front-loading)
+  const alisonPerRow: number[] = new Array(numRows).fill(0);
+  let totalPlaced = 0;
+  let madeProgress = true;
+  while (totalPlaced < alison.length && madeProgress) {
+    madeProgress = false;
+    for (let r = 0; r < numRows && totalPlaced < alison.length; r++) {
+      if (alisonPerRow[r] < rowCap(r)) {
+        alisonPerRow[r]++;
+        totalPlaced++;
+        madeProgress = true;
       }
     }
   }
 
-  // Phase 2: place Alison under the per-row cap first
-  for (const item of alison) {
-    let placed = false;
-    for (let r = 0; r < numRows; r++) {
-      if (rows[r].length < rowSize && aliCount[r] < rowCap(r)) {
-        rows[r].push(item);
-        aliCount[r]++;
-        placed = true;
-        break;
-      }
-    }
+  // Build result: for each row, interleave non-Alison and Alison
+  const result: T[] = [];
+  let nonIdx = 0, aliIdx = 0;
 
-    // Fallback: add to the row with the fewest Alison that still has space
-    if (!placed) {
-      let bestRow = -1;
-      let bestAliCount = Infinity;
-      for (let r = 0; r < numRows; r++) {
-        if (rows[r].length < rowSize && aliCount[r] < bestAliCount) {
-          bestAliCount = aliCount[r];
-          bestRow = r;
-        }
-      }
-      if (bestRow >= 0) {
-        rows[bestRow].push(item);
-        aliCount[bestRow]++;
+  for (let r = 0; r < numRows; r++) {
+    const thisRowSize = r === numRows - 1 ? lastRowSize : rowSize;
+    const aliCount = alisonPerRow[r];
+    const nonCount = Math.max(0, thisRowSize - aliCount);
+
+    const rowNon = nonAlison.slice(nonIdx, nonIdx + nonCount);
+    const rowAli = alison.slice(aliIdx, aliIdx + aliCount);
+    nonIdx += rowNon.length;
+    aliIdx += rowAli.length;
+
+    // Alternate: Non, Ali, Non, Ali...
+    let nI = 0, aI = 0;
+    let wantAli = false;
+    while (nI < rowNon.length || aI < rowAli.length) {
+      if (!wantAli && nI < rowNon.length) {
+        result.push(rowNon[nI++]);
+        wantAli = aI < rowAli.length;
+      } else if (aI < rowAli.length) {
+        result.push(rowAli[aI++]);
+        wantAli = false;
+      } else {
+        result.push(rowNon[nI++]);
       }
     }
   }
 
-  return rows.flat();
+  // Safety: append any overflow Alison that exceeded row caps
+  if (aliIdx < alison.length) {
+    result.push(...alison.slice(aliIdx));
+  }
+
+  return result;
 }
