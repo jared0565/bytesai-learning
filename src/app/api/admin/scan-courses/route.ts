@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyBearerToken } from '@/lib/auth';
+import { verifyBearerToken, verifySession, COOKIE_NAME } from '@/lib/auth';
 import { getDB } from '@/lib/db';
 import { runScan } from '@/lib/scanner';
+
+async function requireAdmin(req: NextRequest) {
+  // Try Bearer token first (CLI/automation)
+  const auth = req.headers.get('Authorization');
+  const bearer = auth ? await verifyBearerToken(auth) : null;
+  if (bearer) return bearer;
+
+  // Fall back to session cookie (browser admin UI)
+  const token = req.cookies.get(COOKIE_NAME)?.value;
+  const session = token ? await verifySession(token) : null;
+  if (!session || session.role !== 'admin') return null;
+  return session;
+}
 
 // POST /api/admin/scan-courses
 // Body: { provider: string, limit?: number }
 export async function POST(req: NextRequest) {
-  const auth = req.headers.get('Authorization');
-  const admin = await verifyBearerToken(auth);
+  const admin = await requireAdmin(req);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 });
   }
