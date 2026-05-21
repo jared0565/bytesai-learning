@@ -47,7 +47,16 @@ export default function AddCourseForm() {
       const u = params.get('prefill_url');
       const s = params.get('prefill_snippet');
       const i = params.get('prefill_image');
-      if (t) { applyTitle(t); setShowForm(true); }
+      const asNew = params.get('prefill_as_new') === '1';
+      if (t) {
+        applyTitle(t);
+        if (asNew) {
+          // Modify slug to avoid collision when importing as new
+          setSlug(`${slugify(t)}-2`);
+          setSlugManual(true);
+        }
+        setShowForm(true);
+      }
       if (u) { setUrl(u); setShowForm(true); }
       if (s) { setSnippet(s); setShowForm(true); }
       if (i) { setOgImage(i); setShowForm(true); }

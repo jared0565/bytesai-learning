@@ -11,12 +11,29 @@ async function requireAdmin(req: NextRequest) {
 }
 
 // GET /api/admin/courses — list all courses (admin, unpaginated)
+// Query param `slug` returns a single course for comparison
 export async function GET(req: NextRequest) {
   const session = await requireAdmin(req);
   if (!session) return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 });
 
   const db = await getDB();
   if (!db) return NextResponse.json({ error: 'DB unavailable.' }, { status: 503 });
+
+  const url = new URL(req.url);
+  const slug = url.searchParams.get('slug');
+
+  // Single-course lookup for comparison
+  if (slug) {
+    try {
+      const course = await db.prepare(
+        'SELECT id, slug, title, provider_id, category, level, published_status, is_alison, is_affiliate, official_link, snippet, cover_image_url, duration_text, created_at, updated_at FROM courses WHERE slug = ?'
+      ).bind(slug).first<import('@/lib/db').Course>();
+      if (!course) return NextResponse.json({ error: 'Course not found.' }, { status: 404 });
+      return NextResponse.json({ course });
+    } catch {
+      return NextResponse.json({ error: 'Failed to fetch course.' }, { status: 500 });
+    }
+  }
 
   try {
     const result = await db.prepare(
