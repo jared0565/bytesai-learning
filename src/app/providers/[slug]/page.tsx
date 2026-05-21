@@ -90,7 +90,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <section style={{ background: 'transparent', padding: '3.5rem 0 2.5rem', color: 'white' }}>
           <div className="container">
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', flexWrap: 'wrap' }}>
-              <ProviderLogo slug={provider.slug} name={provider.name} logoUrl={provider.logo_url} websiteUrl={provider.website_url} size={64} />
+              <ProviderLogo slug={provider.slug} name={provider.name} logoUrl={provider.logo_url} size={64} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                   <h1 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 800, color: 'white' }}>

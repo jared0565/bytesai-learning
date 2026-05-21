@@ -89,7 +89,7 @@ function ProviderCard({ provider, courseCount }: { provider: import('@/lib/db').
       background: isAlison ? 'rgba(245, 158, 11, 0.03)' : undefined
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <ProviderLogo slug={provider.slug} name={provider.name} logoUrl={provider.logo_url} websiteUrl={provider.website_url} size={40} />
+        <ProviderLogo slug={provider.slug} name={provider.name} logoUrl={provider.logo_url} size={40} />
         {isAlison && <span className="badge badge-alison text-xs">Partner</span>}
       </div>
 
