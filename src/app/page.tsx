@@ -100,80 +100,58 @@ export default async function HomePage() {
                   </AuthButton>
                 )}
               </div>
+
+              {/* Quiz CTA — inside hero so it sits above the fold */}
+              <Link
+                href="/quiz"
+                style={{
+                  display: 'block',
+                  marginTop: '2rem',
+                  padding: '1.25rem 1.5rem',
+                  borderRadius: 14,
+                  background: 'linear-gradient(135deg, rgba(79,110,247,0.10), rgba(251,191,36,0.08))',
+                  border: '2px solid var(--accent)',
+                  textDecoration: 'none', color: 'inherit',
+                  position: 'relative', overflow: 'hidden',
+                  maxWidth: 520,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 12,
+                    background: 'var(--accent)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <Brain size={22} color="white" />
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>Take the Quiz</span>
+                      <span style={{
+                        fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em',
+                        padding: '2px 7px', borderRadius: 99,
+                        background: 'var(--accent)', color: 'white',
+                      }}>New</span>
+                    </div>
+                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0.125rem 0', lineHeight: 1.4 }}>
+                      and discover your ideal start.
+                    </p>
+                    <p style={{
+                      fontSize: '0.78rem', fontWeight: 700, color: 'var(--amber)',
+                      display: 'flex', alignItems: 'center', gap: '0.25rem', margin: 0,
+                    }}>
+                      <Trophy size={13} style={{ flexShrink: 0 }} /> Bragging rights included
+                    </p>
+                  </div>
+                </div>
+              </Link>
             </div>
             <div className="hero-visual">
               <HeroCardGrid courses={featuredCourses} />
             </div>
           </div>
         </section>
-
-        {/* Quiz CTA */}
-        <ScrollReveal>
-        <section className="section-sm" style={{ paddingTop: '1.5rem', paddingBottom: '1.5rem' }}>
-          <div className="container">
-            <Link
-              href="/quiz"
-              style={{
-                display: 'block',
-                padding: '2rem 2.25rem',
-                borderRadius: 16,
-                background: 'linear-gradient(135deg, rgba(79,110,247,0.10), rgba(251,191,36,0.08), rgba(20,184,166,0.05))',
-                border: '2px solid var(--accent)',
-                textDecoration: 'none', color: 'inherit',
-                position: 'relative', overflow: 'hidden',
-              }}
-            >
-              {/* Decorative sparkles */}
-              <Sparkles size={20} color="var(--accent)" style={{ position: 'absolute', top: 18, right: 64, opacity: 0.45 }} />
-              <Sparkles size={14} color="#f59e0b" style={{ position: 'absolute', top: 44, right: 36, opacity: 0.35 }} />
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-                {/* Left: bold icon */}
-                <div style={{
-                  width: 60, height: 60, borderRadius: 16,
-                  background: 'var(--accent)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  boxShadow: '0 10px 28px rgba(79,110,247,0.28)',
-                }}>
-                  <Brain size={30} color="white" />
-                </div>
-
-                {/* Centre: stacked typography */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-                      Take the Quiz
-                    </span>
-                    <span style={{
-                      fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em',
-                      padding: '3px 10px', borderRadius: 99,
-                      background: 'var(--accent)', color: 'white',
-                    }}>New</span>
-                  </div>
-                  <p style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.375rem', lineHeight: 1.4 }}>
-                    and discover your ideal start.
-                  </p>
-                  <p style={{
-                    fontSize: '0.9rem', fontWeight: 700, color: 'var(--amber)',
-                    display: 'flex', alignItems: 'center', gap: '0.375rem', margin: 0,
-                  }}>
-                    <Trophy size={15} style={{ flexShrink: 0 }} /> Bragging rights included
-                  </p>
-                </div>
-
-                {/* Right: action arrow */}
-                <div style={{
-                  width: 48, height: 48, borderRadius: '50%',
-                  background: 'var(--accent-soft)', border: '2px solid var(--accent)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
-                  <ArrowRight size={22} color="var(--accent)" />
-                </div>
-              </div>
-            </Link>
-          </div>
-        </section>
-        </ScrollReveal>
 
         {/* Featured Above the Fold */}
         <ScrollReveal>
