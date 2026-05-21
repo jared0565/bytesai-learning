@@ -1,9 +1,10 @@
 import { getDB } from '@/lib/db';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Building2, ArrowRight, BookOpen } from 'lucide-react';
+import { ArrowRight, BookOpen } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import ProviderLogo from '@/components/ui/ProviderLogo';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 
@@ -88,13 +89,7 @@ function ProviderCard({ provider, courseCount }: { provider: import('@/lib/db').
       background: isAlison ? 'rgba(245, 158, 11, 0.03)' : undefined
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <div style={{
-          width: 40, height: 40,
-          borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-        }}>
-          <Building2 size={20} color="var(--text-muted)" />
-        </div>
+        <ProviderLogo slug={provider.slug} name={provider.name} logoUrl={provider.logo_url} size={40} />
         {isAlison && <span className="badge badge-alison text-xs">Partner</span>}
       </div>
 

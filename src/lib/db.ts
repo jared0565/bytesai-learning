@@ -114,6 +114,7 @@ export interface Provider {
   slug: string;
   name: string;
   website_url: string | null;
+  logo_url: string | null;
   affiliate_enabled: number;
   affiliate_disclosure: string | null;
   created_at: string;

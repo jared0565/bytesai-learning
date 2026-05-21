@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ExternalLink, Building2, BookOpen } from 'lucide-react';
+import { ArrowLeft, ExternalLink, BookOpen } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
+import ProviderLogo from '@/components/ui/ProviderLogo';
 import { getProviderBySlug, getCoursesByProvider, getDB, distributeCourses } from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
@@ -89,9 +90,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <section style={{ background: 'transparent', padding: '3.5rem 0 2.5rem', color: 'white' }}>
           <div className="container">
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', flexWrap: 'wrap' }}>
-              <div style={{ width: 64, height: 64, borderRadius: 16, background: isAlison ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Building2 size={28} color={isAlison ? '#fbbf24' : '#94a3b8'} />
-              </div>
+              <ProviderLogo slug={provider.slug} name={provider.name} logoUrl={provider.logo_url} size={64} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                   <h1 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 800, color: 'white' }}>
