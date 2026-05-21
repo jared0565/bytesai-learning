@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { Building2 } from 'lucide-react';
 
 const BRAND_MAP: Record<string, { color: string; bg: string; initials: string }> = {
@@ -25,7 +25,18 @@ const BRAND_MAP: Record<string, { color: string; bg: string; initials: string }>
   autogen: { color: '#ffffff', bg: '#0f4c81', initials: 'AG' },
 };
 
-function deriveFallbackUrl(websiteUrl: string | null | undefined): string | null {
+function deriveLogoUrl(websiteUrl: string | null | undefined): string | null {
+  if (!websiteUrl) return null;
+  try {
+    const url = new URL(websiteUrl);
+    const domain = url.hostname.replace(/^www\./, '');
+    return `https://logo.clearbit.com/${domain}?size=128`;
+  } catch {
+    return null;
+  }
+}
+
+function deriveFaviconUrl(websiteUrl: string | null | undefined): string | null {
   if (!websiteUrl) return null;
   try {
     const url = new URL(websiteUrl);
@@ -47,47 +58,51 @@ interface ProviderLogoProps {
 
 export default function ProviderLogo({ slug, name, logoUrl, websiteUrl, size = 40, className }: ProviderLogoProps) {
   const brand = BRAND_MAP[slug];
-  const [imgError, setImgError] = useState(false);
-  const [fallbackError, setFallbackError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
-  const handleImgError = useCallback(() => {
-    setImgError(true);
-  }, []);
+  // Logo cascade: explicit logo_url → derived Clearbit → derived favicon → branded initials → generic icon
+  const clearbitUrl = deriveLogoUrl(websiteUrl);
+  const faviconUrl = deriveFaviconUrl(websiteUrl);
 
-  const handleFallbackError = useCallback(() => {
-    setFallbackError(true);
-  }, []);
+  const urls: (string | null)[] = [
+    logoUrl ?? null,
+    clearbitUrl,
+    faviconUrl,
+  ];
 
-  // Attempt 1: clearbit logo_url
-  if (logoUrl && !imgError) {
+  const currentUrl = urls[attempt] ?? null;
+
+  if (currentUrl) {
     return (
-      <img
-        src={logoUrl}
-        alt={`${name} logo`}
+      <div
         className={className}
-        style={{ width: size, height: size, borderRadius: size * 0.2, objectFit: 'contain', flexShrink: 0 }}
-        loading="lazy"
-        onError={handleImgError}
-      />
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size * 0.2,
+          background: 'white',
+          border: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          overflow: 'hidden',
+          padding: size * 0.12,
+        }}
+        title={name}
+      >
+        <img
+          src={currentUrl}
+          alt={`${name} logo`}
+          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          loading="lazy"
+          onError={() => setAttempt(prev => prev + 1)}
+        />
+      </div>
     );
   }
 
-  // Attempt 2: Google Favicon API fallback
-  const fallbackUrl = deriveFallbackUrl(websiteUrl);
-  if (fallbackUrl && !fallbackError && (!logoUrl || imgError)) {
-    return (
-      <img
-        src={fallbackUrl}
-        alt={`${name} logo`}
-        className={className}
-        style={{ width: size, height: size, borderRadius: size * 0.2, objectFit: 'contain', flexShrink: 0 }}
-        loading="lazy"
-        onError={handleFallbackError}
-      />
-    );
-  }
-
-  // Attempt 3: branded initials
+  // Branded initials fallback
   if (brand) {
     const fontSize = brand.initials.length > 2 ? size * 0.3 : size * 0.42;
     return (
