@@ -74,7 +74,7 @@ export default async function AdminProvidersPage() {
                   style={{ borderBottom: i < providers.length - 1 ? '1px solid var(--border)' : 'none' }}
                 >
                   <td style={{ padding: '0.75rem 1rem' }}>
-                    <ProviderLogo slug={p.slug} name={p.name} logoUrl={p.logo_url} size={44} />
+                    <ProviderLogo slug={p.slug} name={p.name} size={44} />
                   </td>
                   <td style={{ padding: '0.75rem 1rem' }}>
                     <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.name}</p>

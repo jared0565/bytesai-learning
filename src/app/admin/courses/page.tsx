@@ -6,6 +6,7 @@ import AddCourseForm from './AddCourseForm';
 import CourseActions from './CourseActions';
 import SortableHeader from './SortableHeader';
 import EnrollRefresh from './EnrollRefresh';
+import CourseScanner from './CourseScanner';
 
 export const metadata: Metadata = {
   title: 'Courses — Admin',
@@ -85,8 +86,11 @@ export default async function AdminCoursesPage({
         </p>
       </div>
 
+      {/* Scan for new courses */}
+      <CourseScanner />
+
       {/* Add course form */}
-      <div style={{ marginBottom: '2.5rem' }}>
+      <div id="add-course-form" style={{ marginBottom: '2.5rem' }}>
         <AddCourseForm />
       </div>
 

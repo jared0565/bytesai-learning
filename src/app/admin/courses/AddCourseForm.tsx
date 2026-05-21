@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowRight, Link2, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { CATEGORIES } from '@/lib/ranking';
 
@@ -40,6 +40,33 @@ export default function AddCourseForm() {
   const [created, setCreated] = useState<{ id: string; slug: string } | null>(null);
 
   const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    function applyPrefill(params: URLSearchParams) {
+      const t = params.get('prefill_title');
+      const u = params.get('prefill_url');
+      const s = params.get('prefill_snippet');
+      const i = params.get('prefill_image');
+      if (t) { applyTitle(t); setShowForm(true); }
+      if (u) { setUrl(u); setShowForm(true); }
+      if (s) { setSnippet(s); setShowForm(true); }
+      if (i) { setOgImage(i); setShowForm(true); }
+    }
+
+    // Read from current URL on mount
+    applyPrefill(new URLSearchParams(window.location.search));
+
+    // Listen for scanner prefill events
+    function onPrefill(e: Event) {
+      const detail = (e as CustomEvent).detail as Record<string, string>;
+      if (detail) {
+        const params = new URLSearchParams(detail);
+        applyPrefill(params);
+      }
+    }
+    window.addEventListener('scanner-prefill', onPrefill);
+    return () => window.removeEventListener('scanner-prefill', onPrefill);
+  }, []);
 
   function applyTitle(t: string) {
     setTitle(t);
