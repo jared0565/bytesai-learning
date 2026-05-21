@@ -8,7 +8,7 @@
  * https://learn.microsoft.com/en-us/training/browse/?subjects=artificial-intelligence&resource_type=course
  *
  * Course URLs follow the pattern:
- * /en-us/training/courses/{slug}/
+ * /{locale}/training/courses/{slug}/
  */
 
 import { getCloudflareContext } from '@opennextjs/cloudflare';
@@ -16,14 +16,16 @@ import type { D1Database } from '@/lib/db';
 import type { CatalogScanner, ScannedCourse } from './types';
 import { fetchHTMLWithFirecrawl, fetchHTML, resolveCourse } from './base';
 
-const CATALOG_URL = 'https://learn.microsoft.com/en-us/training/browse/?subjects=artificial-intelligence&resource_type=course';
+const DEFAULT_CATALOG_URL = 'https://learn.microsoft.com/en-us/training/browse/?subjects=artificial-intelligence&resource_type=course';
 
 export const microsoftScanner: CatalogScanner = {
   id: 'microsoft',
   name: 'Microsoft Learn',
-  catalogUrl: CATALOG_URL,
+  catalogUrl: DEFAULT_CATALOG_URL,
 
-  async scan({ limit, db }) {
+  async scan({ limit, db, url: customUrl }) {
+    const catalogUrl = customUrl || this.catalogUrl;
+
     // 1. Get Firecrawl API key from Cloudflare env
     let firecrawlKey: string | undefined;
     try {
@@ -34,10 +36,10 @@ export const microsoftScanner: CatalogScanner = {
     // 2. Fetch rendered HTML via Firecrawl (fallback to raw fetch if no key)
     let html: string | null = null;
     if (firecrawlKey) {
-      html = await fetchHTMLWithFirecrawl(CATALOG_URL, firecrawlKey, 5000);
+      html = await fetchHTMLWithFirecrawl(catalogUrl, firecrawlKey, 5000);
     }
     if (!html) {
-      html = await fetchHTML(CATALOG_URL, 15_000);
+      html = await fetchHTML(catalogUrl, 15_000);
     }
     if (!html) return [];
 
@@ -45,8 +47,8 @@ export const microsoftScanner: CatalogScanner = {
     const candidates: Array<{ title: string; url: string }> = [];
 
     // ── Strategy 1: anchor links inside course cards ──
-    // Microsoft Learn renders cards as <a href="/en-us/training/courses/{slug}/"> with the title as link text
-    const courseRegex = /<a[^\u003e]*href="(\/en-us\/training\/courses\/[^"]+)"[^\u003e]*\u003e\s*([^\u003c]{10,200})\s*<\/a>/gi;
+    // Locale-agnostic: matches /en-us/, /en-gb/, /en/, etc.
+    const courseRegex = /<a[^\u003e]*href="(\/[a-z]{2}(?:-[a-z]{2})?\/training\/courses\/[^"]+)"[^\u003e]*\u003e\s*([^\u003c]{10,200})\s*<\/a>/gi;
     let m: RegExpExecArray | null;
     while ((m = courseRegex.exec(html)) !== null) {
       const path = m[1];
@@ -59,7 +61,7 @@ export const microsoftScanner: CatalogScanner = {
     }
 
     // ── Strategy 2: broader href match for /training/courses/ ──
-    const pathRegex = /href="(\/en-us\/training\/courses\/[a-z0-9-]+)\/?"/gi;
+    const pathRegex = /href="(\/[a-z]{2}(?:-[a-z]{2})?\/training\/courses\/[a-z0-9-]+)\/?"/gi;
     while ((m = pathRegex.exec(html)) !== null) {
       const path = m[1];
       const url = normalizeMsUrl(path);

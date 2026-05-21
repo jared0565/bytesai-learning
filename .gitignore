@@ -57,3 +57,11 @@ build-output.txt
 
 # Claude Code config
 .claude/
+
+# Playwright MCP / Firecrawl temp files
+.playwright-mcp/
+.firecrawl/
+
+# Project docs
+PRODUCT.md
+style-exploration.html

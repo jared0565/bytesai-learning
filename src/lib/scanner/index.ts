@@ -22,7 +22,7 @@ export function listScanners(): CatalogScanner[] {
 
 export async function runScan(
   providerId: string,
-  opts: { limit: number; db: D1Database }
+  opts: { limit: number; db: D1Database; url?: string }
 ): Promise<ScanResult | null> {
   const scanner = getScanner(providerId);
   if (!scanner) return null;

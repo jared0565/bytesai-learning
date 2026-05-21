@@ -20,7 +20,7 @@ export interface CatalogScanner {
   id: string;          // provider slug
   name: string;        // display name
   catalogUrl: string;  // human-readable catalog page
-  scan(opts: { limit: number; db: D1Database }): Promise<ScannedCourse[]>;
+  scan(opts: { limit: number; db: D1Database; url?: string }): Promise<ScannedCourse[]>;
 }
 
 export interface ScanResult {

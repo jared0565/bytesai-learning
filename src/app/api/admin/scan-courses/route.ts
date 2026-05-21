@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 });
   }
 
-  let body: { provider?: string; limit?: number };
+  let body: { provider?: string; limit?: number; url?: string };
   try {
     body = await req.json();
   } catch {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Database unavailable.' }, { status: 503 });
   }
 
-  const result = await runScan(providerId, { limit, db });
+  const result = await runScan(providerId, { limit, db, url: body.url });
   if (!result) {
     return NextResponse.json({ error: `No scanner found for provider "${providerId}".` }, { status: 404 });
   }

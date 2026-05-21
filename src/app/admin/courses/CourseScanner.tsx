@@ -29,6 +29,7 @@ const PROVIDERS = [
 
 export default function CourseScanner() {
   const [provider, setProvider] = useState('microsoft');
+  const [customUrl, setCustomUrl] = useState('');
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<ScanResult | null>(null);
@@ -39,10 +40,12 @@ export default function CourseScanner() {
     setError('');
     setResult(null);
     try {
+      const body: Record<string, unknown> = { provider, limit: 20 };
+      if (customUrl.trim()) body.url = customUrl.trim();
       const res = await fetch('/api/admin/scan-courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, limit: 20 }),
+        body: JSON.stringify(body),
       });
       const data: ScanResult & { error?: string } = await res.json();
       if (!res.ok) {
@@ -83,28 +86,40 @@ export default function CourseScanner() {
         <Scan size={18} /> Scan for new courses
       </h2>
 
-      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <select
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <select
+            className="input"
+            value={provider}
+            onChange={e => setProvider(e.target.value)}
+            disabled={scanning}
+            style={{ minWidth: 180 }}
+          >
+            {PROVIDERS.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleScan}
+            disabled={scanning}
+            className="btn btn-primary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+          >
+            {scanning ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Scan size={15} />}
+            {scanning ? 'Scanning…' : 'Scan catalog'}
+          </button>
+        </div>
+
+        <input
+          type="url"
           className="input"
-          value={provider}
-          onChange={e => setProvider(e.target.value)}
+          placeholder="Optional: paste a filtered catalog URL (e.g. https://learn.microsoft.com/en-gb/training/browse/?subjects=artificial-intelligence...)"
+          value={customUrl}
+          onChange={e => setCustomUrl(e.target.value)}
           disabled={scanning}
-          style={{ minWidth: 180 }}
-        >
-          {PROVIDERS.map(p => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={handleScan}
-          disabled={scanning}
-          className="btn btn-primary"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
-        >
-          {scanning ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Scan size={15} />}
-          {scanning ? 'Scanning…' : 'Scan catalog'}
-        </button>
+          style={{ fontSize: '0.8125rem' }}
+        />
       </div>
 
       {error && (
