@@ -1,7 +1,7 @@
 import { getDB } from '@/lib/db';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, BookOpen } from 'lucide-react';
+import { ArrowRight, BookOpen, Building2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProviderLogo from '@/components/ui/ProviderLogo';
