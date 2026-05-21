@@ -22,6 +22,23 @@ export async function fetchHTML(url: string, timeout = 10_000): Promise<string |
   }
 }
 
+/** Use Firecrawl to render JS-heavy pages (Alison search, Microsoft Learn browse, etc.). */
+export async function fetchHTMLWithFirecrawl(url: string, apiKey: string, waitFor = 3000): Promise<string | null> {
+  try {
+    const res = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, formats: ['html'], waitFor }),
+      signal: AbortSignal.timeout(35_000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { success?: boolean; data?: { html?: string } };
+    return data.data?.html ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function extractOpenGraph(html: string): { title: string | null; description: string | null; image: string | null } {
   const get = (pattern: RegExp) => html.match(pattern)?.[1]?.trim() ?? null;
   return {
