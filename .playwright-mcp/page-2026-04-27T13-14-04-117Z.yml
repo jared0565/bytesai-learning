@@ -1,0 +1,1261 @@
+- generic [ref=e1]:
+  - banner [ref=e3]:
+    - generic [ref=e6]:
+      - generic [ref=e9]: Join millions using the Alison App – faster, easier, and made for learning on the move... 📲
+      - link "Get App" [ref=e11] [cursor=pointer]:
+        - /url: https://alison.com/mobile/online-learning-app
+        - generic: Get App
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - link "Free Online Courses, Classes and Tutorials" [ref=e15] [cursor=pointer]:
+          - /url: https://alison.com
+          - img "Free Online Courses, Classes and Tutorials" [ref=e16]
+        - generic [ref=e17]:
+          - link "Explore" [ref=e18] [cursor=pointer]:
+            - /url: "#"
+            - text: Explore
+            - img [ref=e19]
+          - navigation:    
+        - generic [ref=e22]:
+          - text: 
+          - generic [ref=e24]:
+            - textbox "What do you want to learn?" [ref=e25]: artificial intelligence
+            - button "" [ref=e26] [cursor=pointer]:
+              - generic: 
+          - text:   
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e31] [cursor=pointer]: LMS
+          - generic [ref=e32]:
+            - generic [ref=e33] [cursor=pointer]:
+              - generic [ref=e34]: 
+              - generic [ref=e35]: 
+            - generic: 
+        - generic [ref=e36]:
+          - link "Log In" [ref=e37] [cursor=pointer]:
+            - /url: https://alison.com/login
+          - link "Sign Up" [ref=e38] [cursor=pointer]:
+            - /url: https://alison.com/register
+          - generic [ref=e40] [cursor=pointer]:
+            - img [ref=e41]
+            - generic [ref=e42]: en
+            - generic [ref=e45]:
+              - paragraph [ref=e46]:
+                - strong [ref=e47]: Select Site Language
+              - paragraph [ref=e48]: View the site in your preferred language
+          - generic:
+            - list:
+              - listitem:
+                - link "English English" [ref=e49] [cursor=pointer]:
+                  - /url: https://alison.com/courses?query=artificial%20intelligence
+                  - img "English" [ref=e51]
+                  - text: English
+              - listitem:
+                - link "Spanish Spanish" [ref=e52] [cursor=pointer]:
+                  - /url: https://alison.com/es/cursos?query=artificial%20intelligence
+                  - img "Spanish" [ref=e54]
+                  - text: Spanish
+  - generic [ref=e57]:
+    - generic [ref=e58]:
+      - text: 
+      - generic [ref=e60] [cursor=pointer]:
+        - generic [ref=e61]: 
+        - paragraph [ref=e62]: Sort by
+        - combobox "Best Match" [ref=e63]:
+          - generic "Best Match" [ref=e64]
+      - generic [ref=e68]:
+        - paragraph [ref=e69]: Refine your search
+        - generic [ref=e71] [cursor=pointer]:
+          - text: Certificate Type
+          - generic [ref=e72]: 
+        - generic [ref=e73]:
+          - generic [ref=e74] [cursor=pointer]:
+            - text: Subjects
+            - generic [ref=e75]: 
+          - generic:  
+        - generic [ref=e78] [cursor=pointer]:
+          - text: Course Language
+          - generic [ref=e79]: 
+        - generic [ref=e81] [cursor=pointer]:
+          - text: Course Level
+          - generic [ref=e82]: 
+        - generic [ref=e84] [cursor=pointer]:
+          - text: Course Duration
+          - generic [ref=e85]: 
+        - generic [ref=e87] [cursor=pointer]:
+          - text: Learning Stage
+          - generic [ref=e88]: 
+        - generic [ref=e90] [cursor=pointer]:
+          - text: Content Type
+          - generic [ref=e91]: 
+    - generic [ref=e94]:
+      - generic [ref=e96]:
+        - text:     
+        - generic [ref=e97]:
+          - heading "Alison’s Top Free Online Courses For \"artificial intelligence\"" [level=2] [ref=e98]
+          - paragraph [ref=e99]: Discover the best resources and courses on artificial intelligence - handpicked by experts
+        - paragraph [ref=e101]: 297 Courses
+      - text: · · · 
+      - list [ref=e102]:
+        - generic [ref=e103] [cursor=pointer]:
+          - generic [ref=e104]:
+            - generic [ref=e105]:
+              - generic [ref=e106]: 
+              - generic [ref=e107]: Advanced Level
+            - generic [ref=e108]:  Certificate
+            - img "Machine Learning with Artificial Intelligence" [ref=e110]
+          - generic [ref=e111]:
+            - heading "Machine Learning with Artificial Intelligence" [level=3] [ref=e113]
+            - generic [ref=e114]:
+              - generic [ref=e115]:
+                - img [ref=e116]
+                - paragraph [ref=e117]: 119 liked this course
+              - generic [ref=e118]:  10-15 hrs  22,091 learners
+              - generic:
+                - generic [ref=e119]: You Will Learn How To
+                - list:
+                  - listitem [ref=e120]:  Define artificial intelligence and the different dimensi...
+                  - listitem [ref=e121]:  Describe the different developments in the history of ar...
+                  - listitem [ref=e122]:
+                    - text:  Describe how heuristics could be formulated f...
+                    - link "Read More" [ref=e123]:
+                      - /url: https://alison.com/course/machine-learning-with-artificial-intelligence#outcomes
+              - generic [ref=e124]:
+                - link "More Info" [ref=e125]:
+                  - /url: https://alison.com/course/machine-learning-with-artificial-intelligence
+                - link "Start Learning" [ref=e126]:
+                  - /url: https://alison.com/course/machine-learning-with-artificial-intelligence?show_modal=true
+        - generic [ref=e127] [cursor=pointer]:
+          - generic [ref=e128]:
+            - generic [ref=e129]:
+              - generic [ref=e130]: 
+              - generic [ref=e131]: Advanced Level
+            - generic [ref=e132]:  Diploma
+            - img "Diploma in Fundamentals of Artificial Intelligence" [ref=e134]
+          - generic [ref=e135]:
+            - heading "Diploma in Fundamentals of Artificial Intelligence" [level=3] [ref=e137]
+            - generic [ref=e138]:
+              - generic [ref=e139]:
+                - img [ref=e140]
+                - paragraph [ref=e141]: 125 liked this course
+              - generic [ref=e142]:  10-15 hrs  22,582 learners
+              - generic:
+                - generic [ref=e143]: You Will Learn How To
+                - list:
+                  - listitem [ref=e144]:  Define artificial intelligence and the different dimensi...
+                  - listitem [ref=e145]:  Describe the different developments in the history of ar...
+                  - listitem [ref=e146]:
+                    - text:  Describe how heuristics could be formulated f...
+                    - link "Read More" [ref=e147]:
+                      - /url: https://alison.com/course/diploma-in-fundamentals-of-artificial-intelligence#outcomes
+              - generic [ref=e148]:
+                - link "More Info" [ref=e149]:
+                  - /url: https://alison.com/course/diploma-in-fundamentals-of-artificial-intelligence
+                - link "Start Learning" [ref=e150]:
+                  - /url: https://alison.com/course/diploma-in-fundamentals-of-artificial-intelligence?show_modal=true
+        - generic [ref=e151] [cursor=pointer]:
+          - generic [ref=e152]:
+            - generic [ref=e153]:
+              - generic [ref=e154]: 
+              - generic [ref=e155]: Intermediate Level
+            - generic [ref=e156]:  Certificate
+            - 'img "Salesforce Developer: Introduction to Artificial Intelligence" [ref=e158]'
+          - generic [ref=e159]:
+            - 'heading "Salesforce Developer: Introduction to Artificial Intelligence" [level=3] [ref=e161]'
+            - generic [ref=e162]:
+              - generic [ref=e163]:
+                - img [ref=e164]
+                - paragraph [ref=e165]: 51 liked this course
+              - generic [ref=e166]:  3-4 hrs  7,263 learners
+              - generic:
+                - generic [ref=e167]: You Will Learn How To
+                - list [ref=e168]:
+                  - listitem [ref=e169]:  Explain the core concepts of Salesforce and artificial i...
+                  - listitem [ref=e170]:  Discuss how to use Eclipse IDE with Salesforce IDE
+                  - listitem [ref=e171]:
+                    - text:  List the various types of ‘sentiments’ recogn...
+                    - link "Read More" [ref=e172]:
+                      - /url: https://alison.com/course/salesforce-developer-introduction-to-artificial-intelligence#outcomes
+              - generic [ref=e173]:
+                - link "More Info" [ref=e174]:
+                  - /url: https://alison.com/course/salesforce-developer-introduction-to-artificial-intelligence
+                - link "Start Learning" [ref=e175]:
+                  - /url: https://alison.com/course/salesforce-developer-introduction-to-artificial-intelligence?show_modal=true
+        - generic [ref=e176] [cursor=pointer]:
+          - generic [ref=e177]:
+            - generic [ref=e178]:
+              - generic [ref=e179]: 
+              - generic [ref=e180]: Intermediate Level
+            - generic [ref=e181]:  Certificate
+            - generic [ref=e182]:
+              - generic [ref=e183]: Also available in
+              - list [ref=e184]:
+                - listitem [ref=e185]
+            - img "Artificial Intelligence and Machine Learning in Business" [ref=e187]
+          - generic [ref=e188]:
+            - heading "Artificial Intelligence and Machine Learning in Business" [level=3] [ref=e190]
+            - generic [ref=e191]:
+              - generic [ref=e192]:
+                - img [ref=e193]
+                - paragraph [ref=e194]: 351 liked this course
+              - generic [ref=e195]:  2 - 3 hrs  31,891 learners
+              - generic:
+                - generic [ref=e196]: You Will Learn How To
+                - list [ref=e197]:
+                  - listitem [ref=e198]:  Discuss the concepts of AI, ML and DL
+                  - listitem [ref=e199]:  State the maturity levels of artificial intelligence
+                  - listitem [ref=e200]:
+                    - text:  Distinguish between the features of AI, ML an...
+                    - link "Read More" [ref=e201]:
+                      - /url: https://alison.com/course/artificial-intelligence-and-machine-learning-in-business#outcomes
+              - generic [ref=e202]:
+                - link "More Info" [ref=e203]:
+                  - /url: https://alison.com/course/artificial-intelligence-and-machine-learning-in-business
+                - link "Start Learning" [ref=e204]:
+                  - /url: https://alison.com/course/artificial-intelligence-and-machine-learning-in-business?show_modal=true
+        - generic [ref=e205] [cursor=pointer]:
+          - generic [ref=e206]:
+            - generic [ref=e207]:
+              - generic [ref=e208]: 
+              - generic [ref=e209]: Intermediate Level
+            - generic [ref=e210]:  Certificate
+            - generic [ref=e211]:
+              - generic [ref=e212]: Also available in
+              - list [ref=e213]:
+                - listitem [ref=e214]
+            - img "Artificial Intelligence in Project Management" [ref=e216]
+          - generic [ref=e217]:
+            - heading "Artificial Intelligence in Project Management" [level=3] [ref=e219]
+            - generic [ref=e220]:
+              - generic [ref=e221]:
+                - img [ref=e222]
+                - paragraph [ref=e223]: 747 liked this course
+              - generic [ref=e224]:  2 - 3 hrs  21,122 learners
+              - generic:
+                - generic [ref=e225]: You Will Learn How To
+                - list:
+                  - listitem [ref=e226]:  Analyse the impact of Artificial Intelligence (AI) on pr...
+                  - listitem [ref=e227]:  Discuss emerging trends and ethical considerations in AI...
+                  - listitem [ref=e228]:
+                    - text:  Assess the scalability and sustainability of ...
+                    - link "Read More" [ref=e229]:
+                      - /url: https://alison.com/course/artificial-intelligence-in-project-management#outcomes
+              - generic [ref=e230]:
+                - link "More Info" [ref=e231]:
+                  - /url: https://alison.com/course/artificial-intelligence-in-project-management
+                - link "Start Learning" [ref=e232]:
+                  - /url: https://alison.com/course/artificial-intelligence-in-project-management?show_modal=true
+        - generic [ref=e233] [cursor=pointer]:
+          - generic [ref=e234]:
+            - generic [ref=e235]:
+              - generic [ref=e236]: 
+              - generic [ref=e237]: Beginner Level
+            - generic [ref=e238]:  Certificate
+            - generic [ref=e239]:
+              - generic [ref=e240]: Also available in
+              - list [ref=e241]:
+                - listitem [ref=e242]
+            - 'img "Artificial Intelligence: Preparing for the Future of Work" [ref=e244]'
+          - generic [ref=e245]:
+            - 'heading "Artificial Intelligence: Preparing for the Future of Work" [level=3] [ref=e247]'
+            - generic [ref=e248]:
+              - generic [ref=e249]:
+                - img [ref=e250]
+                - paragraph [ref=e251]: 586 liked this course
+              - generic [ref=e252]:  2 - 3 hrs  18,097 learners
+              - generic:
+                - generic [ref=e253]: You Will Learn How To
+                - list [ref=e254]:
+                  - listitem [ref=e255]:  Discuss what ‘artificial intelligence’ (AI) is
+                  - listitem [ref=e256]:  Outline the categories of artificial intelligence
+                  - listitem [ref=e257]:
+                    - text:  Describe the impact of AI on the job market
+                    - link "Read More" [ref=e258]:
+                      - /url: https://alison.com/course/artificial-intelligence-preparing-for-the-future-of-work#outcomes
+              - generic [ref=e259]:
+                - link "More Info" [ref=e260]:
+                  - /url: https://alison.com/course/artificial-intelligence-preparing-for-the-future-of-work
+                - link "Start Learning" [ref=e261]:
+                  - /url: https://alison.com/course/artificial-intelligence-preparing-for-the-future-of-work?show_modal=true
+        - generic [ref=e262] [cursor=pointer]:
+          - generic [ref=e263]:
+            - generic [ref=e264]:
+              - generic [ref=e265]: 
+              - generic [ref=e266]: Beginner Level
+            - generic [ref=e267]:  Certificate
+            - img "Affective Artificial Intelligence" [ref=e269]
+          - generic [ref=e270]:
+            - heading "Affective Artificial Intelligence" [level=3] [ref=e272]
+            - generic [ref=e273]:
+              - generic [ref=e274]:
+                - img [ref=e275]
+                - paragraph [ref=e276]: 121 liked this course
+              - generic [ref=e277]:  2 - 3 hrs  2,762 learners
+              - generic:
+                - generic [ref=e278]: You Will Learn How To
+                - list:
+                  - listitem [ref=e279]:  Define Affective Artificial Intelligence and its link to...
+                  - listitem [ref=e280]:  Describe the history and foundations of affective comput...
+                  - listitem [ref=e281]:
+                    - text:  Identify models of human emotions and how the...
+                    - link "Read More" [ref=e282]:
+                      - /url: https://alison.com/course/affective-artificial-intelligence#outcomes
+              - generic [ref=e283]:
+                - link "More Info" [ref=e284]:
+                  - /url: https://alison.com/course/affective-artificial-intelligence
+                - link "Start Learning" [ref=e285]:
+                  - /url: https://alison.com/course/affective-artificial-intelligence?show_modal=true
+        - generic [ref=e286] [cursor=pointer]:
+          - generic [ref=e287]:
+            - generic [ref=e288]:
+              - generic [ref=e289]: 
+              - generic [ref=e290]: Beginner Level
+            - generic [ref=e291]:  Certificate
+            - generic [ref=e292]:
+              - generic [ref=e293]: Also available in
+              - list [ref=e294]:
+                - listitem [ref=e295]
+            - img "Artificial Intelligence for Beginners" [ref=e297]
+          - generic [ref=e298]:
+            - heading "Artificial Intelligence for Beginners" [level=3] [ref=e300]
+            - generic [ref=e301]:
+              - generic [ref=e302]:
+                - img [ref=e303]
+                - paragraph [ref=e304]: 905 liked this course
+              - generic [ref=e305]:  2 - 3 hrs  54,694 learners
+              - generic:
+                - generic [ref=e306]: You Will Learn How To
+                - list [ref=e307]:
+                  - listitem [ref=e308]:  Define ‘artificial intelligence’ (AI) and summarize its ...
+                  - listitem [ref=e309]:  Compare the different types of AI systems
+                  - listitem [ref=e310]:
+                    - text:  Define the concept of ‘machine learning’ and ...
+                    - link "Read More" [ref=e311]:
+                      - /url: https://alison.com/course/artificial-intelligence-for-beginners#outcomes
+              - generic [ref=e312]:
+                - link "More Info" [ref=e313]:
+                  - /url: https://alison.com/course/artificial-intelligence-for-beginners
+                - link "Start Learning" [ref=e314]:
+                  - /url: https://alison.com/course/artificial-intelligence-for-beginners?show_modal=true
+        - generic [ref=e316]:
+          - img "Rating on Trustpilot" [ref=e319]
+          - list [ref=e320]:
+            - listitem [ref=e321]:
+              - img "Learners" [ref=e322]
+              - generic [ref=e323]: 50+ Million
+              - text: Learners
+            - listitem [ref=e324]:
+              - img "Graduates" [ref=e325]
+              - generic [ref=e326]: 15+ Million
+              - text: Graduates
+            - listitem [ref=e327]:
+              - img "Countries" [ref=e328]
+              - generic [ref=e329]: "193"
+              - text: Countries
+        - generic [ref=e330] [cursor=pointer]:
+          - generic [ref=e331]:
+            - generic [ref=e332]:
+              - generic [ref=e333]: 
+              - generic [ref=e334]: Beginner Level
+            - generic [ref=e335]:  Certificate
+            - img "Understanding the EU Artificial Intelligence Act" [ref=e337]
+          - generic [ref=e338]:
+            - heading "Understanding the EU Artificial Intelligence Act" [level=3] [ref=e340]
+            - generic [ref=e341]:
+              - generic [ref=e342]:
+                - img [ref=e343]
+                - paragraph [ref=e344]: 56 liked this course
+              - generic [ref=e345]:  3-4 hrs  2,445 learners
+              - generic:
+                - generic [ref=e346]: You Will Learn How To
+                - list [ref=e347]:
+                  - listitem [ref=e348]:  Analyse the fundamental principles of the AI Act
+                  - listitem [ref=e349]:  Apply the general and specific requirements for AI syste...
+                  - listitem [ref=e350]:
+                    - text:  Compare the roles and responsibilities of pro...
+                    - link "Read More" [ref=e351]:
+                      - /url: https://alison.com/course/understanding-the-eu-artificial-intelligence-act#outcomes
+              - generic [ref=e352]:
+                - link "More Info" [ref=e353]:
+                  - /url: https://alison.com/course/understanding-the-eu-artificial-intelligence-act
+                - link "Start Learning" [ref=e354]:
+                  - /url: https://alison.com/course/understanding-the-eu-artificial-intelligence-act?show_modal=true
+        - generic [ref=e355] [cursor=pointer]:
+          - generic [ref=e356]:
+            - generic [ref=e357]:
+              - generic [ref=e358]: 
+              - generic [ref=e359]: Beginner Level
+            - generic [ref=e360]:  Certificate
+            - generic [ref=e361]:
+              - generic [ref=e362]: Also available in
+              - list [ref=e363]:
+                - listitem [ref=e364]
+            - img "Introduction to Artificial Intelligence (AI)" [ref=e366]
+          - generic [ref=e367]:
+            - heading "Introduction to Artificial Intelligence (AI)" [level=3] [ref=e369]
+            - generic [ref=e370]:
+              - generic [ref=e371]:
+                - img [ref=e372]
+                - paragraph [ref=e373]: 638 liked this course
+              - generic [ref=e374]:  4-5 hrs  37,376 learners
+              - generic:
+                - generic [ref=e375]: You Will Learn How To
+                - list:
+                  - listitem [ref=e376]:  Define and differentiate between machine learning, deep ...
+                  - listitem [ref=e377]:  Analyze ML principles including supervised, unsupervised...
+                  - listitem [ref=e378]:
+                    - text:  Describe neural networks, convolutional neura...
+                    - link "Read More" [ref=e379]:
+                      - /url: https://alison.com/course/introduction-to-artificial-intelligence-ai#outcomes
+              - generic [ref=e380]:
+                - link "More Info" [ref=e381]:
+                  - /url: https://alison.com/course/introduction-to-artificial-intelligence-ai
+                - link "Start Learning" [ref=e382]:
+                  - /url: https://alison.com/course/introduction-to-artificial-intelligence-ai?show_modal=true
+        - generic [ref=e383] [cursor=pointer]:
+          - generic [ref=e384]:
+            - generic [ref=e385]:
+              - generic [ref=e386]: 
+              - generic [ref=e387]: Beginner Level
+            - generic [ref=e388]:  Certificate
+            - img "Artificial Intelligence in Human Resource Management" [ref=e390]
+          - generic [ref=e391]:
+            - heading "Artificial Intelligence in Human Resource Management" [level=3] [ref=e393]
+            - generic [ref=e394]:
+              - generic [ref=e395]:
+                - img [ref=e396]
+                - paragraph [ref=e397]: 466 liked this course
+              - generic [ref=e398]:  2 - 3 hrs  16,088 learners
+              - generic:
+                - generic [ref=e399]: You Will Learn How To
+                - list:
+                  - listitem [ref=e400]:  Apply AI for efficient and unbiased talent recruitment t...
+                  - listitem [ref=e401]:  Plan for occupational transitions through upskilling pro...
+                  - listitem [ref=e402]:
+                    - text:  Assess the power of conversational AI and vir...
+                    - link "Read More" [ref=e403]:
+                      - /url: https://alison.com/course/artificial-intelligence-in-human-resource-management#outcomes
+              - generic [ref=e404]:
+                - link "More Info" [ref=e405]:
+                  - /url: https://alison.com/course/artificial-intelligence-in-human-resource-management
+                - link "Start Learning" [ref=e406]:
+                  - /url: https://alison.com/course/artificial-intelligence-in-human-resource-management?show_modal=true
+        - generic [ref=e407] [cursor=pointer]:
+          - generic [ref=e408]:
+            - generic [ref=e409]:
+              - generic [ref=e410]: 
+              - generic [ref=e411]: Intermediate Level
+            - generic [ref=e412]:  Certificate
+            - generic [ref=e413]:
+              - generic [ref=e414]: Also available in
+              - list [ref=e415]:
+                - listitem [ref=e416]
+            - img "Artificial Intelligence in Personal Finance and Investments" [ref=e418]
+          - generic [ref=e419]:
+            - heading "Artificial Intelligence in Personal Finance and Investments" [level=3] [ref=e421]
+            - generic [ref=e422]:
+              - generic [ref=e423]:
+                - img [ref=e424]
+                - paragraph [ref=e425]: 149 liked this course
+              - generic [ref=e426]:  2 - 3 hrs  7,255 learners
+              - generic:
+                - generic [ref=e427]: You Will Learn How To
+                - list [ref=e428]:
+                  - listitem [ref=e429]:  Explain the core principles of personal finance
+                  - listitem [ref=e430]:  Discuss AI-generated insights from financial data to ide...
+                  - listitem [ref=e431]:
+                    - text:  Compare and contrast traditional investment m...
+                    - link "Read More" [ref=e432]:
+                      - /url: https://alison.com/course/artificial-intelligence-in-personal-finance-and-investments#outcomes
+              - generic [ref=e433]:
+                - link "More Info" [ref=e434]:
+                  - /url: https://alison.com/course/artificial-intelligence-in-personal-finance-and-investments
+                - link "Start Learning" [ref=e435]:
+                  - /url: https://alison.com/course/artificial-intelligence-in-personal-finance-and-investments?show_modal=true
+        - generic [ref=e436] [cursor=pointer]:
+          - generic [ref=e437]:
+            - generic [ref=e438]:
+              - generic [ref=e439]: 
+              - generic [ref=e440]: Beginner Level
+            - generic [ref=e441]:  Certificate
+            - generic [ref=e442]:
+              - generic [ref=e443]: Also available in
+              - list [ref=e444]:
+                - listitem [ref=e445]
+            - img "Artificial Intelligence for Supply Chains and Logistics" [ref=e447]
+          - generic [ref=e448]:
+            - heading "Artificial Intelligence for Supply Chains and Logistics" [level=3] [ref=e450]
+            - generic [ref=e451]:
+              - generic [ref=e452]:
+                - img [ref=e453]
+                - paragraph [ref=e454]: 692 liked this course
+              - generic [ref=e455]:  2 - 3 hrs  20,126 learners
+              - generic:
+                - generic [ref=e456]: You Will Learn How To
+                - list:
+                  - listitem [ref=e457]:  Analyse AI's impact on supply chain productivity, explor...
+                  - listitem [ref=e458]:  Evaluate AI's historical evolution in logistics, from ex...
+                  - listitem [ref=e459]:
+                    - text:  Discuss AI's challenges and opportunities in ...
+                    - link "Read More" [ref=e460]:
+                      - /url: https://alison.com/course/artificial-intelligence-for-supply-chains-and-logistics#outcomes
+              - generic [ref=e461]:
+                - link "More Info" [ref=e462]:
+                  - /url: https://alison.com/course/artificial-intelligence-for-supply-chains-and-logistics
+                - link "Start Learning" [ref=e463]:
+                  - /url: https://alison.com/course/artificial-intelligence-for-supply-chains-and-logistics?show_modal=true
+        - generic [ref=e464] [cursor=pointer]:
+          - generic [ref=e465]:
+            - generic [ref=e466]:
+              - generic [ref=e467]: 
+              - generic [ref=e468]: Beginner Level
+            - generic [ref=e469]:  Certificate
+            - img "Artificial Intelligence Between Ethics and Psychology" [ref=e471]
+          - generic [ref=e472]:
+            - heading "Artificial Intelligence Between Ethics and Psychology" [level=3] [ref=e474]
+            - generic [ref=e475]:
+              - generic [ref=e476]:
+                - img [ref=e477]
+                - paragraph [ref=e478]: 164 liked this course
+              - generic [ref=e479]:  2 - 3 hrs  3,445 learners
+              - generic:
+                - generic [ref=e480]: You Will Learn How To
+                - list [ref=e481]:
+                  - listitem [ref=e482]:  Analyze the ethical implications of AI technologies
+                  - listitem [ref=e483]:  Apply psychological theories to human-AI interactions
+                  - listitem [ref=e484]:
+                    - text:  Assess the impact of algorithmic bias on deci...
+                    - link "Read More" [ref=e485]:
+                      - /url: https://alison.com/course/artificial-intelligence-between-ethics-and-psychology#outcomes
+              - generic [ref=e486]:
+                - link "More Info" [ref=e487]:
+                  - /url: https://alison.com/course/artificial-intelligence-between-ethics-and-psychology
+                - link "Start Learning" [ref=e488]:
+                  - /url: https://alison.com/course/artificial-intelligence-between-ethics-and-psychology?show_modal=true
+        - generic [ref=e489] [cursor=pointer]:
+          - generic [ref=e490]:
+            - generic [ref=e491]:
+              - generic [ref=e492]: 
+              - generic [ref=e493]: Intermediate Level
+            - generic [ref=e494]:  Certificate
+            - generic [ref=e495]:
+              - generic [ref=e496]: Also available in
+              - list [ref=e497]:
+                - listitem [ref=e498]
+            - img "Artificial Intelligence for Task Management and Productivity" [ref=e500]
+          - generic [ref=e501]:
+            - heading "Artificial Intelligence for Task Management and Productivity" [level=3] [ref=e503]
+            - generic [ref=e504]:
+              - generic [ref=e505]:
+                - img [ref=e506]
+                - paragraph [ref=e507]: 254 liked this course
+              - generic [ref=e508]:  2 - 3 hrs  5,404 learners
+              - generic:
+                - generic [ref=e509]: You Will Learn How To
+                - list [ref=e510]:
+                  - listitem [ref=e511]:  Identify challenges in traditional task management and A...
+                  - listitem [ref=e512]:  Select popular AI tools designed for effective task mana...
+                  - listitem [ref=e513]:
+                    - text:  Evaluate AI tools for workflow suitability
+                    - link "Read More" [ref=e514]:
+                      - /url: https://alison.com/course/artificial-intelligence-for-task-management-and-productivity#outcomes
+              - generic [ref=e515]:
+                - link "More Info" [ref=e516]:
+                  - /url: https://alison.com/course/artificial-intelligence-for-task-management-and-productivity
+                - link "Start Learning" [ref=e517]:
+                  - /url: https://alison.com/course/artificial-intelligence-for-task-management-and-productivity?show_modal=true
+        - generic [ref=e518] [cursor=pointer]:
+          - generic [ref=e519]:
+            - generic [ref=e520]:
+              - generic [ref=e521]: 
+              - generic [ref=e522]: Beginner Level
+            - generic [ref=e523]:  Certificate
+            - generic [ref=e524]:
+              - generic [ref=e525]: Also available in
+              - list [ref=e526]:
+                - listitem [ref=e527]
+            - img "Master Generative AI (Artificial Intelligence)" [ref=e529]
+          - generic [ref=e530]:
+            - heading "Master Generative AI (Artificial Intelligence)" [level=3] [ref=e532]
+            - generic [ref=e533]:
+              - generic [ref=e534]:
+                - img [ref=e535]
+                - paragraph [ref=e536]: 452 liked this course
+              - generic [ref=e537]:  4-5 hrs  21,876 learners
+              - generic:
+                - generic [ref=e538]: You Will Learn How To
+                - list:
+                  - listitem [ref=e539]:  Analyze the different types of generative AI models and ...
+                  - listitem [ref=e540]:  Apply generative AI techniques to solve real-world probl...
+                  - listitem [ref=e541]:
+                    - text:  Categorize different types of data and genera...
+                    - link "Read More" [ref=e542]:
+                      - /url: https://alison.com/course/master-course-in-generative-ai-artificial-intelligence#outcomes
+              - generic [ref=e543]:
+                - link "More Info" [ref=e544]:
+                  - /url: https://alison.com/course/master-course-in-generative-ai-artificial-intelligence
+                - link "Start Learning" [ref=e545]:
+                  - /url: https://alison.com/course/master-course-in-generative-ai-artificial-intelligence?show_modal=true
+        - generic [ref=e548]:
+          - heading "Overwhelmed by career choices? Let us guide you." [level=2] [ref=e549]
+          - paragraph [ref=e550]: Try the Career Ready Plan. Discover the career most suitable to you and get started in the field with a step-by-step plan which tells you exactly what you need to do.
+          - link "Become Career Ready" [ref=e551] [cursor=pointer]:
+            - /url: https://alison.com/career-ready-plan/assessment
+        - generic [ref=e552] [cursor=pointer]:
+          - generic [ref=e553]:
+            - generic [ref=e554]:
+              - generic [ref=e555]: 
+              - generic [ref=e556]: Advanced Level
+            - generic [ref=e557]:  Certificate
+            - img "Artificial Intelligence Fundamentals and State Space Search" [ref=e559]
+          - generic [ref=e560]:
+            - heading "Artificial Intelligence Fundamentals and State Space Search" [level=3] [ref=e562]
+            - generic [ref=e563]:
+              - generic [ref=e564]:
+                - img [ref=e565]
+                - paragraph [ref=e566]: 29 liked this course
+              - generic [ref=e567]:  2 - 3 hrs  2,282 learners
+              - generic:
+                - generic [ref=e568]: You Will Learn How To
+                - list [ref=e569]:
+                  - listitem [ref=e570]:  Define ‘artificial intelligence’ and describe the associ...
+                  - listitem [ref=e571]:  Describe the state space search used in AI
+                  - listitem [ref=e572]:
+                    - text:  Discuss the main characteristics and types of...
+                    - link "Read More" [ref=e573]:
+                      - /url: https://alison.com/course/artificial-intelligence-fundamentals-and-state-space-search#outcomes
+              - generic [ref=e574]:
+                - link "More Info" [ref=e575]:
+                  - /url: https://alison.com/course/artificial-intelligence-fundamentals-and-state-space-search
+                - link "Start Learning" [ref=e576]:
+                  - /url: https://alison.com/course/artificial-intelligence-fundamentals-and-state-space-search?show_modal=true
+        - generic [ref=e577] [cursor=pointer]:
+          - generic [ref=e578]:
+            - generic [ref=e579]:
+              - generic [ref=e580]: 
+              - generic [ref=e581]: Beginner Level
+            - generic [ref=e582]:  Certificate
+            - generic [ref=e583]:
+              - generic [ref=e584]: Also available in
+              - list [ref=e585]:
+                - listitem [ref=e586]
+            - img "EU AI Act - Fundamentals of Laws on Artificial Intelligence" [ref=e588]
+          - generic [ref=e589]:
+            - heading "EU AI Act - Fundamentals of Laws on Artificial Intelligence" [level=3] [ref=e591]
+            - generic [ref=e592]:
+              - generic [ref=e593]:
+                - img [ref=e594]
+                - paragraph [ref=e595]: 137 liked this course
+              - generic [ref=e596]:  2 - 3 hrs  5,361 learners
+              - generic:
+                - generic [ref=e597]: You Will Learn How To
+                - list [ref=e598]:
+                  - listitem [ref=e599]:  Recognize the ways in which Artificial Intelligence can ...
+                  - listitem [ref=e600]:  Explain the ethical dilemmas that AI cannot solve
+                  - listitem [ref=e601]:
+                    - text:  Outline the importance of the EU AI Act conce...
+                    - link "Read More" [ref=e602]:
+                      - /url: https://alison.com/course/eu-ai-act-fundamentals-of-laws-on-artificial-intelligence#outcomes
+              - generic [ref=e603]:
+                - link "More Info" [ref=e604]:
+                  - /url: https://alison.com/course/eu-ai-act-fundamentals-of-laws-on-artificial-intelligence
+                - link "Start Learning" [ref=e605]:
+                  - /url: https://alison.com/course/eu-ai-act-fundamentals-of-laws-on-artificial-intelligence?show_modal=true
+        - generic [ref=e606] [cursor=pointer]:
+          - generic [ref=e607]:
+            - generic [ref=e608]:
+              - generic [ref=e609]: 
+              - generic [ref=e610]: Beginner Level
+            - generic [ref=e611]:  Certificate
+            - generic [ref=e612]:
+              - generic [ref=e613]: Also available in
+              - list [ref=e614]:
+                - listitem [ref=e615]
+            - img "Artificial Intelligence and Automation in Lead Generation" [ref=e617]
+          - generic [ref=e618]:
+            - heading "Artificial Intelligence and Automation in Lead Generation" [level=3] [ref=e620]
+            - generic [ref=e621]:
+              - generic [ref=e622]:
+                - img [ref=e623]
+                - paragraph [ref=e624]: 99 liked this course
+              - generic [ref=e625]:  2 - 3 hrs  4,670 learners
+              - generic:
+                - generic [ref=e626]: You Will Learn How To
+                - list [ref=e627]:
+                  - listitem [ref=e628]:  Define lead generation and its significance
+                  - listitem [ref=e629]:  Describe how AI improves lead generation
+                  - listitem [ref=e630]:
+                    - text:  Identify key AI technologies in lead generati...
+                    - link "Read More" [ref=e631]:
+                      - /url: https://alison.com/course/artificial-intelligence-and-automation-in-lead-generation#outcomes
+              - generic [ref=e632]:
+                - link "More Info" [ref=e633]:
+                  - /url: https://alison.com/course/artificial-intelligence-and-automation-in-lead-generation
+                - link "Start Learning" [ref=e634]:
+                  - /url: https://alison.com/course/artificial-intelligence-and-automation-in-lead-generation?show_modal=true
+        - generic [ref=e635] [cursor=pointer]:
+          - generic [ref=e636]:
+            - generic [ref=e637]:
+              - generic [ref=e638]: 
+              - generic [ref=e639]: Beginner Level
+            - generic [ref=e640]:  Certificate
+            - 'img "Creative Artificial Intelligence: Unleash Your Imagination With AI" [ref=e642]'
+          - generic [ref=e643]:
+            - 'heading "Creative Artificial Intelligence: Unleash Your Imagination With AI" [level=3] [ref=e645]'
+            - generic [ref=e646]:
+              - generic [ref=e647]:
+                - img [ref=e648]
+                - paragraph [ref=e649]: 327 liked this course
+              - generic [ref=e650]:  2 - 3 hrs  5,151 learners
+              - generic:
+                - generic [ref=e651]: You Will Learn How To
+                - list:
+                  - listitem [ref=e652]:  Create stories, images, and music with AI tools like Cha...
+                  - listitem [ref=e653]:  Apply AI creatively in writing, art, and music through h...
+                  - listitem [ref=e654]:
+                    - text:  Analyze how AI models generate content and un...
+                    - link "Read More" [ref=e655]:
+                      - /url: https://alison.com/course/creative-artificial-intelligence-unleash-your-imagination-with-ai#outcomes
+              - generic [ref=e656]:
+                - link "More Info" [ref=e657]:
+                  - /url: https://alison.com/course/creative-artificial-intelligence-unleash-your-imagination-with-ai
+                - link "Start Learning" [ref=e658]:
+                  - /url: https://alison.com/course/creative-artificial-intelligence-unleash-your-imagination-with-ai?show_modal=true
+        - generic [ref=e659] [cursor=pointer]:
+          - generic [ref=e660]:
+            - generic [ref=e661]:
+              - generic [ref=e662]: 
+              - generic [ref=e663]: Intermediate Level
+            - generic [ref=e664]:  Certificate
+            - generic [ref=e665]:
+              - generic [ref=e666]: Also available in
+              - list [ref=e667]:
+                - listitem [ref=e668]
+            - img "Artificial Intelligence in Education and Learning" [ref=e670]
+          - generic [ref=e671]:
+            - heading "Artificial Intelligence in Education and Learning" [level=3] [ref=e673]
+            - generic [ref=e674]:
+              - generic [ref=e675]:
+                - img [ref=e676]
+                - paragraph [ref=e677]: 373 liked this course
+              - generic [ref=e678]:  2 - 3 hrs  12,490 learners
+              - generic:
+                - generic [ref=e679]: You Will Learn How To
+                - list:
+                  - listitem [ref=e680]:  Analyse the transformative potential of AI in enhancing ...
+                  - listitem [ref=e681]:  Evaluate the applications of AI-powered technologies lik...
+                  - listitem [ref=e682]:
+                    - text:  Compare the capabilities and limitations of a...
+                    - link "Read More" [ref=e683]:
+                      - /url: https://alison.com/course/artificial-intelligence-in-education-and-learning#outcomes
+              - generic [ref=e684]:
+                - link "More Info" [ref=e685]:
+                  - /url: https://alison.com/course/artificial-intelligence-in-education-and-learning
+                - link "Start Learning" [ref=e686]:
+                  - /url: https://alison.com/course/artificial-intelligence-in-education-and-learning?show_modal=true
+        - generic [ref=e687] [cursor=pointer]:
+          - generic [ref=e688]:
+            - generic [ref=e689]:
+              - generic [ref=e690]: 
+              - generic [ref=e691]: Beginner Level
+            - generic [ref=e692]:  Certificate
+            - img "AI for Beginners" [ref=e694]
+          - generic [ref=e695]:
+            - heading "AI for Beginners" [level=3] [ref=e697]
+            - generic [ref=e698]:
+              - generic [ref=e699]:
+                - img [ref=e700]
+                - paragraph [ref=e701]: 282 liked this course
+              - generic [ref=e702]:  5-6 hrs  18,111 learners
+              - generic:
+                - generic [ref=e703]: You Will Learn How To
+                - list [ref=e704]:
+                  - listitem [ref=e705]:  Define artificial intelligence and its core functions in...
+                  - listitem [ref=e706]:  Identify the hierarchical relationship between artificia...
+                  - listitem [ref=e707]:  Distinguish between narrow AI and general AI
+                  - listitem [ref=e708]:
+                    - text:  Describe how neural networks function in lang...
+                    - link "Read More" [ref=e709]:
+                      - /url: https://alison.com/course/ai-for-beginners#outcomes
+              - generic [ref=e710]:
+                - link "More Info" [ref=e711]:
+                  - /url: https://alison.com/course/ai-for-beginners
+                - link "Start Learning" [ref=e712]:
+                  - /url: https://alison.com/course/ai-for-beginners?show_modal=true
+        - generic [ref=e713] [cursor=pointer]:
+          - generic [ref=e714]:
+            - generic [ref=e715]:
+              - generic [ref=e716]: 
+              - generic [ref=e717]: Beginner Level
+            - generic [ref=e718]:  Certificate
+            - img "AI Awareness for Safety Professionals" [ref=e720]
+          - generic [ref=e721]:
+            - heading "AI Awareness for Safety Professionals" [level=3] [ref=e723]
+            - generic [ref=e724]:
+              - generic [ref=e725]:
+                - img [ref=e726]
+                - paragraph [ref=e727]: 140 liked this course
+              - generic [ref=e728]:  2 - 3 hrs  5,945 learners
+              - generic:
+                - generic [ref=e729]: You Will Learn How To
+                - list:
+                  - listitem [ref=e730]:  Define Artificial Intelligence and differentiate between...
+                  - listitem [ref=e731]:  Discuss the historical development and evolution of AI t...
+                  - listitem [ref=e732]:
+                    - text:  Categorize Artificial Intelligence systems ba...
+                    - link "Read More" [ref=e733]:
+                      - /url: https://alison.com/course/ai-awareness-for-safety-professionals#outcomes
+              - generic [ref=e734]:
+                - link "More Info" [ref=e735]:
+                  - /url: https://alison.com/course/ai-awareness-for-safety-professionals
+                - link "Start Learning" [ref=e736]:
+                  - /url: https://alison.com/course/ai-awareness-for-safety-professionals?show_modal=true
+        - generic [ref=e737] [cursor=pointer]:
+          - generic [ref=e738]:
+            - generic [ref=e739]:
+              - generic [ref=e740]: 
+              - generic [ref=e741]: Beginner Level
+            - generic [ref=e742]:  Certificate
+            - img "Master AI from Fundamentals to Real-World Career Skills" [ref=e744]
+          - generic [ref=e745]:
+            - heading "Master AI from Fundamentals to Real-World Career Skills" [level=3] [ref=e747]
+            - generic [ref=e748]:
+              - generic [ref=e749]:
+                - img [ref=e750]
+                - paragraph [ref=e751]: 343 liked this course
+              - generic [ref=e752]:  2 - 3 hrs  5,883 learners
+              - generic:
+                - generic [ref=e753]: You Will Learn How To
+                - list:
+                  - listitem [ref=e754]:  Define the fundamental concepts and principles of Artifi...
+                  - listitem [ref=e755]:  Explain the differences between AI, Machine Learning, an...
+                  - listitem [ref=e756]:
+                    - text:  Apply machine learning algorithms to solve pr...
+                    - link "Read More" [ref=e757]:
+                      - /url: https://alison.com/course/master-ai-from-fundamentals-to-real-world-career-skills#outcomes
+              - generic [ref=e758]:
+                - link "More Info" [ref=e759]:
+                  - /url: https://alison.com/course/master-ai-from-fundamentals-to-real-world-career-skills
+                - link "Start Learning" [ref=e760]:
+                  - /url: https://alison.com/course/master-ai-from-fundamentals-to-real-world-career-skills?show_modal=true
+      - generic [ref=e761]:
+        - list [ref=e763]:
+          - listitem [ref=e764]:
+            - generic [ref=e765]: Prev
+          - listitem [ref=e766]: "1"
+          - listitem [ref=e767]:
+            - link "2" [ref=e768] [cursor=pointer]:
+              - /url: https://alison.com/courses?query=artificial%20intelligence&page=2
+          - listitem [ref=e769]:
+            - link "3" [ref=e770] [cursor=pointer]:
+              - /url: https://alison.com/courses?query=artificial%20intelligence&page=3
+          - listitem [ref=e771]: ...
+          - listitem [ref=e772]:
+            - link "12" [ref=e773] [cursor=pointer]:
+              - /url: https://alison.com/courses?query=artificial%20intelligence&page=12
+          - listitem [ref=e774]:
+            - link "13" [ref=e775] [cursor=pointer]:
+              - /url: https://alison.com/courses?query=artificial%20intelligence&page=13
+          - listitem [ref=e776]:
+            - link "Next" [ref=e777] [cursor=pointer]:
+              - /url: https://alison.com/courses?query=artificial%20intelligence&page=2
+        - generic [ref=e778]: Showing 1-24 of 297
+      - text: 
+      - generic [ref=e779]:
+        - generic [ref=e781]:
+          - generic [ref=e783]:
+            - generic [ref=e784]:
+              - paragraph [ref=e785]: Shareable on
+              - img "Shareable on LinkedIn" [ref=e786]
+            - img "Certificate Sample" [ref=e787]
+          - generic [ref=e788]:
+            - heading "Benefits of an Alison Certificate" [level=5] [ref=e789]
+            - list [ref=e790]:
+              - listitem [ref=e791]:
+                - img [ref=e793]
+                - generic [ref=e794]:
+                  - heading "Learn for Free" [level=5] [ref=e795]
+                  - paragraph [ref=e796]: Enrol in a course, finish learning, and pick up new skills - all for free.
+              - listitem [ref=e797]:
+                - img [ref=e799]
+                - generic [ref=e800]:
+                  - heading "Study at Your Own Pace" [level=5] [ref=e801]
+                  - paragraph [ref=e802]: Study whenever you want, from wherever you want. If you need a break, continue learning from where you left off.
+              - listitem [ref=e803]:
+                - img [ref=e805]
+                - generic [ref=e806]:
+                  - heading "CPD Accredited Certificates" [level=5] [ref=e807]
+                  - paragraph [ref=e808]: Claim Certificates/Diplomas, add them to your CV, and show off your new skills to the world.
+        - generic [ref=e809]:
+          - heading "Explore Related Subjects" [level=3] [ref=e810]
+          - generic [ref=e811]:
+            - list
+            - list [ref=e812]:
+              - text: 
+              - listbox [ref=e814]:
+                - option "artificial intelligence ai" [ref=e815]:
+                  - link "artificial intelligence ai" [ref=e816] [cursor=pointer]:
+                    - /url: https://alison.com/tag/artificial-intelligence-ai
+                - option "technology" [ref=e817]:
+                  - link "technology" [ref=e818] [cursor=pointer]:
+                    - /url: https://alison.com/tag/technology
+                - option "emotional intelligence" [ref=e819]:
+                  - link "emotional intelligence" [ref=e820] [cursor=pointer]:
+                    - /url: https://alison.com/tag/emotional-intelligence
+                - option [ref=e821]:
+                  - link [ref=e822] [cursor=pointer]:
+                    - /url: https://alison.com/tag/machine-learning
+                    - text: machine learning
+                - option [ref=e823]:
+                  - link [ref=e824] [cursor=pointer]:
+                    - /url: https://alison.com/tag/artificial-intelligence
+                    - text: artificial intelligence
+                - option [ref=e825]:
+                  - link [ref=e826] [cursor=pointer]:
+                    - /url: https://alison.com/tag/management
+                    - text: management
+                - option [ref=e827]:
+                  - link [ref=e828] [cursor=pointer]:
+                    - /url: https://alison.com/tag/data-analysis
+                    - text: data analysis
+              - button "" [ref=e829] [cursor=pointer]:
+                - generic [ref=e830]: 
+            - list [ref=e831]:
+              - listbox [ref=e833]:
+                - option "leadership skills" [ref=e834]:
+                  - link "leadership skills" [ref=e835] [cursor=pointer]:
+                    - /url: https://alison.com/tag/leadership-skills
+                - option "generative ai" [ref=e836]:
+                  - link "generative ai" [ref=e837] [cursor=pointer]:
+                    - /url: https://alison.com/tag/generative-ai
+                - option "analytics" [ref=e838]:
+                  - link "analytics" [ref=e839] [cursor=pointer]:
+                    - /url: https://alison.com/tag/analytics
+                - option [ref=e840]:
+                  - link [ref=e841] [cursor=pointer]:
+                    - /url: https://alison.com/tag/psychology
+                    - text: psychology
+                - option [ref=e842]:
+                  - link [ref=e843] [cursor=pointer]:
+                    - /url: https://alison.com/tag/programming
+                    - text: programming
+                - option [ref=e844]:
+                  - link [ref=e845] [cursor=pointer]:
+                    - /url: https://alison.com/tag/communication-skills
+                    - text: communication skills
+                - option [ref=e846]:
+                  - link [ref=e847] [cursor=pointer]:
+                    - /url: https://alison.com/tag/chatgpt
+                    - text: chatgpt
+                - option [ref=e848]:
+                  - link [ref=e849] [cursor=pointer]:
+                    - /url: https://alison.com/tag/decision-making
+                    - text: decision making
+                - option [ref=e850]:
+                  - link [ref=e851] [cursor=pointer]:
+                    - /url: https://alison.com/tag/ai-for-business
+                    - text: ai for business
+      - generic [ref=e852]:
+        - heading "Frequently Asked Questions" [level=2] [ref=e854]
+        - generic [ref=e856] [cursor=pointer]: How are Alison courses structured?
+        - generic [ref=e860] [cursor=pointer]: When will my lesson start?
+        - generic [ref=e864] [cursor=pointer]: What is the course duration?
+        - generic [ref=e868] [cursor=pointer]: What’s the difference between a Certificate and a Diploma course?
+        - generic [ref=e872] [cursor=pointer]: Are Alison courses accredited?
+      - generic [ref=e875]:
+        - img [ref=e876]
+        - generic [ref=e877]:
+          - heading "Unlock Your True Potential With Alison's Free Online Courses" [level=3] [ref=e878]
+          - paragraph [ref=e879]: From Art to Zoology, Alison has thousands of free online courses and is adding more all the time. We seek out experts in their field to design learning material that is comprehensive, broken down into manageable chunks and gives you a series of achievable learning outcomes. Our online courses strive to provide interactive and rich studying experiences for anyone in the world, wherever they are... Read More
+  - text:      
+  - contentinfo [ref=e880]:
+    - generic [ref=e881]:
+      - generic [ref=e882]:
+        - generic [ref=e886]:
+          - generic [ref=e887]:
+            - text: CERTIFIED
+            - text: COURSES
+          - list [ref=e888]:
+            - listitem [ref=e889]:
+              - link "Business" [ref=e890] [cursor=pointer]:
+                - /url: https://alison.com/courses/business
+            - listitem [ref=e891]:
+              - link "Engineering & Construction" [ref=e892] [cursor=pointer]:
+                - /url: https://alison.com/courses/engineering
+            - listitem [ref=e893]:
+              - link "English" [ref=e894] [cursor=pointer]:
+                - /url: https://alison.com/tag/english-language
+            - listitem [ref=e895]:
+              - link "Health" [ref=e896] [cursor=pointer]:
+                - /url: https://alison.com/courses/health
+            - listitem [ref=e897]:
+              - link "Information Technology (IT)" [ref=e898] [cursor=pointer]:
+                - /url: https://alison.com/courses/it
+            - listitem [ref=e899]:
+              - link "Language" [ref=e900] [cursor=pointer]:
+                - /url: https://alison.com/courses/language
+            - listitem [ref=e901]:
+              - link "Management" [ref=e902] [cursor=pointer]:
+                - /url: https://alison.com/courses/management
+            - listitem [ref=e903]:
+              - link "Personal Development" [ref=e904] [cursor=pointer]:
+                - /url: https://alison.com/courses/personal-development
+            - listitem [ref=e905]:
+              - link "Sales & Marketing" [ref=e906] [cursor=pointer]:
+                - /url: https://alison.com/courses/marketing
+            - listitem [ref=e907]:
+              - link "Teaching & Academics" [ref=e908] [cursor=pointer]:
+                - /url: https://alison.com/courses/education
+        - generic [ref=e909]:
+          - generic [ref=e913]:
+            - generic [ref=e914]:
+              - text: ABOUT
+              - text: ALISON
+            - list [ref=e915]:
+              - listitem [ref=e916]:
+                - link "Our Story" [ref=e917] [cursor=pointer]:
+                  - /url: https://alison.com/about/our-story
+              - listitem [ref=e918]:
+                - link "Board of Directors" [ref=e919] [cursor=pointer]:
+                  - /url: https://alison.com/about/board-of-directors
+              - listitem [ref=e920]:
+                - link "Our Team & Culture" [ref=e921] [cursor=pointer]:
+                  - /url: https://alison.com/alison-team
+              - listitem [ref=e922]:
+                - link "Our Unique HQ" [ref=e923] [cursor=pointer]:
+                  - /url: https://alison.com/hq
+              - listitem [ref=e924]:
+                - link "Open Positions" [ref=e925] [cursor=pointer]:
+                  - /url: https://alison.com/about/careers
+              - listitem [ref=e926]:
+                - link "Our Course Creators" [ref=e927] [cursor=pointer]:
+                  - /url: https://alison.com/course-creators
+              - listitem [ref=e928]:
+                - link "Learning on Alison" [ref=e929] [cursor=pointer]:
+                  - /url: https://alison.com/about/learning-on-alison
+              - listitem [ref=e930]:
+                - link "Blog" [ref=e931] [cursor=pointer]:
+                  - /url: https://alison.com/blog
+              - listitem [ref=e932]:
+                - link "Press Room" [ref=e933] [cursor=pointer]:
+                  - /url: https://alison.com/press-room
+              - listitem [ref=e934]:
+                - link "Alison in Africa" [ref=e935] [cursor=pointer]:
+                  - /url: https://alison.com/alison-in-africa
+              - listitem [ref=e936]:
+                - link "Alison Programmes" [ref=e937] [cursor=pointer]:
+                  - /url: https://alison.com/programmes
+          - generic [ref=e941]:
+            - generic [ref=e942]:
+              - text: QUALITY
+              - text: LEARNING
+            - list [ref=e943]:
+              - listitem [ref=e944]:
+                - link "Accreditation" [ref=e945] [cursor=pointer]:
+                  - /url: https://alison.com/about/accreditation
+              - listitem [ref=e946]:
+                - link "All Certificates" [ref=e947] [cursor=pointer]:
+                  - /url: https://alison.com/certificate-courses
+              - listitem [ref=e948]:
+                - link "All Diplomas" [ref=e949] [cursor=pointer]:
+                  - /url: https://alison.com/diploma-courses
+              - listitem [ref=e950]:
+                - link "All Free Courses" [ref=e951] [cursor=pointer]:
+                  - /url: https://alison.com/courses
+              - listitem [ref=e952]:
+                - link "Alison Testimonials" [ref=e953] [cursor=pointer]:
+                  - /url: https://alison.com/testimonials
+              - listitem [ref=e954]:
+                - link "Graduate Profiles" [ref=e955] [cursor=pointer]:
+                  - /url: https://alison.com/alison-graduate-profiles
+              - listitem [ref=e956]:
+                - link "Hubs" [ref=e957] [cursor=pointer]:
+                  - /url: https://alison.com/hubs
+              - listitem [ref=e958]:
+                - link "Premium Learning" [ref=e959] [cursor=pointer]:
+                  - /url: https://alison.com/about/gopremium
+              - listitem [ref=e960]:
+                - link "Purchase a Gift Card" [ref=e961] [cursor=pointer]:
+                  - /url: https://alison.com/alison-gift-card
+        - generic [ref=e962]:
+          - generic [ref=e966]:
+            - generic [ref=e967]:
+              - text: CAREER
+              - text: RESOURCES
+            - list [ref=e968]:
+              - listitem [ref=e969]:
+                - link "Build Your Resumé" [ref=e970] [cursor=pointer]:
+                  - /url: https://alison.com/resume-builder
+              - listitem [ref=e971]:
+                - link "Explore Job Vacancies" [ref=e972] [cursor=pointer]:
+                  - /url: https://alison.com/recruitment
+              - listitem [ref=e973]:
+                - link "Alison Career Guide" [ref=e974] [cursor=pointer]:
+                  - /url: https://alison.com/careers
+              - listitem [ref=e975]:
+                - link "Career Ready Plan" [ref=e976] [cursor=pointer]:
+                  - /url: https://alison.com/career-ready-plan
+              - listitem [ref=e977]:
+                - link "Psychometric Tests" [ref=e978] [cursor=pointer]:
+                  - /url: https://alison.com/psychometric-test
+              - listitem [ref=e979]:
+                - link "Aptitude Test" [ref=e980] [cursor=pointer]:
+                  - /url: https://alison.com/psychometric-test/aptitude
+                  - img [ref=e981]
+                  - text: Aptitude Test
+              - listitem [ref=e983]:
+                - link "Well-being Test (Welliba)" [ref=e984] [cursor=pointer]:
+                  - /url: https://alison.com/psychometric-test/wellbeing
+                  - img [ref=e985]
+                  - text: Well-being Test (Welliba)
+              - listitem [ref=e987]:
+                - link "Work Place Personality Test" [ref=e988] [cursor=pointer]:
+                  - /url: https://alison.com/psychometric-test/personality
+                  - img [ref=e989]
+                  - text: Work Place Personality Test
+              - listitem [ref=e991]:
+                - link "English Proficiency Test" [ref=e992] [cursor=pointer]:
+                  - /url: https://alison.com/hubs/english-test
+                  - img [ref=e993]
+                  - text: English Proficiency Test
+          - generic [ref=e998]:
+            - generic [ref=e999]:
+              - text: DISCOVER
+              - text: MORE
+            - list [ref=e1000]:
+              - listitem [ref=e1001]:
+                - link "Access Free LMS" [ref=e1002] [cursor=pointer]:
+                  - /url: https://alison.com/lms
+              - listitem [ref=e1003]:
+                - link "Affiliate Programme" [ref=e1004] [cursor=pointer]:
+                  - /url: https://alison.com/affiliates/learn-to-earn
+              - listitem [ref=e1005]:
+                - link "Alison Profile" [ref=e1006] [cursor=pointer]:
+                  - /url: https://alison.com/public-profile
+              - listitem [ref=e1007]:
+                - link "Create Courses on Alison" [ref=e1008] [cursor=pointer]:
+                  - /url: https://alison.com/publish
+              - listitem [ref=e1009]:
+                - link "Download App & Learn Offline" [ref=e1010] [cursor=pointer]:
+                  - /url: https://alison.com/mobile/online-learning-app
+              - listitem [ref=e1011]:
+                - link "Integrate Alison’s API" [ref=e1012] [cursor=pointer]:
+                  - /url: https://alison.com/lms/lms-remote-access-api
+              - listitem [ref=e1013]:
+                - link "Learn With Gamification" [ref=e1014] [cursor=pointer]:
+                  - /url: https://alison.com/learn-with-gamification
+              - listitem [ref=e1015]:
+                - link "Refer a Friend" [ref=e1016] [cursor=pointer]:
+                  - /url: https://alison.com/referrals-programme/about
+              - listitem [ref=e1017]:
+                - link "TechEquity Partnership" [ref=e1018] [cursor=pointer]:
+                  - /url: https://alison.com/tech-equity
+              - listitem [ref=e1019]:
+                - link "UK Immigration Requirements" [ref=e1020] [cursor=pointer]:
+                  - /url: https://alison.com/uk-english-a-level
+              - listitem [ref=e1021]:
+                - link "Upcoming Webinars" [ref=e1022] [cursor=pointer]:
+                  - /url: https://alison.com/webinars
+        - link "" [ref=e1023] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e1024]: 
+      - separator [ref=e1025]
+      - generic [ref=e1026]:
+        - generic [ref=e1027]:
+          - generic [ref=e1028]:
+            - img [ref=e1030]
+            - list [ref=e1031]:
+              - listitem [ref=e1032]:
+                - link "FAQs" [ref=e1033] [cursor=pointer]:
+                  - /url: https://alison.com/faqs
+              - listitem [ref=e1034]:
+                - link "Customer Support" [ref=e1035] [cursor=pointer]:
+                  - /url: https://alison.com/contact-us
+          - generic:
+            - list:
+              - listitem:
+                - link:
+                  - /url: https://www.facebook.com/AlisonCourses
+                  - img
+              - listitem:
+                - link:
+                  - /url: https://twitter.com/Alison_Learning
+                  - img
+              - listitem:
+                - link:
+                  - /url: https://www.linkedin.com/company/alison-learning
+                  - img
+              - listitem:
+                - link:
+                  - /url: https://www.instagram.com/alisonlearning
+                  - img
+              - listitem:
+                - link:
+                  - /url: https://www.tiktok.com/@alisonlearning
+                  - img
+              - listitem:
+                - link:
+                  - /url: https://www.youtube.com/channel/UC-xeBVl9gN_sQTVhDVSgL6g
+                  - img
+              - listitem:
+                - link:
+                  - /url: https://alison.quora.com
+                  - img
+              - listitem:
+                - link:
+                  - /url: https://t.me/alisonlearning
+                  - img
+        - generic [ref=e1036]:
+          - generic [ref=e1037]:
+            - generic:
+              - text: Rated
+              - iframe [ref=e1039]:
+                - generic [ref=f2e2]:
+                  - link "Trustpilot reviews" [ref=f2e3] [cursor=pointer]:
+                    - /url: https://uk.trustpilot.com/review/alison.com?utm_medium=trustbox&utm_source=MicroStar
+                    - generic [ref=f2e4]: Excellent
+                    - img [ref=f2e9]
+                    - img [ref=f2e32]
+                  - generic [ref=f2e36]: Rated Excellent. 4.6 out of 5 on Trustpilot
+                  - generic [ref=f2e37]: Click to view the company's Trustpilot profile
+          - generic [ref=e1040]:
+            - link "Download on the App Store" [ref=e1041] [cursor=pointer]:
+              - /url: https://apps.apple.com/app/apple-store/id1558468968?pt=118422314&ct=portal_app_page&mt=8
+              - img "Download on the App Store" [ref=e1042]
+            - link "Download on Google Play" [ref=e1043] [cursor=pointer]:
+              - /url: https://play.google.com/store/apps/details?id=com.alison.mobile.flutter
+              - img "Download on Google Play" [ref=e1044]
+          - list [ref=e1046]:
+            - listitem [ref=e1047]: © Alison 2026
+            - listitem [ref=e1048]:
+              - link "Privacy" [ref=e1049] [cursor=pointer]:
+                - /url: https://alison.com/about/terms-of-use?privacy-policy
+            - listitem [ref=e1050]:
+              - link "Terms" [ref=e1051] [cursor=pointer]:
+                - /url: https://alison.com/about/terms-of-use
+            - listitem [ref=e1052]:
+              - link "Cookie Policy" [ref=e1053] [cursor=pointer]:
+                - /url: https://alison.com/about/terms-of-use?privacy-policy#alison_cookie_policy
+            - listitem [ref=e1054]:
+              - link "Sitemap" [ref=e1055] [cursor=pointer]:
+                - /url: https://alison.com/sitemap
+  - text: 
+  - img [ref=e1058] [cursor=pointer]
+  - dialog "SP Consent Message" [ref=e1060]:
+    - iframe [active] [ref=e1061]:
+      - generic [ref=f5e4]:
+        - generic [ref=f5e6]:
+          - paragraph [ref=f5e9]: Keep Alison Free For All, Click Accept All
+          - paragraph [ref=f5e10]:
+            - text: Alison uses cookies to provide you with the best possible service, but also to continuously improve our website. Alison and our 60 technology
+            - link "partners" [ref=f5e11] [cursor=pointer]:
+              - /url: "#"
+            - text: ask you to consent to the use of cookies to store, access and process personal data on your device. This can include the use of unique identifiers and information about your browsing patterns to create the best possible user experience on this website. The following description outlines how your data may be used by us, or by our partners.
+          - generic [ref=f5e13]:
+            - button "Store and/or access information on a device" [ref=f5e15] [cursor=pointer]: Store and/or access information on a device
+            - button "Personalised advertising and content, advertising and content measurement, audience research and services development" [ref=f5e18] [cursor=pointer]: Personalised advertising and content, advertising and content measurement, audience research and services development
+            - button "Analytics Storage" [ref=f5e21] [cursor=pointer]: Analytics Storage
+          - paragraph [ref=f5e23]: You don’t have to consent in order to view the information on this site, but if you don’t consent, some personalization of content and advertising won’t be available. Your choices on this site will be applied only to this site. You can change your settings at any time by using the link at the bottom of the page to reopen the Privacy Preferences and managing the setting 60
+        - generic [ref=f5e25]:
+          - button "Change Settings" [ref=f5e26] [cursor=pointer]
+          - button "Accept All" [ref=f5e27] [cursor=pointer]

@@ -1,9 +1,14 @@
 /**
  * Microsoft Learn catalog scanner.
- * Catalog: https://learn.microsoft.com/en-us/training/browse/?subjects=artificial-intelligence&resource_type=course
  *
  * Microsoft Learn browse pages are JS-rendered. We use Firecrawl to execute
  * JavaScript and extract the rendered HTML, then regex-match course cards.
+ *
+ * Catalog URL (with AI filter):
+ * https://learn.microsoft.com/en-us/training/browse/?subjects=artificial-intelligence&resource_type=course
+ *
+ * Course URLs follow the pattern:
+ * /en-us/training/courses/{slug}/
  */
 
 import { getCloudflareContext } from '@opennextjs/cloudflare';
@@ -29,7 +34,7 @@ export const microsoftScanner: CatalogScanner = {
     // 2. Fetch rendered HTML via Firecrawl (fallback to raw fetch if no key)
     let html: string | null = null;
     if (firecrawlKey) {
-      html = await fetchHTMLWithFirecrawl(CATALOG_URL, firecrawlKey, 4000);
+      html = await fetchHTMLWithFirecrawl(CATALOG_URL, firecrawlKey, 5000);
     }
     if (!html) {
       html = await fetchHTML(CATALOG_URL, 15_000);
@@ -39,23 +44,36 @@ export const microsoftScanner: CatalogScanner = {
     const seen = new Set<string>();
     const candidates: Array<{ title: string; url: string }> = [];
 
-    // ── Strategy 1: training-card anchor pattern (rendered React cards) ──
-    const cardRegex = /<a[^>]*href="(\/training\/(?:modules|paths)\/[^"]+)"[^>]*>/gi;
+    // ── Strategy 1: anchor links inside course cards ──
+    // Microsoft Learn renders cards as <a href="/en-us/training/courses/{slug}/"> with the title as link text
+    const courseRegex = /<a[^\u003e]*href="(\/en-us\/training\/courses\/[^"]+)"[^\u003e]*\u003e\s*([^\u003c]{10,200})\s*<\/a>/gi;
     let m: RegExpExecArray | null;
-    while ((m = cardRegex.exec(html)) !== null) {
+    while ((m = courseRegex.exec(html)) !== null) {
+      const path = m[1];
+      const title = cleanTitle(m[2].trim());
+      const url = normalizeMsUrl(path);
+      if (!title || seen.has(url)) continue;
+      seen.add(url);
+      candidates.push({ title, url });
+      if (candidates.length >= limit * 2) break;
+    }
+
+    // ── Strategy 2: broader href match for /training/courses/ ──
+    const pathRegex = /href="(\/en-us\/training\/courses\/[a-z0-9-]+)\/?"/gi;
+    while ((m = pathRegex.exec(html)) !== null) {
       const path = m[1];
       const url = normalizeMsUrl(path);
       if (seen.has(url)) continue;
       seen.add(url);
 
-      // Walk back up to 2000 chars to find the card title
-      const lookback = html.slice(Math.max(0, m.index - 2000), m.index);
+      // Walk back to find the nearest heading or link text
+      const lookback = html.slice(Math.max(0, m.index - 1500), m.index);
       const title = extractBestTitle(lookback, path);
       if (title) candidates.push({ title, url });
       if (candidates.length >= limit * 2) break;
     }
 
-    // ── Strategy 2: JSON-LD blocks (sometimes present) ──
+    // ── Strategy 3: JSON-LD blocks (sometimes present) ──
     const jsonLdBlocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
     for (const block of jsonLdBlocks) {
       try {
@@ -76,20 +94,6 @@ export const microsoftScanner: CatalogScanner = {
       } catch { /* ignore */ }
     }
 
-    // ── Strategy 3: loose href fallback for any /training/modules/ or /training/paths/ ──
-    const pathRegex = /href="(\/training\/(?:modules|paths)\/[a-z0-9-]+)\/?"/gi;
-    while ((m = pathRegex.exec(html)) !== null) {
-      const path = m[1];
-      const url = normalizeMsUrl(path);
-      if (seen.has(url)) continue;
-      seen.add(url);
-
-      const lookback = html.slice(Math.max(0, m.index - 1000), m.index);
-      const title = extractBestTitle(lookback, path);
-      if (title) candidates.push({ title, url });
-      if (candidates.length >= limit * 2) break;
-    }
-
     // 3. Resolve each candidate against the DB
     const results: ScannedCourse[] = [];
     for (const c of candidates.slice(0, limit)) {
@@ -107,13 +111,13 @@ function normalizeMsUrl(pathOrUrl: string): string {
 
 function extractBestTitle(lookback: string, fallbackPath: string): string | null {
   // Priority: h3/h2 card title → span with "title" class → generic text near the link
-  const h3Match = lookback.match(/<h[23][^>]*>([^<]{10,200})<\/h[23]>/i);
+  const h3Match = lookback.match(/<h[23][^\u003e]*>([^\u003c]{10,200})<\/h[23]>/i);
   if (h3Match) return cleanTitle(h3Match[1].trim());
 
-  const spanMatch = lookback.match(/<span[^>]*class="[^"]*title[^"]*"[^>]*>([^<]{10,200})<\/span>/i);
+  const spanMatch = lookback.match(/<span[^\u003e]*class="[^"]*title[^"]*"[^\u003e]*>([^\u003c]{10,200})<\/span>/i);
   if (spanMatch) return cleanTitle(spanMatch[1].trim());
 
-  const textMatch = lookback.match(/>\s*([^<]{15,200}?)\s*<\/[^>]+>\s*$/i);
+  const textMatch = lookback.match(/>\s*([^\u003c]{15,200}?)\s*<\/[^\u003e]+>\s*$/i);
   if (textMatch) return cleanTitle(textMatch[1].trim());
 
   // Fallback: derive from URL path

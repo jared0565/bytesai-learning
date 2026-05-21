@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BytesAI Learning — Style Directions</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: oklch(9.5% 0.005 255);
+  font-family: system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  color: oklch(88% 0.005 255);
+}
+
+.comp-header {
+  padding: 32px 40px 24px;
+  border-bottom: 1px solid oklch(17% 0.005 255);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.comp-header h1 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: oklch(85% 0.005 255);
+}
+
+.comp-header p {
+  font-size: 0.8125rem;
+  color: oklch(42% 0.005 255);
+}
+
+.comp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  padding: 24px 40px 40px;
+}
+
+.comp-col {
+  cursor: pointer;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid oklch(17% 0.005 255);
+  transition: border-color 0.15s, transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.comp-col:hover {
+  border-color: oklch(32% 0.01 255);
+  transform: translateY(-4px);
+}
+
+.comp-label {
+  padding: 14px 18px;
+  background: oklch(12% 0.005 255);
+  border-bottom: 1px solid oklch(15% 0.005 255);
+}
+
+.comp-label span {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: oklch(36% 0.005 255);
+  margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-label h2 {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: oklch(86% 0.005 255);
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+}
+
+.comp-label p {
+  font-size: 0.6875rem;
+  color: oklch(40% 0.005 255);
+}
+
+.comp-preview {
+  position: relative;
+  height: 520px;
+  overflow: hidden;
+  background: oklch(8% 0.005 255);
+}
+
+/* Invisible shield so clicks go to the col, not the iframe */
+.comp-preview::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+}
+
+.comp-preview iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1440px;
+  height: 1800px;
+  border: none;
+  transform-origin: top left;
+}
+
+/* Full-screen overlay */
+#full-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: oklch(5% 0.005 255);
+}
+
+#full-overlay iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.back-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 600;
+  padding: 7px 16px;
+  background: oklch(12% 0.005 255 / 0.92);
+  color: oklch(78% 0.005 255);
+  border: 1px solid oklch(22% 0.005 255);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: system-ui, sans-serif;
+  backdrop-filter: blur(10px);
+  transition: background 0.1s;
+}
+
+.back-btn:hover { background: oklch(16% 0.005 255 / 0.96); }
+
+.style-badge {
+  position: fixed;
+  top: 16px;
+  left: 80px;
+  z-index: 600;
+  padding: 7px 14px;
+  background: oklch(12% 0.005 255 / 0.92);
+  color: oklch(55% 0.005 255);
+  border: 1px solid oklch(20% 0.005 255);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  backdrop-filter: blur(10px);
+}
+</style>
+</head>
+<body>
+
+<div class="comp-header">
+  <h1>BytesAI Learning — Style Directions</h1>
+  <p>Click any direction to expand · Esc to return</p>
+</div>
+
+<div class="comp-grid">
+  <div class="comp-col" onclick="expand(1)">
+    <div class="comp-label">
+      <span>01</span>
+      <h2>Editorial Precision</h2>
+      <p>Light · DM Serif · Deep blue</p>
+    </div>
+    <div class="comp-preview"><iframe id="f1"></iframe></div>
+  </div>
+  <div class="comp-col" onclick="expand(2)">
+    <div class="comp-label">
+      <span>02</span>
+      <h2>Compass Warm</h2>
+      <p>Dark warm · Jakarta Sans · Amber</p>
+    </div>
+    <div class="comp-preview"><iframe id="f2"></iframe></div>
+  </div>
+  <div class="comp-col" onclick="expand(3)">
+    <div class="comp-label">
+      <span>03</span>
+      <h2>Signal Clear</h2>
+      <p>Near-black · Mono accents · Emerald</p>
+    </div>
+    <div class="comp-preview"><iframe id="f3"></iframe></div>
+  </div>
+</div>
+
+<div id="full-overlay">
+  <button class="back-btn" onclick="collapse()">← Back</button>
+  <span class="style-badge" id="style-badge"></span>
+  <iframe id="full-frame"></iframe>
+</div>
+
+<script>
+/* ── Style 1: Editorial Precision ───────────────────────────────────────── */
+const s1 = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:opsz,wght@14..32,300..800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:         oklch(97.2% 0.007 75);
+  --surface:    oklch(99.4% 0.003 75);
+  --text:       oklch(16% 0.015 258);
+  --text-2:     oklch(43% 0.01 258);
+  --text-3:     oklch(60% 0.007 258);
+  --accent:     oklch(38% 0.19 258);
+  --accent-dim: oklch(38% 0.19 258 / 0.09);
+  --border:     oklch(89% 0.008 75);
+  --border-2:   oklch(83% 0.01 75);
+}
+body { background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; }
+a { text-decoration: none; color: inherit; }
+
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 64px; height: 64px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.logo { font-family: 'DM Serif Display', serif; font-size: 1.3125rem; letter-spacing: -0.025em; }
+.nav-links { display: flex; gap: 36px; list-style: none; }
+.nav-links a { font-size: 0.875rem; font-weight: 500; color: var(--text-2); }
+.nav-links a:hover { color: var(--text); }
+.nav-actions { display: flex; gap: 10px; align-items: center; }
+.btn-ghost { padding: 8px 16px; background: none; border: 1px solid var(--border-2); border-radius: 6px; font-size: 0.875rem; font-weight: 500; color: var(--text-2); cursor: pointer; font-family: inherit; }
+.btn-primary { padding: 9px 20px; background: var(--accent); color: oklch(98% 0.003 75); border: none; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+.hero { padding: 88px 64px 72px; }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.065em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 28px;
+}
+.eyebrow::before { content: ''; display: block; width: 28px; height: 1px; background: var(--accent); }
+.hero h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 4rem; line-height: 1.08; letter-spacing: -0.025em;
+  max-width: 720px; margin-bottom: 24px;
+}
+.hero p {
+  font-size: 1.125rem; line-height: 1.7;
+  color: var(--text-2); max-width: 520px; margin-bottom: 40px;
+}
+.search-row { display: flex; max-width: 480px; }
+.search-row input {
+  flex: 1; padding: 13px 18px;
+  border: 1.5px solid var(--border-2); border-right: none;
+  border-radius: 8px 0 0 8px; font-size: 0.9375rem;
+  font-family: inherit; background: var(--surface); color: var(--text);
+  outline: none;
+}
+.search-row input:focus { border-color: var(--accent); }
+.search-row input::placeholder { color: var(--text-3); }
+.search-row button {
+  padding: 13px 22px; background: var(--accent); color: oklch(98% 0.003 75);
+  border: none; border-radius: 0 8px 8px 0;
+  font-size: 0.9375rem; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+
+.stats-bar {
+  display: flex; gap: 56px; align-items: center;
+  padding: 28px 64px;
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  margin-bottom: 72px;
+}
+.stat { display: flex; flex-direction: column; gap: 3px; }
+.stat-num { font-size: 1.625rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 0.8125rem; color: var(--text-3); }
+
+.section { padding: 0 64px 88px; }
+.section-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding-bottom: 18px; border-bottom: 1px solid var(--border); margin-bottom: 36px;
+}
+.section-head h2 { font-family: 'DM Serif Display', serif; font-size: 1.875rem; letter-spacing: -0.02em; }
+.section-head a { font-size: 0.875rem; color: var(--accent); font-weight: 500; }
+
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+}
+.card:hover { box-shadow: 0 6px 24px oklch(50% 0.01 255 / 0.07); }
+.card-top { padding: 20px 20px 0; display: flex; align-items: center; gap: 12px; }
+.pmark {
+  width: 38px; height: 38px; border-radius: 7px; flex-shrink: 0;
+  background: var(--accent-dim); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8125rem; font-weight: 700;
+}
+.pname { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); display: block; margin-bottom: 2px; }
+.level { font-size: 0.6875rem; color: var(--text-3); }
+.card-body { padding: 16px 20px 22px; }
+.card-title { font-size: 1rem; font-weight: 600; line-height: 1.35; letter-spacing: -0.01em; margin-bottom: 8px; }
+.card-desc { font-size: 0.8125rem; line-height: 1.55; color: var(--text-2); margin-bottom: 18px; }
+.card-foot { display: flex; align-items: center; justify-content: space-between; }
+.badge-free { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 4px; background: oklch(94% 0.06 145); color: oklch(32% 0.1 145); }
+.dur { font-size: 0.75rem; color: var(--text-3); }
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">BytesAI</span>
+  <ul class="nav-links">
+    <li><a href="#">Courses</a></li>
+    <li><a href="#">Learning Paths</a></li>
+    <li><a href="#">Dashboard</a></li>
+  </ul>
+  <div class="nav-actions">
+    <button class="btn-ghost">Sign in</button>
+    <button class="btn-primary">Get started</button>
+  </div>
+</nav>
+<div class="hero">
+  <p class="eyebrow">100+ verified-free courses</p>
+  <h1>The best free AI courses, curated for humans.</h1>
+  <p>Top courses from Google, Anthropic, Stanford, and 20 other providers. No paywalls, no noise — just the best.</p>
+  <div class="search-row">
+    <input type="text" placeholder="Search 100+ courses…">
+    <button>Search</button>
+  </div>
+</div>
+<div class="stats-bar">
+  <div class="stat"><span class="stat-num">100+</span><span class="stat-label">Curated courses</span></div>
+  <div class="stat"><span class="stat-num">20+</span><span class="stat-label">Top providers</span></div>
+  <div class="stat"><span class="stat-num">Free</span><span class="stat-label">Always, forever</span></div>
+  <div class="stat"><span class="stat-num">3</span><span class="stat-label">Skill levels</span></div>
+</div>
+<div class="section">
+  <div class="section-head">
+    <h2>Featured Courses</h2>
+    <a href="#">Browse all →</a>
+  </div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-top">
+        <div class="pmark">G</div>
+        <div><span class="pname">Google Cloud</span><span class="level">Beginner</span></div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">Introduction to Machine Learning</h3>
+        <p class="card-desc">Build a strong foundation in ML concepts, algorithms, and practical applications using Python.</p>
+        <div class="card-foot"><span class="badge-free">Free</span><span class="dur">8 hours</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top">
+        <div class="pmark">A</div>
+        <div><span class="pname">Anthropic</span><span class="level">Intermediate</span></div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">Prompt Engineering for Developers</h3>
+        <p class="card-desc">Learn to craft precise, effective prompts for LLMs. Covers CoT, few-shot, and system design patterns.</p>
+        <div class="card-foot"><span class="badge-free">Free</span><span class="dur">4 hours</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top">
+        <div class="pmark">D</div>
+        <div><span class="pname">DeepLearning.AI</span><span class="level">Advanced</span></div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">Deep Learning Specialization</h3>
+        <p class="card-desc">Five-course series covering neural networks, CNNs, sequence models, and structuring ML projects.</p>
+        <div class="card-foot"><span class="badge-free">Free</span><span class="dur">60 hours</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
+
+/* ── Style 2: Compass Warm ───────────────────────────────────────────────── */
+const s2 = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:         oklch(11.5% 0.016 50);
+  --surface:    oklch(16% 0.018 50);
+  --surface-2:  oklch(19.5% 0.02 50);
+  --text:       oklch(87% 0.009 60);
+  --text-2:     oklch(62% 0.009 50);
+  --text-3:     oklch(42% 0.007 50);
+  --accent:     oklch(71% 0.155 54);
+  --accent-dim: oklch(71% 0.155 54 / 0.12);
+  --border:     oklch(20.5% 0.018 50);
+  --border-2:   oklch(25% 0.02 50);
+}
+body { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+a { text-decoration: none; color: inherit; }
+
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 64px; height: 68px; border-bottom: 1px solid var(--border);
+}
+.logo { font-size: 1.125rem; font-weight: 800; letter-spacing: -0.025em; }
+.logo em { font-style: normal; color: var(--accent); }
+.nav-links { display: flex; gap: 32px; list-style: none; }
+.nav-links a { font-size: 0.875rem; font-weight: 500; color: var(--text-2); }
+.nav-links a:hover { color: var(--text); }
+.nav-actions { display: flex; gap: 10px; align-items: center; }
+.btn-ghost { padding: 8px 16px; background: none; border: 1px solid var(--border-2); border-radius: 8px; font-size: 0.875rem; font-weight: 500; color: var(--text-2); cursor: pointer; font-family: inherit; }
+.btn-primary { padding: 9px 22px; background: var(--accent); color: oklch(11.5% 0.016 50); border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+.hero { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; padding: 80px 64px 72px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-dim); color: var(--accent); padding: 6px 14px; border-radius: 20px; font-size: 0.8125rem; font-weight: 600; margin-bottom: 28px; }
+.hero h1 { font-size: 3.375rem; font-weight: 800; line-height: 1.08; letter-spacing: -0.03em; margin-bottom: 20px; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero p { font-size: 1.0625rem; line-height: 1.65; color: var(--text-2); margin-bottom: 36px; }
+.search-wrap { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 4px 4px 4px 16px; max-width: 460px; }
+.search-wrap input { flex: 1; background: none; border: none; outline: none; font-size: 0.9375rem; color: var(--text); font-family: inherit; }
+.search-wrap input::placeholder { color: var(--text-3); }
+.search-wrap button { padding: 10px 18px; background: var(--accent); color: oklch(11.5% 0.016 50); border: none; border-radius: 7px; font-size: 0.875rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+.hero-right { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mc { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.mc:hover { border-color: var(--border-2); }
+.mc.span2 { grid-column: span 2; }
+.mc-prov { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); margin-bottom: 8px; }
+.mc-title { font-size: 0.875rem; font-weight: 600; line-height: 1.4; margin-bottom: 12px; }
+.mc-foot { display: flex; align-items: center; justify-content: space-between; }
+.mc-badge { font-size: 0.6875rem; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: var(--accent-dim); color: var(--accent); }
+.mc-level { font-size: 0.6875rem; color: var(--text-3); }
+
+.section { padding: 0 64px 80px; }
+.section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.section-head h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.025em; }
+.section-head a { font-size: 0.875rem; color: var(--accent); font-weight: 600; }
+
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.card:hover { border-color: var(--border-2); background: var(--surface-2); }
+.card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.cicon { width: 38px; height: 38px; border-radius: 8px; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; font-size: 0.8125rem; font-weight: 800; color: var(--accent); flex-shrink: 0; }
+.csrc { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); }
+.card-title { font-size: 0.9375rem; font-weight: 700; line-height: 1.35; letter-spacing: -0.01em; margin-bottom: 14px; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { font-size: 0.6875rem; font-weight: 600; padding: 3px 9px; border-radius: 4px; background: oklch(20% 0.015 50); color: var(--text-3); }
+.tag.a { background: var(--accent-dim); color: var(--accent); }
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">Bytes<em>AI</em></span>
+  <ul class="nav-links">
+    <li><a href="#">Courses</a></li>
+    <li><a href="#">Learning Paths</a></li>
+    <li><a href="#">Dashboard</a></li>
+  </ul>
+  <div class="nav-actions">
+    <button class="btn-ghost">Sign in</button>
+    <button class="btn-primary">Get started</button>
+  </div>
+</nav>
+<div class="hero">
+  <div>
+    <div class="pill">&#x2726; 100+ verified free courses</div>
+    <h1>Learn <em>AI</em> from the people who build it.</h1>
+    <p>Curated courses from Google, Anthropic, Stanford, and 20 more top providers. Always free, always current.</p>
+    <div class="search-wrap">
+      <input type="text" placeholder="Search courses, topics, providers…">
+      <button>Search</button>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="mc span2">
+      <div class="mc-prov">Anthropic</div>
+      <div class="mc-title">Prompt Engineering for Developers</div>
+      <div class="mc-foot"><span class="mc-badge">Free</span><span class="mc-level">Intermediate · 4 hrs</span></div>
+    </div>
+    <div class="mc">
+      <div class="mc-prov">Google Cloud</div>
+      <div class="mc-title">Intro to Machine Learning</div>
+      <div class="mc-foot"><span class="mc-badge">Free</span><span class="mc-level">Beginner</span></div>
+    </div>
+    <div class="mc">
+      <div class="mc-prov">DeepLearning.AI</div>
+      <div class="mc-title">Deep Learning Specialization</div>
+      <div class="mc-foot"><span class="mc-badge">Free</span><span class="mc-level">Advanced</span></div>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-head"><h2>Trending this week</h2><a href="#">View all →</a></div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-top"><div class="cicon">G</div><span class="csrc">Google Cloud</span></div>
+      <h3 class="card-title">Introduction to Machine Learning</h3>
+      <div class="tags"><span class="tag a">Free</span><span class="tag">Beginner</span><span class="tag">8 hours</span></div>
+    </div>
+    <div class="card">
+      <div class="card-top"><div class="cicon">A</div><span class="csrc">Anthropic</span></div>
+      <h3 class="card-title">Prompt Engineering for Developers</h3>
+      <div class="tags"><span class="tag a">Free</span><span class="tag">Intermediate</span><span class="tag">4 hours</span></div>
+    </div>
+    <div class="card">
+      <div class="card-top"><div class="cicon">D</div><span class="csrc">DeepLearning.AI</span></div>
+      <h3 class="card-title">Deep Learning Specialization</h3>
+      <div class="tags"><span class="tag a">Free</span><span class="tag">Advanced</span><span class="tag">60 hours</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
+
+/* ── Style 3: Signal Clear ───────────────────────────────────────────────── */
+const s3 = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:         oklch(9% 0.005 255);
+  --surface:    oklch(12.5% 0.005 255);
+  --surface-2:  oklch(15% 0.005 255);
+  --text:       oklch(87% 0.005 255);
+  --text-2:     oklch(58% 0.005 255);
+  --text-3:     oklch(37% 0.004 255);
+  --accent:     oklch(72% 0.21 145);
+  --accent-dim: oklch(72% 0.21 145 / 0.1);
+  --border:     oklch(17% 0.005 255);
+  --border-2:   oklch(22% 0.005 255);
+}
+body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+a { text-decoration: none; color: inherit; }
+
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 56px; height: 56px; border-bottom: 1px solid var(--border);
+}
+.logo { display: flex; align-items: center; gap: 9px; font-size: 0.9375rem; font-weight: 700; letter-spacing: -0.02em; }
+.logo-mark { width: 24px; height: 24px; background: var(--accent); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+.logo-mark svg { width: 12px; height: 12px; }
+.nav-links { display: flex; gap: 2px; list-style: none; align-items: center; }
+.nav-links a { padding: 5px 12px; font-size: 0.8125rem; font-weight: 500; color: var(--text-2); border-radius: 5px; }
+.nav-links a:hover, .nav-links a.on { color: var(--text); background: var(--surface); }
+.nav-right { display: flex; gap: 8px; align-items: center; }
+.btn-out { padding: 6px 14px; background: none; border: 1px solid var(--border-2); border-radius: 6px; font-size: 0.8125rem; font-weight: 500; color: var(--text-2); cursor: pointer; font-family: inherit; }
+.btn-acc { padding: 6px 14px; background: var(--accent); border: none; border-radius: 6px; font-size: 0.8125rem; font-weight: 600; color: oklch(9% 0.005 255); cursor: pointer; font-family: inherit; }
+
+.hero { padding: 64px 56px 56px; border-bottom: 1px solid var(--border); }
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--text-3); margin-bottom: 36px; }
+.breadcrumb .seg { color: var(--accent); }
+.breadcrumb .sep { color: var(--text-3); }
+.hero-inner { display: flex; align-items: flex-start; justify-content: space-between; gap: 56px; }
+.hero-text { max-width: 560px; }
+.hero-text h1 { font-size: 3rem; font-weight: 700; line-height: 1.12; letter-spacing: -0.035em; margin-bottom: 16px; color: oklch(93% 0.005 255); }
+.hero-text h1 strong { color: var(--accent); font-weight: 700; }
+.hero-text p { font-size: 0.9375rem; line-height: 1.65; color: var(--text-2); margin-bottom: 28px; }
+.search-field { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border-2); border-radius: 8px; padding: 0 14px; height: 42px; max-width: 420px; }
+.search-field:focus-within { border-color: var(--accent); }
+.spfx { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; color: var(--accent); line-height: 1; }
+.search-field input { flex: 1; background: none; border: none; outline: none; font-size: 0.875rem; color: var(--text); font-family: inherit; }
+.search-field input::placeholder { color: var(--text-3); }
+
+.hero-stats { min-width: 200px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.srow { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid var(--border); gap: 24px; }
+.srow:last-child { border-bottom: none; }
+.skey { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.sval { font-size: 0.875rem; font-weight: 600; }
+.sval.g { color: var(--accent); }
+
+.body { padding: 36px 56px 64px; }
+.filters { display: flex; align-items: center; gap: 8px; padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+.flabel { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--text-3); margin-right: 4px; }
+.chip { padding: 5px 12px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; border: 1px solid var(--border); color: var(--text-2); cursor: pointer; background: none; font-family: inherit; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: oklch(9% 0.005 255); font-weight: 600; }
+
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; gap: 1px; background: var(--border); }
+.card { background: var(--surface); padding: 22px; }
+.card:hover { background: var(--surface-2); }
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+.cprov { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.cbadge { font-size: 0.625rem; font-weight: 600; padding: 2px 7px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.04em; background: var(--accent-dim); color: var(--accent); }
+.ctitle { font-size: 0.9375rem; font-weight: 600; line-height: 1.4; color: oklch(80% 0.005 255); margin-bottom: 14px; letter-spacing: -0.01em; }
+.cmeta { display: flex; gap: 16px; }
+.cmi { font-size: 0.75rem; color: var(--text-3); }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 12 12" fill="oklch(9% 0.005 255)"><polygon points="6,0.5 11,3.25 11,8.75 6,11.5 1,8.75 1,3.25"/></svg>
+    </div>
+    BytesAI
+  </div>
+  <ul class="nav-links">
+    <li><a href="#" class="on">Courses</a></li>
+    <li><a href="#">Paths</a></li>
+    <li><a href="#">Dashboard</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="btn-out">Sign in</button>
+    <button class="btn-acc">Get started</button>
+  </div>
+</nav>
+<div class="hero">
+  <div class="breadcrumb">
+    <span>bytesai</span><span class="sep">/</span><span class="seg">courses</span><span class="sep">&middot;</span><span>100+ free</span>
+  </div>
+  <div class="hero-inner">
+    <div class="hero-text">
+      <h1>Free AI courses from the people <strong>building it.</strong></h1>
+      <p>100+ verified courses from Google, Anthropic, Stanford, and 20 other providers. No account required to browse.</p>
+      <div class="search-field">
+        <span class="spfx">_</span>
+        <input type="text" placeholder="search courses">
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="srow"><span class="skey">Courses</span><span class="sval g">100+</span></div>
+      <div class="srow"><span class="skey">Providers</span><span class="sval">20+</span></div>
+      <div class="srow"><span class="skey">Cost</span><span class="sval g">$0</span></div>
+      <div class="srow"><span class="skey">Updated</span><span class="sval">Weekly</span></div>
+    </div>
+  </div>
+</div>
+<div class="body">
+  <div class="filters">
+    <span class="flabel">filter:</span>
+    <button class="chip on">All</button>
+    <button class="chip">Beginner</button>
+    <button class="chip">Intermediate</button>
+    <button class="chip">Advanced</button>
+    <button class="chip">Google</button>
+    <button class="chip">Anthropic</button>
+  </div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-head"><span class="cprov">Google Cloud</span><span class="cbadge">Free</span></div>
+      <h3 class="ctitle">Introduction to Machine Learning</h3>
+      <div class="cmeta"><span class="cmi">Beginner</span><span class="cmi">8 hours</span></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="cprov">Anthropic</span><span class="cbadge">Free</span></div>
+      <h3 class="ctitle">Prompt Engineering for Developers</h3>
+      <div class="cmeta"><span class="cmi">Intermediate</span><span class="cmi">4 hours</span></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="cprov">DeepLearning.AI</span><span class="cbadge">Free</span></div>
+      <h3 class="ctitle">Deep Learning Specialization</h3>
+      <div class="cmeta"><span class="cmi">Advanced</span><span class="cmi">60 hours</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
+
+/* ── Init & controls ─────────────────────────────────────────────────────── */
+const styles = [null, s1, s2, s3];
+const labels = [null, '01 — Editorial Precision', '02 — Compass Warm', '03 — Signal Clear'];
+
+function initPreviews() {
+  [1, 2, 3].forEach(n => {
+    const frame = document.getElementById('f' + n);
+    const wrapper = frame.parentElement;
+    const w = wrapper.clientWidth;
+    const scale = w / 1440;
+    frame.style.cssText = [
+      'position:absolute', 'top:0', 'left:0',
+      'width:1440px', 'height:1800px', 'border:none',
+      'transform-origin:top left',
+      `transform:scale(${scale})`
+    ].join(';');
+    frame.srcdoc = styles[n];
+  });
+}
+
+function expand(n) {
+  document.getElementById('full-frame').srcdoc = styles[n];
+  document.getElementById('style-badge').textContent = labels[n];
+  document.getElementById('full-overlay').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function collapse() {
+  document.getElementById('full-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+window.addEventListener('load', initPreviews);
+window.addEventListener('resize', initPreviews);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') collapse(); });
+</script>
+</body>
+</html>
