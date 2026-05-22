@@ -1,12 +1,10 @@
 import { getDB } from '@/lib/db';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BookOpen, ExternalLink } from 'lucide-react';
-import AddCourseForm from './AddCourseForm';
+import { BookOpen, ExternalLink, PlusCircle } from 'lucide-react';
 import CourseActions from './CourseActions';
 import SortableHeader from './SortableHeader';
 import EnrollRefresh from './EnrollRefresh';
-import DiscoveryPanel from './DiscoveryPanel';
 
 export const metadata: Metadata = {
   title: 'Courses — Admin',
@@ -79,19 +77,20 @@ export default async function AdminCoursesPage({
 
   return (
     <div style={{ padding: '2rem', maxWidth: 1200 }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.625rem', fontWeight: 800, marginBottom: '0.25rem' }}>Courses</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          {courses.length} course{courses.length !== 1 ? 's' : ''} in the catalog.
-        </p>
-      </div>
-
-      {/* Discover new courses */}
-      <DiscoveryPanel />
-
-      {/* Add course form */}
-      <div id="add-course-form" style={{ marginBottom: '2.5rem' }}>
-        <AddCourseForm />
+      <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ fontSize: '1.625rem', fontWeight: 800, marginBottom: '0.25rem' }}>Courses</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            {courses.length} course{courses.length !== 1 ? 's' : ''} in the catalog.
+          </p>
+        </div>
+        <Link
+          href="/admin/add-courses"
+          className="btn btn-primary"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}
+        >
+          <PlusCircle size={15} /> Add courses
+        </Link>
       </div>
 
       {/* Course table */}

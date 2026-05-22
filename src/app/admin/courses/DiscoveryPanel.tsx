@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Loader2, ExternalLink, Plus, ArrowRight, AlertCircle, CheckCircle2, X, Trash2 } from 'lucide-react';
+import { Search, Loader2, ExternalLink, Plus, AlertCircle, CheckCircle2, X, Trash2 } from 'lucide-react';
 
 interface ProviderRow {
   id: string;
@@ -43,8 +43,9 @@ interface ImportState {
 
 export default function DiscoveryPanel() {
   const [providers, setProviders] = useState<ProviderRow[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState('');
   const [loadingProviders, setLoadingProviders] = useState(false);
-  const [discovering, setDiscovering] = useState<string | null>(null);
+  const [discovering, setDiscovering] = useState(false);
   const [result, setResult] = useState<DiscoveryResult | null>(null);
   const [error, setError] = useState('');
   const [pending, setPending] = useState<DiscoveredCourse[]>([]);
@@ -54,7 +55,6 @@ export default function DiscoveryPanel() {
     error: null,
   });
 
-  // Load providers on mount
   useEffect(() => {
     loadProviders();
   }, []);
@@ -66,6 +66,7 @@ export default function DiscoveryPanel() {
       const data = await res.json();
       if (res.ok && data.providers) {
         setProviders(data.providers);
+        if (data.providers.length > 0) setSelectedProviderId(data.providers[0].id);
       }
     } catch {
       // ignore
@@ -74,8 +75,9 @@ export default function DiscoveryPanel() {
     }
   }
 
-  async function handleDiscover(providerId: string) {
-    setDiscovering(providerId);
+  async function handleDiscover() {
+    if (!selectedProviderId) return;
+    setDiscovering(true);
     setError('');
     setResult(null);
     setPending([]);
@@ -83,7 +85,7 @@ export default function DiscoveryPanel() {
       const res = await fetch('/api/admin/scan-courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ providerId, limit: 20 }),
+        body: JSON.stringify({ providerId: selectedProviderId, limit: 20 }),
       });
       const data: DiscoveryResult & { error?: string } = await res.json();
       if (!res.ok) {
@@ -95,7 +97,7 @@ export default function DiscoveryPanel() {
     } catch {
       setError('Network error. Please try again.');
     } finally {
-      setDiscovering(null);
+      setDiscovering(false);
     }
   }
 
@@ -120,7 +122,6 @@ export default function DiscoveryPanel() {
         setImportState({ importing: false, importingCourse: null, error: data.error ?? 'Import failed.' });
         return;
       }
-      // Remove from pending
       setPending(prev => prev.filter(c => c.url !== course.url));
       setImportState({ importing: false, importingCourse: null, error: null });
     } catch {
@@ -170,55 +171,45 @@ export default function DiscoveryPanel() {
   }
 
   return (
-    <div className="card" style={{ padding: '1.5rem 2rem', marginBottom: '2.5rem' }}>
-      <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <Search size={18} /> Discover new courses
-      </h2>
-
-      <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-        Select a provider to scan its catalog for courses not yet in the database.
-      </p>
-
+    <div>
+      {/* Provider selector */}
       {loadingProviders ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', padding: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', padding: '0.5rem 0 1rem' }}>
           <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading providers…
         </div>
       ) : providers.length === 0 ? (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No providers with courses found yet.</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>No providers with courses found yet.</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-          {providers.map(p => (
-            <div
-              key={p.id}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '0.75rem 1rem',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border)',
-                background: 'var(--bg)',
-              }}
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
+          <div style={{ flex: 1 }}>
+            <label className="label" style={{ display: 'block', marginBottom: '0.375rem', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+              Provider
+            </label>
+            <select
+              className="input"
+              value={selectedProviderId}
+              onChange={e => setSelectedProviderId(e.target.value)}
+              disabled={discovering}
             >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>{p.name}</p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {p.websiteUrl ?? p.sampleUrl}
-                  {typeof p.courseCount === 'number' && (
-                    <span style={{ marginLeft: '0.5rem', fontWeight: 600 }}>· {p.courseCount} course{p.courseCount !== 1 ? 's' : ''}</span>
-                  )}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleDiscover(p.id)}
-                disabled={discovering === p.id}
-                className="btn btn-primary btn-sm"
-                style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
-              >
-                {discovering === p.id ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Search size={14} />}
-                {discovering === p.id ? 'Scanning…' : 'Discover'}
-              </button>
-            </div>
-          ))}
+              {providers.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.name}{typeof p.courseCount === 'number' ? ` · ${p.courseCount} courses` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={handleDiscover}
+            disabled={!selectedProviderId || discovering}
+            className="btn btn-primary"
+            style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+          >
+            {discovering
+              ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+              : <Search size={14} />}
+            {discovering ? 'Scanning…' : 'Discover'}
+          </button>
         </div>
       )}
 
@@ -229,12 +220,12 @@ export default function DiscoveryPanel() {
       )}
 
       {result && (
-        <div style={{ marginTop: '1rem' }}>
+        <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div>
               <p style={{ fontWeight: 700, fontSize: '0.9375rem' }}>{result.provider}</p>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                {result.total} found · <span style={{ color: 'var(--emerald)' }}>{result.new} new</span> · <span style={{ color: 'var(--text-muted)' }}>{result.existing} existing</span>
+                {result.total} found · <span style={{ color: 'var(--emerald)' }}>{result.new} new</span> · <span>{result.existing} existing</span>
                 {result.catalogUrl && (
                   <a href={result.catalogUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', marginLeft: '0.5rem' }}>
                     View catalog <ExternalLink size={10} />

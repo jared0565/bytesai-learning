@@ -4,15 +4,15 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   LayoutDashboard, BookOpen, Users, BarChart2, Sparkles, FileText,
-  MessageSquare, Download, Rss, ChevronLeft, ChevronRight, Settings, ThumbsUp,
-  Building2,
+  MessageSquare, Rss, ChevronLeft, ChevronRight, Settings, ThumbsUp,
+  Building2, PlusCircle,
 } from 'lucide-react';
 
 const NAV = [
   { href: '/admin', icon: <LayoutDashboard size={18} />, label: 'Overview' },
   { href: '/admin/courses', icon: <BookOpen size={18} />, label: 'Courses' },
+  { href: '/admin/add-courses', icon: <PlusCircle size={18} />, label: 'Add Courses' },
   { href: '/admin/providers', icon: <Building2 size={18} />, label: 'Providers' },
-  { href: '/admin/alison-import', icon: <Download size={18} />, label: 'Alison Importer' },
   { href: '/admin/featured', icon: <Sparkles size={18} />, label: 'Featured Slots' },
   { href: '/admin/curated', icon: <FileText size={18} />, label: 'Curated Pages' },
   { href: '/admin/trend-engine', icon: <Rss size={18} />, label: 'Trend Engine' },
