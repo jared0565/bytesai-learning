@@ -27,13 +27,11 @@ export async function getProvidersWithSamples(db: D1Database): Promise<ProviderW
   const rows = await db.prepare(
     `SELECT
        p.id, p.slug, p.name, p.website_url,
-       c.official_link AS sample_url,
-       COUNT(c2.id) AS course_count
+       MIN(c.official_link) AS sample_url,
+       COUNT(c.id) AS course_count
      FROM providers p
-     JOIN courses c ON c.provider_id = p.id
-     LEFT JOIN courses c2 ON c2.provider_id = p.id
-     WHERE c.published_status = 'published'
-     GROUP BY p.id, c.official_link`
+     JOIN courses c ON c.provider_id = p.id AND c.published_status = 'published'
+     GROUP BY p.id, p.slug, p.name, p.website_url`
   ).all<{
     id: string; slug: string; name: string;
     website_url: string | null; sample_url: string;
