@@ -6,7 +6,7 @@ import AddCourseForm from './AddCourseForm';
 import CourseActions from './CourseActions';
 import SortableHeader from './SortableHeader';
 import EnrollRefresh from './EnrollRefresh';
-import CourseScanner from './CourseScanner';
+import DiscoveryPanel from './DiscoveryPanel';
 
 export const metadata: Metadata = {
   title: 'Courses — Admin',
@@ -86,8 +86,8 @@ export default async function AdminCoursesPage({
         </p>
       </div>
 
-      {/* Scan for new courses */}
-      <CourseScanner />
+      {/* Discover new courses */}
+      <DiscoveryPanel />
 
       {/* Add course form */}
       <div id="add-course-form" style={{ marginBottom: '2.5rem' }}>

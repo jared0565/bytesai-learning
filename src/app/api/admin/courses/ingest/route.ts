@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySession, COOKIE_NAME } from '@/lib/auth';
+import { verifyBearerToken, verifySession, COOKIE_NAME } from '@/lib/auth';
 import { sanitizeText, isValidSlug, isValidExternalUrl } from '@/lib/security';
 import { getDB, logAdminAction } from '@/lib/db';
 
 async function requireAdmin(req: NextRequest) {
+  const auth = req.headers.get('Authorization');
+  const bearer = auth ? await verifyBearerToken(auth) : null;
+  if (bearer) return bearer;
   const token = req.cookies.get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
   if (!session || session.role !== 'admin') return null;
@@ -58,6 +61,14 @@ export async function POST(req: NextRequest) {
   const officialLink = body.official_link ? sanitizeText(body.official_link as string) : null;
   if (officialLink && !isValidExternalUrl(officialLink)) {
     return NextResponse.json({ error: 'official_link must be a valid HTTPS URL.' }, { status: 422 });
+  }
+
+  // Idempotency: if this URL is already in the DB, return the existing slug.
+  if (officialLink) {
+    const dupe = await db.prepare('SELECT id, slug FROM courses WHERE official_link = ?').bind(officialLink).first<{ id: string; slug: string }>();
+    if (dupe) {
+      return NextResponse.json({ ok: true, course: { id: dupe.id, slug: dupe.slug }, existed: true }, { status: 200 });
+    }
   }
 
   const affiliateUrl = body.affiliate_url ? sanitizeText(body.affiliate_url as string) : null;
@@ -122,7 +133,7 @@ export async function POST(req: NextRequest) {
       entityType: 'course',
       entityId: id,
       after: fields,
-    });
+    }).catch(() => null);
 
     return NextResponse.json({ ok: true, course: { id, slug } }, { status: 201 });
   } catch (err) {

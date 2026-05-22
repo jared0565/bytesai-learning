@@ -1,12 +1,14 @@
 /**
- * Scanner registry — all supported provider scanners.
+ * Scanner registry and discovery exports.
  */
 
 import type { D1Database } from '@/lib/db';
 import { microsoftScanner } from './microsoft';
 import type { CatalogScanner, ScanResult } from './types';
+import { getProvidersWithSamples, discoverProviderCourses } from './discovery';
 
 export * from './types';
+export * from './discovery';
 
 const registry = new Map<string, CatalogScanner>([
   [microsoftScanner.id, microsoftScanner],
@@ -38,4 +40,27 @@ export async function runScan(
     existing: existingCount,
     courses,
   };
+}
+
+/**
+ * Discover courses for all providers that have existing courses.
+ */
+export async function discoverAll(
+  db: D1Database,
+  opts: { limit: number }
+) {
+  const providers = await getProvidersWithSamples(db);
+  const results: Array<{
+    provider: { id: string; name: string };
+    catalogUrl: string | null;
+    courses: Awaited<ReturnType<typeof discoverProviderCourses>>;
+  }> = [];
+
+  for (const provider of providers) {
+    const catalogUrl = (await import('./discovery')).deriveCatalogUrl(provider);
+    const courses = await discoverProviderCourses(provider, { ...opts, db });
+    results.push({ provider: { id: provider.id, name: provider.name }, catalogUrl, courses });
+  }
+
+  return results;
 }

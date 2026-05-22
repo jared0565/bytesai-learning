@@ -42,6 +42,13 @@ const PROVIDERS = [
   { id: 'microsoft', name: 'Microsoft Learn' },
 ];
 
+interface ImportResult {
+  imported: number;
+  skipped: number;
+  errors: number;
+  courses: Array<{ title: string; slug: string; status: 'imported' | 'skipped' | 'error'; reason?: string }>;
+}
+
 export default function CourseScanner() {
   const [provider, setProvider] = useState('microsoft');
   const [customUrl, setCustomUrl] = useState('');
@@ -49,6 +56,10 @@ export default function CourseScanner() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<ScanResult | null>(null);
   const [filter, setFilter] = useState<'all' | 'new' | 'existing'>('all');
+
+  // Direct import state
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
   // Comparison modal state
   const [compareCourse, setCompareCourse] = useState<ScannedCourse | null>(null);
