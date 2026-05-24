@@ -37,7 +37,7 @@ export function sortByFeaturedPriority<T extends RankableItem>(items: T[]): T[] 
 export const CATEGORIES = [
   { slug: 'ai-foundations', label: 'AI Foundations', db: 'AI Foundations' },
   { slug: 'llms-generative-ai', label: 'LLMs & Generative AI', db: 'LLMs / Generative AI' },
-  { slug: 'agents', label: 'Agents', db: 'Agents' },
+  { slug: 'agents', label: 'AI Agents', db: 'AI Agents' },
   { slug: 'data-ml', label: 'Data & ML', db: 'Data / ML' },
   { slug: 'prompt-engineering', label: 'Prompt Engineering', db: 'Prompt Engineering' },
   { slug: 'governance-responsible-ai', label: 'Governance & Responsible AI', db: 'Governance / Responsible AI' },
