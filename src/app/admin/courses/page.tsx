@@ -102,8 +102,8 @@ export default async function AdminCoursesPage({
           <p style={{ color: 'var(--text-secondary)' }}>No courses yet. Add one above.</p>
         </div>
       ) : (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+        <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 900 }}>
             <thead>
               <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
                 {HEADERS.map(h => (
@@ -161,7 +161,7 @@ export default async function AdminCoursesPage({
                   <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: '0.8125rem' }}>
                     {new Date(c.updated_at).toLocaleDateString()}
                   </td>
-                  <td style={{ padding: '0.75rem 1rem' }}>
+                  <td style={{ padding: '0.75rem 1rem', whiteSpace: 'nowrap', width: '1%' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <Link
                         href={`/courses/${c.slug}`}
