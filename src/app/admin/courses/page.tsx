@@ -22,6 +22,8 @@ interface CourseRow {
   is_affiliate: number;
   featured_priority: number;
   enroll_count: number | null;
+  snippet: string | null;
+  provider_id: string | null;
   updated_at: string;
 }
 
@@ -51,7 +53,7 @@ export default async function AdminCoursesPage({
   if (db) {
     try {
       const result = await db.prepare(
-        `SELECT id, slug, title, category, level, published_status, is_alison, is_affiliate, featured_priority, enroll_count, updated_at
+        `SELECT id, slug, title, category, level, published_status, is_alison, is_affiliate, featured_priority, enroll_count, snippet, provider_id, updated_at
          FROM courses ORDER BY ${orderBy} LIMIT 200`
       ).all<CourseRow>();
       courses = result.results;
@@ -168,7 +170,15 @@ export default async function AdminCoursesPage({
                       >
                         View <ExternalLink size={12} />
                       </Link>
-                      <CourseActions courseId={c.id} currentStatus={c.published_status} />
+                      <CourseActions
+                        courseId={c.id}
+                        currentStatus={c.published_status}
+                        title={c.title}
+                        category={c.category}
+                        level={c.level}
+                        snippet={c.snippet}
+                        providerId={c.provider_id}
+                      />
                     </div>
                   </td>
                 </tr>
