@@ -8,6 +8,12 @@ interface FetchedMeta {
   title: string | null;
   description: string | null;
   ogImage: string | null;
+  providerId: string | null;
+}
+
+interface ProviderOption {
+  id: string;
+  name: string;
 }
 
 const CONTENT_TYPES = ['course', 'book', 'other_source', 'platform', 'path'] as const;
@@ -29,6 +35,8 @@ export default function AddCourseForm() {
   const [category, setCategory] = useState('');
   const [contentType, setContentType] = useState<string>('course');
   const [level, setLevel] = useState('');
+  const [providerId, setProviderId] = useState('');
+  const [providers, setProviders] = useState<ProviderOption[]>([]);
   const [isAlison, setIsAlison] = useState(false);
   const [isAffiliate, setIsAffiliate] = useState(false);
   const [affiliateUrl, setAffiliateUrl] = useState('');
@@ -77,6 +85,15 @@ export default function AddCourseForm() {
     return () => window.removeEventListener('scanner-prefill', onPrefill);
   }, []);
 
+  useEffect(() => {
+    fetch('/api/admin/providers')
+      .then(r => r.json())
+      .then((data: { providers?: ProviderOption[] }) => {
+        if (data.providers) setProviders(data.providers);
+      })
+      .catch(() => null);
+  }, []);
+
   function applyTitle(t: string) {
     setTitle(t);
     if (!slugManual) setSlug(slugify(t));
@@ -99,6 +116,7 @@ export default function AddCourseForm() {
         if (data.title) applyTitle(data.title);
         if (data.description) setSnippet(data.description);
         if (data.ogImage) setOgImage(data.ogImage);
+        if (data.providerId) setProviderId(data.providerId);
         setShowForm(true);
       }
     } catch {
@@ -125,6 +143,7 @@ export default function AddCourseForm() {
           category: category || undefined,
           content_type: contentType,
           level: level || undefined,
+          provider_id: providerId || undefined,
           is_alison: isAlison,
           is_affiliate: isAffiliate,
           affiliate_url: affiliateUrl.trim() || undefined,
@@ -147,7 +166,7 @@ export default function AddCourseForm() {
 
   function handleReset() {
     setUrl(''); setTitle(''); setSlug(''); setSlugManual(false);
-    setSnippet(''); setCategory(''); setContentType('course'); setLevel('');
+    setSnippet(''); setCategory(''); setContentType('course'); setLevel(''); setProviderId('');
     setIsAlison(false); setIsAffiliate(false); setAffiliateUrl(''); setOgImage('');
     setPublishedStatus('draft'); setFetchError(null); setSubmitError(null);
     setCreated(null); setShowForm(false);
@@ -238,6 +257,15 @@ export default function AddCourseForm() {
                 placeholder="auto-generated from title"
               />
             </div>
+          </div>
+
+          {/* Provider */}
+          <div className="form-group">
+            <label className="label">Provider</label>
+            <select className="input" value={providerId} onChange={e => setProviderId(e.target.value)}>
+              <option value="">— none —</option>
+              {providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
           </div>
 
           {/* Category + Content type + Level */}

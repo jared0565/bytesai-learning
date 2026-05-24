@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 import { isValidExternalUrl } from '@/lib/security';
+import { getDB } from '@/lib/db';
 
 async function requireAdmin(req: NextRequest) {
   const token = req.cookies.get(COOKIE_NAME)?.value;
@@ -70,7 +71,26 @@ export async function POST(req: NextRequest) {
     }
     reader.cancel();
 
-    return NextResponse.json(extractMeta(html));
+    const meta = extractMeta(html);
+
+    // Auto-detect provider by matching URL hostname against providers.website_url
+    let providerId: string | null = null;
+    try {
+      const hostname = new URL(url as string).hostname.replace(/^www\./, '');
+      const db = await getDB();
+      if (db) {
+        const providers = await db.prepare('SELECT id, website_url FROM providers WHERE website_url IS NOT NULL').all<{ id: string; website_url: string }>();
+        const match = providers.results.find(p => {
+          try {
+            const ph = new URL(p.website_url).hostname.replace(/^www\./, '');
+            return ph === hostname;
+          } catch { return false; }
+        });
+        if (match) providerId = match.id;
+      }
+    } catch { /* non-fatal */ }
+
+    return NextResponse.json({ ...meta, providerId });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Fetch failed.';
     return NextResponse.json({ error: msg }, { status: 502 });
