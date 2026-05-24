@@ -10,20 +10,44 @@ async function requireAdmin(req: NextRequest) {
   return session;
 }
 
+// Strip trailing site-name noise from og:title / <title>
+const TITLE_NOISE = [
+  / [-–|]\s*(Microsoft Learn|Training|Coursera|Udemy|edX|Alison|LinkedIn Learning|Pluralsight|freeCodeCamp|Khan Academy|YouTube)\s*$/i,
+  / [-–|]\s*Training\s*$/i,
+];
+
+function cleanTitle(raw: string | null): string | null {
+  if (!raw) return null;
+  let t = raw;
+  for (const re of TITLE_NOISE) t = t.replace(re, '').trim();
+  return t || raw;
+}
+
 function extractMeta(html: string) {
   const get = (pattern: RegExp) => {
     const m = html.match(pattern);
     return m?.[1]?.trim() ?? null;
   };
 
+  const rawTitle =
+    get(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i) ??
+    get(/<title[^>]*>([^<]+)<\/title>/i);
+
+  // Extract level from body text — look for the word as a standalone term
+  const bodyStart = html.indexOf('</head>');
+  const body = bodyStart !== -1 ? html.slice(bodyStart) : html;
+  const levelMatch = body.match(/\b(Beginner|Intermediate|Advanced)\b/i);
+  const level = levelMatch
+    ? levelMatch[1].charAt(0).toUpperCase() + levelMatch[1].slice(1).toLowerCase()
+    : null;
+
   return {
-    title:
-      get(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i) ??
-      get(/<title[^>]*>([^<]+)<\/title>/i),
+    title: cleanTitle(rawTitle),
     description:
       get(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i) ??
       get(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i),
     ogImage: get(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i),
+    level,
   };
 }
 
@@ -55,19 +79,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'URL does not point to an HTML page.' }, { status: 422 });
     }
 
-    // Read up to 128 KB — enough for <head>
+    // Read up to 256 KB — enough for <head> + early body where level/details appear
     const reader = res.body?.getReader();
     if (!reader) return NextResponse.json({ error: 'Could not read response.' }, { status: 502 });
 
     let html = '';
     let bytesRead = 0;
-    const limit = 131072; // 128 KB
+    const limit = 262144; // 256 KB
     while (bytesRead < limit) {
       const { done, value } = await reader.read();
       if (done) break;
       html += new TextDecoder().decode(value);
       bytesRead += value.length;
-      if (html.includes('</head>')) break;
+      // Stop early once we have enough body content to detect level
+      if (html.includes('</head>') && /\b(Beginner|Intermediate|Advanced)\b/i.test(html)) break;
     }
     reader.cancel();
 

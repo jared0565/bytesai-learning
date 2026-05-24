@@ -9,6 +9,7 @@ interface FetchedMeta {
   description: string | null;
   ogImage: string | null;
   providerId: string | null;
+  level: string | null;
 }
 
 interface ProviderOption {
@@ -117,6 +118,7 @@ export default function AddCourseForm() {
         if (data.description) setSnippet(data.description);
         if (data.ogImage) setOgImage(data.ogImage);
         if (data.providerId) setProviderId(data.providerId);
+        if (data.level) setLevel(data.level);
         setShowForm(true);
       }
     } catch {
