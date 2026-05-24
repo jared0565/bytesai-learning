@@ -66,15 +66,15 @@ export default async function AdminCoursesPage({
     archived: 'var(--text-muted)',
   };
 
-  const HEADERS: { label: string; column: string }[] = [
+  const HEADERS: { label: string; column: string; width?: string }[] = [
     { label: 'Title',    column: 'title' },
-    { label: 'Category', column: 'category' },
-    { label: 'Level',    column: 'level' },
-    { label: 'Status',   column: 'status' },
-    { label: 'Flags',    column: 'flags' },
-    { label: 'Enrolled', column: '' },
-    { label: 'Updated',  column: 'updated' },
-    { label: '',         column: '' },
+    { label: 'Category', column: 'category', width: '110px' },
+    { label: 'Level',    column: 'level',    width: '130px' },
+    { label: 'Status',   column: 'status',   width: '90px'  },
+    { label: 'Flags',    column: 'flags',    width: '90px'  },
+    { label: 'Enrolled', column: '',         width: '80px'  },
+    { label: 'Updated',  column: 'updated',  width: '95px'  },
+    { label: '',         column: '',         width: '170px' },
   ];
 
   return (
@@ -103,11 +103,11 @@ export default async function AdminCoursesPage({
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 900 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
                 {HEADERS.map(h => (
-                  <SortableHeader key={h.label} column={h.column} label={h.label} />
+                  <SortableHeader key={h.label} column={h.column} label={h.label} width={h.width} />
                 ))}
               </tr>
             </thead>
@@ -123,10 +123,10 @@ export default async function AdminCoursesPage({
                     </p>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.125rem', fontFamily: 'monospace' }}>{c.slug}</p>
                   </td>
-                  <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {c.category ?? '—'}
                   </td>
-                  <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {c.level ?? '—'}
                   </td>
                   <td style={{ padding: '0.75rem 1rem' }}>

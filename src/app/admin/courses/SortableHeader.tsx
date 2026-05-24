@@ -6,16 +6,17 @@ import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 interface Props {
   column: string;   // DB column name or '' for unsortable
   label: string;
+  width?: string | number;
 }
 
-export default function SortableHeader({ column, label }: Props) {
+export default function SortableHeader({ column, label, width }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
 
   if (!column) {
     return (
-      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap', width: width ?? undefined }}>
         {label}
       </th>
     );
@@ -48,7 +49,7 @@ export default function SortableHeader({ column, label }: Props) {
     : ChevronsUpDown;
 
   return (
-    <th style={{ padding: '0.75rem 1rem', textAlign: 'left', whiteSpace: 'nowrap' }}>
+    <th style={{ padding: '0.75rem 1rem', textAlign: 'left', whiteSpace: 'nowrap', width: width ?? undefined }}>
       <button
         onClick={handleClick}
         style={{
