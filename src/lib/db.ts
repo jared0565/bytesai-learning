@@ -193,7 +193,10 @@ export interface CuratedPage {
 
 // ─── Course queries ───────────────────────────────────────────────────
 
-export async function getCourseBySlug(db: D1Database, slug: string): Promise<Course | null> {
+export async function getCourseBySlug(db: D1Database, slug: string, includeUnpublished = false): Promise<Course | null> {
+  if (includeUnpublished) {
+    return db.prepare('SELECT * FROM courses WHERE slug = ?').bind(slug).first<Course>();
+  }
   return db.prepare('SELECT * FROM courses WHERE slug = ? AND published_status = ?')
     .bind(slug, 'published')
     .first<Course>();

@@ -59,15 +59,15 @@ export default async function CourseDetailPage({ params }: PageProps) {
     );
   }
 
-  const [course, cookieStore] = await Promise.all([
-    getCourseBySlug(db, slug).catch(() => null),
-    cookies(),
-  ]);
-
-  if (!course) notFound();
-
+  const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
+  const isAdmin = session?.role === 'admin';
+
+  const course = await getCourseBySlug(db, slug, isAdmin).catch(() => null);
+
+  if (!course) notFound();
+  if (course.published_status !== 'published' && !isAdmin) notFound();
 
   const [related, provider, userProgress, relatedInsights] = await Promise.all([
     getRelatedCourses(db, course.id, course.category ?? '', 4).catch(() => []),
@@ -126,6 +126,12 @@ export default async function CourseDetailPage({ params }: PageProps) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <main>
+        {/* Draft banner — visible to admins only */}
+        {isAdmin && course.published_status !== 'published' && (
+          <div style={{ background: '#fef3c7', borderBottom: '1px solid #fcd34d', padding: '0.625rem 0', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#92400e' }}>
+            Preview — this course is <strong>{course.published_status}</strong> and not visible to the public
+          </div>
+        )}
         {/* Breadcrumb */}
         <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', padding: '0.875rem 0' }}>
           <div className="container breadcrumb">
