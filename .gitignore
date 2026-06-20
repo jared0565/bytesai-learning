@@ -65,3 +65,8 @@ build-output.txt
 # Project docs
 PRODUCT.md
 style-exploration.html
+
+# Graphite / graphify generated artifacts
+graph-out/
+graphify-out/
+.cache/graphite/
