@@ -60,3 +60,32 @@ cp tools/graphite/skill/SKILL.md ~/.claude/skills/graphite/SKILL.md
 ```
 
 Then use `/graphite [path]` inside Claude Code. The skill defaults to zero-LLM mode.
+
+### MCP server for Claude Code
+
+Install the optional MCP dependency:
+
+```bash
+pip install -e "tools/graphite[mcp]"
+```
+
+Then configure Claude Code (Desktop) to use the local server. Add this to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "graphite": {
+      "command": "python",
+      "args": ["-m", "graphite.mcp"],
+      "cwd": "F:/Projects/BytesAI Learning/app"
+    }
+  }
+}
+```
+
+Once configured, Claude can call these tools automatically:
+
+- `graphite_query` — e.g. `depends-on db.ts`, `imported-by db.ts`, `path article-gen/route.ts -> db.ts`, `stats`
+- `graphite_community` — list the community around a node
+- `graphite_summary` — stats, god nodes, entry points, surprising connections
+- `graphite_refresh` — rebuild and reload the graph

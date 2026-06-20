@@ -17,10 +17,12 @@ dependencies = [
 
 [project.optional-dependencies]
 local-llm = ["openai>=1.0"]
+mcp = ["mcp>=1.0"]
 dev = ["pytest>=8.0", "ruff>=0.5"]
 
 [project.scripts]
 graphite = "graphite.cli:main"
+graphite-mcp = "graphite.mcp_server:main"
 
 [build-system]
 requires = ["hatchling"]

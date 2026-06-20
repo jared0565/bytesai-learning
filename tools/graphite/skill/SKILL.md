@@ -27,6 +27,32 @@ Examples:
 - `/graphite query "depends-on db.ts"`
 - `/graphite query "path article-gen/route.ts -> db.ts"`
 
+## Claude Code MCP tools
+
+When the Graphite MCP server is configured, Claude can query the graph directly:
+- `graphite_query` — run structured queries.
+- `graphite_community` — describe a node's community/cluster.
+- `graphite_summary` — high-level stats, god nodes, entry points.
+- `graphite_refresh` — rebuild and reload `graph-out/graph.json`.
+
+To configure, install the MCP dependency and add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "graphite": {
+      "command": "python",
+      "args": [
+        "-m",
+        "graphite.mcp"
+      ],
+      "env": {},
+      "cwd": "F:\\Projects\\BytesAI Learning\\app"
+    }
+  }
+}
+```
+
 ## Implementation
 
 This skill calls the local `graphite` Python package installed from `tools/graphite/`.
