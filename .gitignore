@@ -70,3 +70,5 @@ style-exploration.html
 graph-out/
 graphify-out/
 .cache/graphite/
+__pycache__/
+*.pyc
