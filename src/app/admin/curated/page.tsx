@@ -6,6 +6,7 @@ import { FileText, ExternalLink, Plus, BookOpen, Sparkles, Loader2, CheckCircle2
 import CuratedActions from './CuratedActions';
 import NewCuratedPageModal from './NewCuratedPageModal';
 import EditCuratedPageModal from './EditCuratedPageModal';
+import TipsModal from './TipsModal';
 
 interface CuratedRow {
   id: string;
@@ -114,6 +115,7 @@ export default function AdminCuratedPage() {
   const [loading, setLoading] = useState(true);
   const [showNewModal, setShowNewModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [tipsModalPageId, setTipsModalPageId] = useState<string | null>(null);
 
   // ── Fill-rationale state ─────────────────────────────────────────────────────
   const [rationaleStats, setRationaleStats] = useState<{ missing: number } | null>(null);
@@ -333,6 +335,13 @@ export default function AdminCuratedPage() {
         <EditCuratedPageModal
           pageId={editingId}
           onClose={() => setEditingId(null)}
+          onSaved={handleSaved}
+        />
+      )}
+      {tipsModalPageId && (
+        <TipsModal
+          pageId={tipsModalPageId}
+          onClose={() => setTipsModalPageId(null)}
           onSaved={handleSaved}
         />
       )}
@@ -626,15 +635,20 @@ export default function AdminCuratedPage() {
                     })()}
                     {/* Tips indicator */}
                     {tips.length > 0 && (
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
-                        padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)',
-                        fontSize: '0.7rem', fontWeight: 700,
-                        color: errorTips.length > 0 ? 'var(--rose)' : warnTips.length > 0 ? 'var(--amber)' : 'var(--teal)',
-                        background: errorTips.length > 0 ? 'rgba(239,68,68,0.1)' : warnTips.length > 0 ? 'rgba(245,158,11,0.1)' : 'rgba(20,184,166,0.1)',
-                      }}>
+                      <button
+                        type="button"
+                        onClick={() => setTipsModalPageId(p.id)}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                          padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)',
+                          fontSize: '0.7rem', fontWeight: 700,
+                          color: errorTips.length > 0 ? 'var(--rose)' : warnTips.length > 0 ? 'var(--amber)' : 'var(--teal)',
+                          background: errorTips.length > 0 ? 'rgba(239,68,68,0.1)' : warnTips.length > 0 ? 'rgba(245,158,11,0.1)' : 'rgba(20,184,166,0.1)',
+                          border: 'none', cursor: 'pointer',
+                        }}
+                      >
                         {errorTips.length > 0 ? '⚠' : warnTips.length > 0 ? '💡' : '✓'} {tips.length} tip{tips.length !== 1 ? 's' : ''}
-                      </span>
+                      </button>
                     )}
                   </div>
 
@@ -710,9 +724,17 @@ export default function AdminCuratedPage() {
                       }}>
                         {topTip.text}
                         {tips.length > 1 && (
-                          <span style={{ opacity: 0.7, marginLeft: '0.25rem' }}>
-                            (+{tips.length - 1} more — click Edit)
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setTipsModalPageId(p.id)}
+                            style={{
+                              opacity: 0.8, marginLeft: '0.25rem',
+                              background: 'none', border: 'none', padding: 0,
+                              cursor: 'pointer', textDecoration: 'underline',
+                            }}
+                          >
+                            (+{tips.length - 1} more — view all tips)
+                          </button>
                         )}
                       </p>
                     </div>

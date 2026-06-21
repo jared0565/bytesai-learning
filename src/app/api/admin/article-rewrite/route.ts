@@ -38,7 +38,12 @@ export async function POST(req: NextRequest) {
   const { text, instruction, context } = body;
 
   if (!text?.trim()) return NextResponse.json({ error: 'No text provided.' }, { status: 422 });
-  if (!instruction || !INSTRUCTIONS[instruction]) {
+
+  // Support both known rewrite presets and free-form custom instructions.
+  const customInstruction = typeof instruction === 'string' && !INSTRUCTIONS[instruction]
+    ? instruction.trim()
+    : '';
+  if (!instruction || (!INSTRUCTIONS[instruction] && !customInstruction)) {
     return NextResponse.json({ error: 'Invalid instruction.' }, { status: 422 });
   }
   if (text.trim().length > 8000) {
@@ -63,7 +68,8 @@ export async function POST(req: NextRequest) {
     ? `Article context: "${context.slice(0, 200)}"\n\n`
     : '';
 
-  const prompt = `${INSTRUCTIONS[instruction]}\n\n${contextLine}Text to rewrite:\n${text.trim()}`;
+  const systemPrompt = customInstruction || INSTRUCTIONS[instruction];
+  const prompt = `${systemPrompt}\n\n${contextLine}Text to rewrite:\n${text.trim()}`;
 
   try {
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
