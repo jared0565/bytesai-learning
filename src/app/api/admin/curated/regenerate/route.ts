@@ -79,13 +79,16 @@ Content to restructure:
 ${rawContent.slice(0, 5500)}
 
 RULES:
-- Write as flowing, authoritative editorial prose — no bullet points, no asterisks, no markdown symbols
+- Write as flowing, authoritative editorial prose
 - Do not start sentences with "I" or refer to "the article"
-- summary: 2–3 sentences that immediately communicate what happened and why it matters NOW
-- why_it_matters: 3–5 sentences on real-world significance for AI practitioners, businesses, and learners
-- what_changed: 3–5 sentences describing the specific development, release, or announcement in concrete detail
-- executive_implications: 3–5 sentences of actionable takeaways — what people should learn, watch, or do in response
+- Operator voice, not consultant framing. No buzzwords.
+- summary: Start with 3–5 Markdown bullet lines (each starting with "- "). Every bullet must be one sentence; at least two bullets must contain a specific number, benchmark size, or named entity already present in the source content. Follow the bullets with ONE short framing sentence (≤25 words). This is the executive TL;DR.
+- why_it_matters: 3–5 sentences. Frame both risk and opportunity: what bad thing happens if ignored, and what becomes possible if acted on. Include one specific use-case and one honest limitation.
+- what_changed: 3–5 sentences. Quantify the development: exact figures, benchmark size, authors/institution already in the source content. Explain how it works + what specifically changed + one current limitation. Use a Markdown table if comparing methods.
+- executive_implications: A time-boxed action playbook using these exact Markdown headings: "**This week**", "**This quarter**", "**This year**". Under each heading provide 2–3 specific bullet actions.
 - meta_description: a single sentence under 155 characters optimised for search — factual and keyword-rich
+
+BANNED PHRASES: force multiplier, unprecedented, game-changing, transformational, cutting-edge, revolutionary, robust, holistic, paradigm shift, leverage (as verb), synergy, seamlessly, bridge the gap, digital transformation, unlock value, significant, substantial
 
 Respond ONLY with valid JSON — no markdown fences, no explanation, no preamble:
 {

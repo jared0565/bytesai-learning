@@ -818,14 +818,20 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
               <div style={divider} />
 
               {/* ── Content fields (AI-enabled) ── */}
-              <span style={sectionLabel}>Content</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <span style={sectionLabel}>Content</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 600 }} title="See docs/curation-framework.md">
+                  Executive Briefing Standard ↗
+                </span>
+              </div>
 
               <SmartTextarea
                 label="Summary"
                 value={summary}
                 onChange={setSummary}
-                rows={3}
-                placeholder="A 1–2 sentence hook that explains why this topic matters right now."
+                rows={5}
+                placeholder="3–5 TL;DR bullets (each one sentence, at least 2 with specific numbers or named benchmarks), then 1 short framing sentence."
+                hint="Rendered as the article lead. Bullets must start with '- '."
                 articleTitle={title}
               />
 
@@ -834,7 +840,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                 value={whyItMatters}
                 onChange={setWhyItMatters}
                 rows={5}
-                placeholder="3–5 sentences on real-world significance. Naturally mention the free course here."
+                placeholder="3–5 sentences. Frame risk + opportunity: what bad thing happens if ignored, and what becomes possible if acted on. Include one honest limitation."
                 articleTitle={title}
               />
 
@@ -843,7 +849,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                 value={whatChanged}
                 onChange={setWhatChanged}
                 rows={5}
-                placeholder="3–5 sentences on current developments and recent breakthroughs."
+                placeholder="3–5 sentences. Quantify the development: exact figures, benchmark size, authors/institution. Explain mechanism + current limitation."
                 articleTitle={title}
               />
 
@@ -851,8 +857,8 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                 label="Key implications"
                 value={executiveImplications}
                 onChange={setExecutiveImplications}
-                rows={5}
-                placeholder="3–5 sentences on practical takeaways for learners and organisations."
+                rows={6}
+                placeholder="Time-boxed playbook using exact headings: **This week**, **This quarter**, **This year**. Provide 2–3 specific bullet actions under each."
                 articleTitle={title}
               />
 
@@ -1077,7 +1083,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                 onChange={setPrimaryCourseRationale}
                 rows={4}
                 placeholder="Editorial paragraph: who this course is for, what they'll learn, what it doesn't cover, and why it's the right starting point."
-                hint="Displayed as prose above the course key-facts table. Keep it editorial, not promotional."
+                hint="Only write this if the linked course is directly on-topic for the article. Displayed above the course key-facts table. Keep it editorial, not promotional."
                 articleTitle={title}
               />
 

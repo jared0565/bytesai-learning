@@ -205,16 +205,18 @@ QUALITY STANDARDS:
 4. Include at least one honest limitation or failure mode
 5. Make executive_implications operational and sequenced — not strategic platitudes
 6. When additional references are provided, check them and cite them naturally in the text only when they corroborate or add necessary context (e.g., "as MIT Technology Review noted"). Do not pad the article with unrelated sources.
+7. Quantify every major claim. Replace vague intensifiers (significant, substantial, more than, worsens, improves dramatically) with exact numbers, percentages, benchmark sizes, or named institutions. If a number is genuinely unavailable, state the gap explicitly.
+8. Frame every topic as risk + opportunity: what bad thing happens if ignored, and what becomes possible if acted on.
 
-BANNED PHRASES: force multiplier, unprecedented, game-changing, transformational, cutting-edge, revolutionary, robust, holistic, paradigm shift, leverage (as verb), synergy, seamlessly, bridge the gap
+BANNED PHRASES: force multiplier, unprecedented, game-changing, transformational, cutting-edge, revolutionary, robust, holistic, paradigm shift, leverage (as verb), synergy, seamlessly, bridge the gap, digital transformation, unlock value
 
 SECTION INSTRUCTIONS:
 - title: A specific article headline under 85 characters — not the source title verbatim, editorially reframed
-- summary: 60-80 words. One direct definition of what changed + one concrete practical implication
-- why_it_matters: 3-5 sentences. One specific use-case, the mechanism, one honest limitation
-- what_changed: 3-5 sentences. How it works + what specifically changed + one current limitation
-- executive_implications: 3-5 sentences. Where to start, first decisions, governance considerations, what success looks like
-- primary_course_rationale: 3-5 sentences explaining the linked course to the reader (who it's for, what they'll learn, honest limitation, why it's the right entry point). Empty string "" if no course linked.
+- summary: Start with 3–5 Markdown bullet lines (each starting with "- "). Every bullet must be one sentence; at least two bullets must contain a specific number, benchmark size, or named entity. Follow the bullets with ONE short framing sentence (≤25 words). This is the executive TL;DR.
+- why_it_matters: 3–5 sentences. Frame both risk and opportunity: what bad thing happens if ignored, and what becomes possible if acted on. Include one specific use-case, the mechanism, and one honest limitation.
+- what_changed: 3–5 sentences. Quantify the development: exact figures, benchmark size, authors/institution. Explain how it works + what specifically changed + one current limitation. Use a Markdown table if comparing methods.
+- executive_implications: A time-boxed action playbook using these exact Markdown headings: "**This week**", "**This quarter**", "**This year**". Under each heading provide 2–3 specific bullet actions.
+- primary_course_rationale: 3–5 sentences explaining the linked course to the reader (who it's for, what they'll learn, honest limitation, why it's the right entry point). Only write this if the course is directly on-topic for the article; otherwise set to empty string "".
 - meta_description: Under 155 characters, SEO-friendly, factual
 - categories: JSON array of 1–3 topic labels that best describe this article's domain based on the content (not just the title). Choose from: AI Governance, AI Safety, Foundation Models, AI Tooling, AI Workflow, Ethics & Bias, Regulation & Compliance, Technical Implementation, Research & Models, AI in Business. Multiple categories are allowed when the article genuinely spans domains.
 
@@ -284,16 +286,18 @@ QUALITY STANDARDS:
 4. Include at least one limitation or failure mode
 5. Make executive_implications operational, not strategic
 6. When reference sources are provided, check them and cite them naturally in the text only when they corroborate or add necessary context
+7. Quantify every major claim. Replace vague intensifiers (significant, substantial, more than, worsens, improves dramatically) with exact numbers, percentages, benchmark sizes, or named institutions. If a number is genuinely unavailable, state the gap explicitly.
+8. Frame every topic as risk + opportunity: what bad thing happens if ignored, and what becomes possible if acted on.
 
-BANNED PHRASES: force multiplier, unprecedented, game-changing, transformational, cutting-edge, revolutionary, robust, holistic, paradigm shift, leverage (as verb), synergy, seamlessly
+BANNED PHRASES: force multiplier, unprecedented, game-changing, transformational, cutting-edge, revolutionary, robust, holistic, paradigm shift, leverage (as verb), synergy, seamlessly, bridge the gap, digital transformation, unlock value
 
 SECTIONS:
 - title: Specific headline under 85 characters
-- summary: 60-80 words. Definition + concrete practical implication
-- why_it_matters: 3-5 sentences. Specific use-case, mechanism, honest limitation
-- what_changed: 3-5 sentences. How it works + recent developments + current limitation
-- executive_implications: 3-5 sentences. Where to start, first decisions, what success looks like
-- primary_course_rationale: 3-5 sentences. Who this course is for, what they'll learn, honest limitation, why it's the right entry point
+- summary: Start with 3–5 Markdown bullet lines (each starting with "- "). Every bullet must be one sentence; at least two bullets must contain a specific number, benchmark size, or named entity. Follow the bullets with ONE short framing sentence (≤25 words). This is the executive TL;DR.
+- why_it_matters: 3–5 sentences. Frame both risk and opportunity: what bad thing happens if ignored, and what becomes possible if acted on. Include one specific use-case, the mechanism, and one honest limitation.
+- what_changed: 3–5 sentences. Quantify the development: exact figures, benchmark size, authors/institution. Explain how it works + what specifically changed + one current limitation. Use a Markdown table if comparing methods.
+- executive_implications: A time-boxed action playbook using these exact Markdown headings: "**This week**", "**This quarter**", "**This year**". Under each heading provide 2–3 specific bullet actions.
+- primary_course_rationale: 3–5 sentences. Who this course is for, what they'll learn, honest limitation, why it's the right entry point. Only write this if the course is directly on-topic for the article; otherwise set to empty string "".
 - meta_description: Under 155 characters
 - categories: JSON array of 1–3 topic labels based on the article content. Choose from: AI Governance, AI Safety, Foundation Models, AI Tooling, AI Workflow, Ethics & Bias, Regulation & Compliance, Technical Implementation, Research & Models, AI in Business.
 

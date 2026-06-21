@@ -160,9 +160,9 @@ export default async function CuratedDetailPage({ params }: PageProps) {
               {page.title}
             </h1>
             {page.summary && (
-              <p className="article-lead">
-                {page.summary}
-              </p>
+              <div className="article-lead">
+                <MarkdownContent variant="default">{page.summary}</MarkdownContent>
+              </div>
             )}
             <div className="article-byline">
               {page.last_verified_at && (
