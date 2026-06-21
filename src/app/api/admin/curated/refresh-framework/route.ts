@@ -196,7 +196,7 @@ export async function POST(req: NextRequest) {
   const db = await getDB();
   if (!db) return NextResponse.json({ error: 'DB unavailable.' }, { status: 503 });
 
-  let body: { ids?: string[] } = {};
+  let body: { ids?: string[]; runStartTimestamp?: string } = {};
   try { body = await req.json(); } catch { /* no body = refresh all published */ }
 
   // Resolve AI credentials
@@ -212,6 +212,10 @@ export async function POST(req: NextRequest) {
   if (!apiKey) {
     return NextResponse.json({ error: 'OpenRouter API key not configured.' }, { status: 503 });
   }
+
+  // Stable run timestamp: passed from frontend so every batch in the same run
+  // uses the same cutoff. Articles refreshed in this run get updated_at >= runStartTimestamp.
+  const runStartTimestamp = body.runStartTimestamp ?? new Date().toISOString();
 
   // Fetch pages to refresh — up to 3 per call to stay within Worker limits
   type PageRow = {
@@ -237,10 +241,10 @@ export async function POST(req: NextRequest) {
       const result = await db.prepare(
         `SELECT id, title, summary, source_references_json, categories_json
          FROM curated_pages
-         WHERE published_status = 'published'
+         WHERE published_status = 'published' AND updated_at < ?
          ORDER BY updated_at ASC
          LIMIT 3`
-      ).all<PageRow>();
+      ).bind(runStartTimestamp).all<PageRow>();
       pages = result.results;
     }
   } catch (e: unknown) {
@@ -338,14 +342,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Remaining published articles not yet refreshed by this run.
-  // Use a 2-second-past cutoff so that articles updated in the current batch
-  // (which have updated_at ≈ now) are not counted as still remaining.
+  // All articles refreshed in this run have updated_at >= runStartTimestamp.
   let remaining = 0;
   try {
-    const remainingCutoff = new Date(Date.now() - 2000).toISOString();
     const remainingResult = await db.prepare(
       `SELECT COUNT(*) as count FROM curated_pages WHERE published_status = 'published' AND updated_at < ?`
-    ).bind(remainingCutoff).first<{ count: number }>();
+    ).bind(runStartTimestamp).first<{ count: number }>();
     remaining = remainingResult?.count ?? 0;
   } catch (e: unknown) {
     const message = (e as { message?: string }).message ?? 'Unknown error';

@@ -240,12 +240,17 @@ export default function AdminCuratedPage() {
     setRefreshDone(false);
     setRefreshProcessed(0);
     setRefreshFailed(0);
-    let remaining = refreshStats?.published ?? 1;
+
+    // Single stable timestamp for the entire run. The backend uses it as the
+    // cutoff: articles refreshed in this run get updated_at >= runStartTimestamp,
+    // so the remaining count reliably decrements to 0.
+    const runStartTimestamp = new Date().toISOString();
+    const total = refreshStats?.published ?? 0;
+    let remaining = total;
     let processed = 0;
     let failed = 0;
-    const seenIds = new Set<string>();
     let iterations = 0;
-    const maxIterations = 50; // safety net against infinite loops
+    const maxIterations = Math.max(50, Math.ceil(total / 3) + 10); // safety net
 
     while (remaining > 0 && iterations < maxIterations) {
       iterations++;
@@ -253,24 +258,18 @@ export default function AdminCuratedPage() {
         const res = await fetch('/api/admin/curated/refresh-framework', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
+          body: JSON.stringify({ runStartTimestamp }),
         });
         const data = await res.json();
         if (!res.ok) break;
 
-        const batchIds: string[] = data.ids ?? [];
-        const duplicateCount = batchIds.filter(id => seenIds.has(id)).length;
-        batchIds.forEach(id => seenIds.add(id));
-
         processed += data.processed ?? 0;
         failed += data.failed ?? 0;
-        remaining = data.remaining ?? 0;
+        remaining = data.remaining ?? Math.max(0, total - processed - failed);
         setRefreshProcessed(processed);
         setRefreshFailed(failed);
 
-        // Stop if no progress, or if we see duplicates (cycle detected)
         if (data.processed === 0 && data.failed === 0) break;
-        if (duplicateCount > 0 && data.processed === duplicateCount) break;
       } catch {
         break;
       }
