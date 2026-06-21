@@ -243,8 +243,12 @@ export default function AdminCuratedPage() {
     let remaining = refreshStats?.published ?? 1;
     let processed = 0;
     let failed = 0;
+    const seenIds = new Set<string>();
+    let iterations = 0;
+    const maxIterations = 50; // safety net against infinite loops
 
-    while (remaining > 0) {
+    while (remaining > 0 && iterations < maxIterations) {
+      iterations++;
       try {
         const res = await fetch('/api/admin/curated/refresh-framework', {
           method: 'POST',
@@ -253,12 +257,20 @@ export default function AdminCuratedPage() {
         });
         const data = await res.json();
         if (!res.ok) break;
+
+        const batchIds: string[] = data.ids ?? [];
+        const duplicateCount = batchIds.filter(id => seenIds.has(id)).length;
+        batchIds.forEach(id => seenIds.add(id));
+
         processed += data.processed ?? 0;
         failed += data.failed ?? 0;
         remaining = data.remaining ?? 0;
         setRefreshProcessed(processed);
         setRefreshFailed(failed);
-        if (data.processed === 0) break;
+
+        // Stop if no progress, or if we see duplicates (cycle detected)
+        if (data.processed === 0 && data.failed === 0) break;
+        if (duplicateCount > 0 && data.processed === duplicateCount) break;
       } catch {
         break;
       }

@@ -337,12 +337,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Remaining published articles not yet refreshed by updated_at
+  // Remaining published articles not yet refreshed by this run.
+  // Use a 2-second-past cutoff so that articles updated in the current batch
+  // (which have updated_at ≈ now) are not counted as still remaining.
   let remaining = 0;
   try {
+    const remainingCutoff = new Date(Date.now() - 2000).toISOString();
     const remainingResult = await db.prepare(
       `SELECT COUNT(*) as count FROM curated_pages WHERE published_status = 'published' AND updated_at < ?`
-    ).bind(now).first<{ count: number }>();
+    ).bind(remainingCutoff).first<{ count: number }>();
     remaining = remainingResult?.count ?? 0;
   } catch (e: unknown) {
     const message = (e as { message?: string }).message ?? 'Unknown error';
@@ -354,6 +357,7 @@ export async function POST(req: NextRequest) {
     processed: results.filter(r => r.ok).length,
     failed: results.filter(r => !r.ok).length,
     remaining,
+    ids: results.filter(r => r.ok).map(r => r.id),
     results,
   });
 }
