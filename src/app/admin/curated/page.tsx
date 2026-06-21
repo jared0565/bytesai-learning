@@ -129,6 +129,13 @@ export default function AdminCuratedPage() {
   const [regenProcessed, setRegenProcessed] = useState(0);
   const [regenFailed, setRegenFailed] = useState(0);
 
+  // ── Framework refresh state ─────────────────────────────────────────────────
+  const [refreshStats, setRefreshStats] = useState<{ published: number; refreshable: number } | null>(null);
+  const [refreshRunning, setRefreshRunning] = useState(false);
+  const [refreshDone, setRefreshDone] = useState(false);
+  const [refreshProcessed, setRefreshProcessed] = useState(0);
+  const [refreshFailed, setRefreshFailed] = useState(0);
+
   useEffect(() => {
     fetch('/api/admin/curated')
       .then(r => r.json())
@@ -143,6 +150,11 @@ export default function AdminCuratedPage() {
     fetch('/api/admin/curated/fill-rationale')
       .then(r => r.json())
       .then(d => { if (d.missing !== undefined) setRationaleStats(d); })
+      .catch(() => {});
+    // Load framework refresh stats
+    fetch('/api/admin/curated/refresh-framework')
+      .then(r => r.json())
+      .then(d => { if (d.published !== undefined) setRefreshStats(d); })
       .catch(() => {});
   }, []);
 
@@ -221,6 +233,46 @@ export default function AdminCuratedPage() {
   function handleUpdate(id: string, updates: Record<string, string | null>) {
     setPages(prev => prev.map(p => p.id === id ? { ...p, ...updates } as CuratedRow : p));
   }
+
+  // Run one batch of framework refresh, loop until done
+  const runFrameworkRefresh = useCallback(async () => {
+    setRefreshRunning(true);
+    setRefreshDone(false);
+    setRefreshProcessed(0);
+    setRefreshFailed(0);
+    let remaining = refreshStats?.published ?? 1;
+    let processed = 0;
+    let failed = 0;
+
+    while (remaining > 0) {
+      try {
+        const res = await fetch('/api/admin/curated/refresh-framework', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        const data = await res.json();
+        if (!res.ok) break;
+        processed += data.processed ?? 0;
+        failed += data.failed ?? 0;
+        remaining = data.remaining ?? 0;
+        setRefreshProcessed(processed);
+        setRefreshFailed(failed);
+        if (data.processed === 0) break;
+      } catch {
+        break;
+      }
+    }
+
+    setRefreshRunning(false);
+    setRefreshDone(true);
+    fetch('/api/admin/curated/refresh-framework')
+      .then(r => r.json())
+      .then(d => { if (d.published !== undefined) setRefreshStats(d); });
+    fetch('/api/admin/curated')
+      .then(r => r.json())
+      .then(d => { if (d.pages) setPages(d.pages); });
+  }, [refreshStats]);
 
   function handleCreated(page: { id: string; slug: string; title: string }) {
     setShowNewModal(false);
@@ -371,6 +423,56 @@ export default function AdminCuratedPage() {
               <AlertCircle size={12} /> {regenStats.needsRegen} remaining
             </button>
           )}
+        </div>
+      )}
+
+      {/* ── Framework refresh panel — for all published articles ── */}
+      {refreshStats && refreshStats.published > 0 && !refreshDone && (
+        <div style={{
+          marginBottom: '1.25rem', padding: '1rem 1.25rem',
+          background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)',
+          borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem',
+          alignItems: 'center', flexWrap: 'wrap',
+        }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              <Sparkles size={15} color="#7c3aed" />
+              Apply Executive Briefing Standard to {refreshStats.published} published article{refreshStats.published !== 1 ? 's' : ''}
+            </p>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              Re-fetches each primary source and rewrites content to the framework: TL;DR bullets, quantified claims, risk + opportunity framing, and time-boxed actions. Review after running.
+            </p>
+            {refreshRunning && (
+              <p style={{ fontSize: '0.78rem', color: '#7c3aed', marginTop: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                Processed {refreshProcessed} so far{refreshFailed > 0 ? ` · ${refreshFailed} failed` : ''} — working through the batch…
+              </p>
+            )}
+          </div>
+          <button
+            className="btn btn-sm"
+            onClick={runFrameworkRefresh}
+            disabled={refreshRunning}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', whiteSpace: 'nowrap', background: '#7c3aed', color: '#fff', border: 'none' }}
+          >
+            {refreshRunning
+              ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Refreshing…</>
+              : <><Sparkles size={13} /> Apply framework</>}
+          </button>
+        </div>
+      )}
+
+      {refreshDone && (
+        <div style={{
+          marginBottom: '1.25rem', padding: '0.875rem 1.25rem',
+          background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.25)',
+          borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.75rem', alignItems: 'center',
+        }}>
+          <CheckCircle2 size={16} color="var(--emerald)" style={{ flexShrink: 0 }} />
+          <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--emerald)' }}>
+            Framework refresh complete — {refreshProcessed} article{refreshProcessed !== 1 ? 's' : ''} updated
+            {refreshFailed > 0 && <span style={{ color: 'var(--amber)', fontWeight: 400, marginLeft: '0.5rem' }}>({refreshFailed} failed — open each to check source content)</span>}
+          </p>
         </div>
       )}
 
