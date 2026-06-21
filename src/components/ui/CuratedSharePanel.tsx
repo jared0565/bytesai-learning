@@ -17,11 +17,12 @@ const PLATFORMS: {
   color: string;
   abbr: string;
   charRange: [number, number];
+  rows: number;
 }[] = [
-  { id: 'twitter', label: 'X / Twitter', shortLabel: 'X', color: '#1d9bf0', abbr: '𝕏', charRange: [240, 260] },
-  { id: 'linkedin', label: 'LinkedIn', shortLabel: 'LinkedIn', color: '#0a66c2', abbr: 'in', charRange: [1800, 2400] },
-  { id: 'whatsapp', label: 'WhatsApp', shortLabel: 'WhatsApp', color: '#25d366', abbr: '💬', charRange: [300, 400] },
-  { id: 'facebook', label: 'Facebook', shortLabel: 'Facebook', color: '#1877f2', abbr: 'f', charRange: [180, 380] },
+  { id: 'twitter', label: 'X / Twitter', shortLabel: 'X', color: '#1d9bf0', abbr: '𝕏', charRange: [240, 260], rows: 8 },
+  { id: 'linkedin', label: 'LinkedIn', shortLabel: 'LinkedIn', color: '#0a66c2', abbr: 'in', charRange: [1800, 2400], rows: 16 },
+  { id: 'whatsapp', label: 'WhatsApp', shortLabel: 'WhatsApp', color: '#25d366', abbr: '💬', charRange: [300, 400], rows: 10 },
+  { id: 'facebook', label: 'Facebook', shortLabel: 'Facebook', color: '#1877f2', abbr: 'f', charRange: [180, 380], rows: 10 },
 ];
 
 function buildShareUrl(platform: Platform, slug: string, copy: string, shareableUrl?: string): string {
@@ -35,7 +36,6 @@ function buildShareUrl(platform: Platform, slug: string, copy: string, shareable
     case 'twitter':
       return `https://twitter.com/intent/tweet?text=${encodeURIComponent(fullText)}`;
     case 'linkedin':
-      // LinkedIn share-offsite only supports URL — we'll copy the text separately
       return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(articleUrl)}`;
     case 'whatsapp':
       return `https://wa.me/?text=${encodeURIComponent(fullText)}`;
@@ -46,7 +46,7 @@ function buildShareUrl(platform: Platform, slug: string, copy: string, shareable
 
 export default function CuratedSharePanel({ slug, title }: Props) {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<Platform | null>(null);
+  const [selected, setSelected] = useState<Platform>('twitter');
   const [copies, setCopies] = useState<Partial<Record<Platform, string>>>({});
   const [errors, setErrors] = useState<Partial<Record<Platform, string>>>({});
   const [loading, setLoading] = useState<Platform | null>(null);
@@ -67,10 +67,9 @@ export default function CuratedSharePanel({ slug, title }: Props) {
       .catch(() => {});
   }, [open, slug, shortUrl]);
 
-  const selectPlatform = useCallback(async (p: Platform) => {
-    setSelected(p);
-    setCopied(false);
-    if (copies[p] || loading) return; // already generated or in-flight
+  // Generate copy for a platform if not already present
+  const ensureCopy = useCallback(async (p: Platform) => {
+    if (copies[p] || loading === p) return;
 
     setLoading(p);
     setErrors(prev => ({ ...prev, [p]: undefined }));
@@ -91,6 +90,15 @@ export default function CuratedSharePanel({ slug, title }: Props) {
     }
     setLoading(null);
   }, [copies, loading, slug]);
+
+  // Switch tab + lazy-load copy
+  const selectPlatform = useCallback((p: Platform) => {
+    setSelected(p);
+    setCopied(false);
+    if (!copies[p] && !errors[p]) {
+      ensureCopy(p);
+    }
+  }, [copies, errors, ensureCopy]);
 
   const handleDownloadImage = useCallback(async () => {
     setDownloadingImage(true);
@@ -122,10 +130,11 @@ export default function CuratedSharePanel({ slug, title }: Props) {
     setTimeout(() => setCopied(false), 2500);
   }, [selected, copies, slug, shortUrl]);
 
-  const selectedMeta = PLATFORMS.find(p => p.id === selected);
-  const copy = selected ? copies[selected] : undefined;
-  const copyError = selected ? errors[selected] : undefined;
-  const [minC, maxC] = selectedMeta?.charRange ?? [0, 0];
+  const selectedMeta = PLATFORMS.find(p => p.id === selected)!;
+  const copy = copies[selected];
+  const copyError = errors[selected];
+  const isLoading = loading === selected;
+  const [minC, maxC] = selectedMeta.charRange;
   const charCount = copy?.length ?? 0;
   const charOk = charCount >= minC && charCount <= maxC;
 
@@ -165,8 +174,8 @@ export default function CuratedSharePanel({ slug, title }: Props) {
         >
           <div style={{
             background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)',
-            border: '1px solid var(--border)', width: '100%', maxWidth: 560,
-            maxHeight: '92vh', overflowY: 'auto', display: 'flex', flexDirection: 'column',
+            border: '1px solid var(--border)', width: '100%', maxWidth: 680,
+            maxHeight: '94vh', overflowY: 'auto', display: 'flex', flexDirection: 'column',
           }}>
 
             {/* Header */}
@@ -179,7 +188,7 @@ export default function CuratedSharePanel({ slug, title }: Props) {
                 <h3 style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '0.125rem' }}>Share this insight</h3>
                 <p style={{
                   fontSize: '0.75rem', color: 'var(--text-muted)',
-                  overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: 380,
+                  overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: 420,
                 }}>
                   {title}
                 </p>
@@ -199,64 +208,201 @@ export default function CuratedSharePanel({ slug, title }: Props) {
 
             <div style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', overflowY: 'auto' }}>
 
-              {/* Platform grid */}
-              <div>
-                <p style={{
-                  fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)',
-                  textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.625rem',
-                }}>
-                  Choose platform — AI writes optimised copy for each
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                  {PLATFORMS.map(plat => (
+              {/* Platform tabs */}
+              <div
+                role="tablist"
+                aria-label="Social platforms"
+                style={{
+                  display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.375rem',
+                  padding: '0.25rem', background: 'var(--bg)', borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                {PLATFORMS.map(plat => {
+                  const active = selected === plat.id;
+                  return (
                     <button
                       key={plat.id}
+                      role="tab"
+                      aria-selected={active}
                       onClick={() => selectPlatform(plat.id)}
-                      disabled={loading !== null}
+                      disabled={loading !== null && loading !== plat.id}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: '0.625rem',
-                        padding: '0.75rem 0.875rem',
-                        background: selected === plat.id ? `${plat.color}15` : 'var(--bg)',
-                        border: `2px solid ${selected === plat.id ? plat.color : 'var(--border)'}`,
-                        borderRadius: 'var(--radius-md)', cursor: loading ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.15s', textAlign: 'left', opacity: loading && loading !== plat.id ? 0.6 : 1,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
+                        padding: '0.625rem 0.5rem',
+                        background: active ? 'var(--bg-card)' : 'transparent',
+                        border: active ? `1px solid ${plat.color}` : '1px solid transparent',
+                        borderRadius: 'var(--radius)',
+                        cursor: loading !== null && loading !== plat.id ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.15s',
+                        fontSize: '0.78rem', fontWeight: active ? 700 : 600,
+                        color: active ? plat.color : 'var(--text-secondary)',
+                        boxShadow: active ? `0 1px 2px ${plat.color}20` : 'none',
                       }}
                     >
-                      {/* Platform icon */}
-                      <span style={{
-                        width: 30, height: 30, borderRadius: 7,
-                        background: plat.color, color: 'white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: plat.abbr.length <= 2 ? '0.9rem' : '0.8rem',
-                        fontWeight: 900, flexShrink: 0, fontFamily: 'serif',
-                        userSelect: 'none',
-                      }}>
-                        {plat.abbr}
-                      </span>
-
-                      <div style={{ flex: 1, overflow: 'hidden' }}>
-                        <p style={{ fontWeight: 700, fontSize: '0.8rem', lineHeight: 1.25, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                          {plat.label}
-                        </p>
-                        <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', lineHeight: 1.2 }}>
-                          {plat.charRange[0].toLocaleString()}–{plat.charRange[1].toLocaleString()} chars
-                        </p>
-                      </div>
-
-                      {/* Status icon */}
+                      <span style={{ fontSize: '0.9rem' }}>{plat.abbr}</span>
+                      <span className="hide-mobile-sm">{plat.shortLabel}</span>
                       {loading === plat.id && (
-                        <Loader2 size={13} style={{ flexShrink: 0, color: plat.color, animation: 'spin 1s linear infinite' }} />
+                        <Loader2 size={11} style={{ animation: 'spin 1s linear infinite', marginLeft: 2 }} />
                       )}
                       {copies[plat.id] && loading !== plat.id && (
-                        <Check size={13} style={{ flexShrink: 0, color: 'var(--emerald)' }} />
+                        <Check size={11} style={{ color: 'var(--emerald)', marginLeft: 2 }} />
                       )}
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
 
-              {/* OG card preview — shown once a platform is selected */}
-              {selected && (
+              {/* Generated copy area — tall and readable */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <p style={{
+                    fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)',
+                    textTransform: 'uppercase', letterSpacing: '0.06em',
+                  }}>
+                    {selectedMeta.label} copy
+                  </p>
+                  {copy && (
+                    <span style={{
+                      fontSize: '0.7rem', fontWeight: 700, padding: '0.125rem 0.5rem',
+                      borderRadius: 'var(--radius-full)',
+                      color: charOk ? 'var(--emerald)' : charCount > maxC ? 'var(--rose)' : 'var(--amber)',
+                      background: charOk ? 'rgba(16,185,129,0.1)' : charCount > maxC ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
+                    }}>
+                      {charCount.toLocaleString()} chars
+                      {selected !== 'linkedin' && ` · target ${minC}–${maxC}`}
+                    </span>
+                  )}
+                </div>
+
+                {isLoading ? (
+                  <div style={{
+                    minHeight: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    background: 'var(--bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)',
+                  }}>
+                    <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)', marginBottom: '0.625rem' }} />
+                    <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                      Writing {selectedMeta.label} copy…
+                    </p>
+                  </div>
+                ) : copyError ? (
+                  <div style={{
+                    minHeight: 120, padding: '1.25rem',
+                    background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
+                    borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.625rem', alignItems: 'flex-start',
+                  }}>
+                    <AlertCircle size={16} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
+                    <div>
+                      <p style={{ fontSize: '0.875rem', color: 'var(--rose)', fontWeight: 600 }}>{copyError}</p>
+                      <button
+                        onClick={() => { setCopies(prev => ({ ...prev, [selected]: undefined })); setErrors(prev => ({ ...prev, [selected]: undefined })); ensureCopy(selected); }}
+                        style={{ fontSize: '0.75rem', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: '0.5rem', textDecoration: 'underline' }}
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  </div>
+                ) : copy ? (
+                  <>
+                    <textarea
+                      value={copy}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setCopies(prev => ({ ...prev, [selected]: val }));
+                      }}
+                      rows={selectedMeta.rows}
+                      style={{
+                        width: '100%', minHeight: 180, padding: '1rem',
+                        background: 'var(--bg)', border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-md)', resize: 'vertical',
+                        fontSize: '0.9375rem', lineHeight: 1.7,
+                        color: 'var(--text-primary)', fontFamily: 'inherit',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+
+                    {/* Platform-specific guidance */}
+                    {selected === 'linkedin' && (
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: 1.5 }}>
+                        💡 LinkedIn share links don&apos;t accept pre-filled text — copy the post then click Share to paste it.
+                      </p>
+                    )}
+
+                    {/* Action buttons */}
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.875rem', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={handleCopy}
+                        className="btn btn-primary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+                      >
+                        {copied ? <Check size={13} /> : <Copy size={13} />}
+                        {copied ? 'Copied!' : 'Copy text + link'}
+                      </button>
+                      <a
+                        href={buildShareUrl(selected, slug, copy, shortUrl ?? undefined)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-outline btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+                        onClick={selected === 'linkedin' || selected === 'facebook' ? handleCopy : undefined}
+                      >
+                        <ExternalLink size={13} />
+                        Open {selectedMeta.shortLabel}
+                        {selected === 'linkedin' && ' ↗'}
+                      </a>
+                      <button
+                        onClick={() => { setCopies(prev => ({ ...prev, [selected]: undefined })); ensureCopy(selected); }}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                          padding: '0.375rem 0.625rem', background: 'none', border: 'none',
+                          cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-muted)',
+                        }}
+                      >
+                        ↺ Regenerate
+                      </button>
+                    </div>
+
+                    {/* Facebook native image tip */}
+                    {selected === 'facebook' && (
+                      <div style={{
+                        marginTop: '1rem', padding: '1rem 1.125rem',
+                        background: 'rgba(24,119,242,0.04)',
+                        border: '1px solid rgba(24,119,242,0.15)',
+                        borderRadius: 'var(--radius-md)',
+                      }}>
+                        <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1877f2', marginBottom: '0.375rem' }}>
+                          📸 Native image post — 2–3× more reach
+                        </p>
+                        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '0.625rem' }}>
+                          Facebook suppresses link posts. Download the branded card, post it as a native image, and paste the copy + link in the caption for full organic reach.
+                        </p>
+                        <button
+                          onClick={handleDownloadImage}
+                          disabled={downloadingImage}
+                          className="btn btn-outline btn-sm"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+                        >
+                          {downloadingImage
+                            ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                            : <Download size={13} />}
+                          {downloadingImage ? 'Generating…' : 'Download image card'}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{
+                    minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'var(--bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)',
+                    color: 'var(--text-muted)', fontSize: '0.875rem',
+                  }}>
+                    Select a platform above to generate share copy.
+                  </div>
+                )}
+              </div>
+
+              {/* OG card preview */}
+              {copy && (
                 <div>
                   <p style={{
                     fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)',
@@ -268,147 +414,8 @@ export default function CuratedSharePanel({ slug, title }: Props) {
                   <img
                     src={`/api/og?slug=${encodeURIComponent(slug)}&type=article`}
                     alt="Article share card"
-                    style={{ width: '100%', borderRadius: 'var(--radius-md)', display: 'block', border: '1px solid var(--border)' }}
+                    style={{ width: '100%', maxWidth: 420, borderRadius: 'var(--radius-md)', display: 'block', border: '1px solid var(--border)' }}
                   />
-                </div>
-              )}
-
-              {/* Generated copy area */}
-              {selected && (
-                <div>
-                  {loading === selected ? (
-                    <div style={{
-                      padding: '2.5rem 1rem', textAlign: 'center',
-                      background: 'var(--bg)', borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border)',
-                    }}>
-                      <Loader2 size={22} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)', margin: '0 auto 0.625rem', display: 'block' }} />
-                      <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                        Writing {selectedMeta?.label} copy…
-                      </p>
-                    </div>
-                  ) : copyError ? (
-                    <div style={{
-                      padding: '1.25rem', background: 'rgba(239,68,68,0.06)',
-                      border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)',
-                      display: 'flex', gap: '0.625rem', alignItems: 'flex-start',
-                    }}>
-                      <AlertCircle size={15} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
-                      <div>
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--rose)', fontWeight: 600 }}>{copyError}</p>
-                        <button
-                          onClick={() => { setCopies(prev => ({ ...prev, [selected]: undefined })); setErrors(prev => ({ ...prev, [selected]: undefined })); selectPlatform(selected); }}
-                          style={{ fontSize: '0.75rem', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: '0.25rem', textDecoration: 'underline' }}
-                        >
-                          Retry
-                        </button>
-                      </div>
-                    </div>
-                  ) : copy ? (
-                    <div>
-                      {/* Char count header */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                          {selectedMeta?.label} copy
-                        </p>
-                        <span style={{
-                          fontSize: '0.7rem', fontWeight: 700, padding: '0.125rem 0.5rem',
-                          borderRadius: 'var(--radius-full)',
-                          color: charOk ? 'var(--emerald)' : charCount > maxC ? 'var(--rose)' : 'var(--amber)',
-                          background: charOk ? 'rgba(16,185,129,0.1)' : charCount > maxC ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
-                        }}>
-                          {charCount.toLocaleString()} chars
-                          {selected !== 'linkedin' && ` · target ${minC}–${maxC}`}
-                        </span>
-                      </div>
-
-                      {/* Editable textarea */}
-                      <textarea
-                        value={copy}
-                        onChange={e => {
-                          const val = e.target.value;
-                          setCopies(prev => ({ ...prev, [selected]: val }));
-                        }}
-                        rows={selected === 'linkedin' ? 14 : 5}
-                        style={{
-                          width: '100%', padding: '0.875rem',
-                          background: 'var(--bg)', border: '1px solid var(--border)',
-                          borderRadius: 'var(--radius-md)', resize: 'vertical',
-                          fontSize: '0.875rem', lineHeight: 1.65,
-                          color: 'var(--text-primary)', fontFamily: 'inherit',
-                          boxSizing: 'border-box',
-                        }}
-                      />
-
-                      {selected === 'linkedin' && (
-                        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.375rem', lineHeight: 1.5 }}>
-                          💡 LinkedIn share links don&apos;t accept pre-filled text — copy the post then click Share to paste it.
-                        </p>
-                      )}
-
-                      {/* Action buttons */}
-                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
-                        <button
-                          onClick={handleCopy}
-                          className="btn btn-primary btn-sm"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
-                        >
-                          {copied ? <Check size={13} /> : <Copy size={13} />}
-                          {copied ? 'Copied!' : 'Copy text + link'}
-                        </button>
-                        <a
-                          href={buildShareUrl(selected, slug, copy, shortUrl ?? undefined)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn btn-outline btn-sm"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
-                          onClick={selected === 'linkedin' || selected === 'facebook' ? handleCopy : undefined}
-                        >
-                          <ExternalLink size={13} />
-                          Open {selectedMeta?.shortLabel}
-                          {selected === 'linkedin' && ' ↗'}
-                        </a>
-                        <button
-                          onClick={() => { setCopies(prev => ({ ...prev, [selected]: undefined })); selectPlatform(selected); }}
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
-                            padding: '0.375rem 0.625rem', background: 'none', border: 'none',
-                            cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-muted)',
-                          }}
-                        >
-                          ↺ Regenerate
-                        </button>
-                      </div>
-
-                      {/* Native image post tip — Facebook only */}
-                      {selected === 'facebook' && (
-                        <div style={{
-                          marginTop: '0.875rem', padding: '0.875rem 1rem',
-                          background: 'rgba(24,119,242,0.04)',
-                          border: '1px solid rgba(24,119,242,0.15)',
-                          borderRadius: 'var(--radius-md)',
-                        }}>
-                          <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1877f2', marginBottom: '0.375rem' }}>
-                            📸 Native image post — 2–3× more reach
-                          </p>
-                          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '0.625rem' }}>
-                            Facebook suppresses link posts. Download the branded card, post it as a native image, and paste the copy + link in the caption for full organic reach.
-                          </p>
-                          <button
-                            onClick={handleDownloadImage}
-                            disabled={downloadingImage}
-                            className="btn btn-outline btn-sm"
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
-                          >
-                            {downloadingImage
-                              ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
-                              : <Download size={13} />}
-                            {downloadingImage ? 'Generating…' : 'Download image card'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
                 </div>
               )}
 
