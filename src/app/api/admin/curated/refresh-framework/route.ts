@@ -66,6 +66,13 @@ interface RestructuredPage {
   meta_description: string;
 }
 
+function hasRequiredFields(obj: unknown): obj is RestructuredPage {
+  if (!obj || typeof obj !== 'object') return false;
+  const p = obj as Record<string, unknown>;
+  const keys = ['summary', 'why_it_matters', 'what_changed', 'executive_implications', 'meta_description'];
+  return keys.every(k => typeof p[k] === 'string' && (p[k] as string).trim().length > 0);
+}
+
 async function aiRestructure(
   title: string,
   rawContent: string,
@@ -75,7 +82,7 @@ async function aiRestructure(
   const prompt = `You are an editorial writer for BytesAI Learning, an AI education platform.
 Given the article content below, rewrite it into the Executive Briefing Standard for a curated insight page.
 
-Article title: "${title}"
+Article title: "${title.replace(/"/g, '\\"')}"
 
 Content to restructure:
 ${rawContent.slice(0, 5500)}
@@ -114,7 +121,7 @@ Respond ONLY with valid JSON — no markdown fences, no explanation, no preamble
         model,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.55,
-        max_tokens: 1000,
+        max_tokens: 1200,
       }),
       signal: AbortSignal.timeout(30_000),
     });
@@ -123,7 +130,9 @@ Respond ONLY with valid JSON — no markdown fences, no explanation, no preamble
     const raw = data.choices?.[0]?.message?.content ?? '';
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return null;
-    return JSON.parse(match[0]) as RestructuredPage;
+    const parsed = JSON.parse(match[0]) as unknown;
+    if (!hasRequiredFields(parsed)) return null;
+    return parsed as RestructuredPage;
   } catch {
     return null;
   }
@@ -144,20 +153,35 @@ export async function GET(req: NextRequest) {
       `SELECT COUNT(*) as total FROM curated_pages WHERE published_status = 'published'`
     ).first<{ total: number }>();
 
-    const withSources = await db.prepare(
-      `SELECT COUNT(*) as total FROM curated_pages
-       WHERE published_status = 'published'
-         AND source_references_json IS NOT NULL
-         AND json_extract(source_references_json, '$[0].url') IS NOT NULL`
-    ).first<{ total: number }>();
+    // Defensive: some D1 environments do not support json_extract reliably.
+    // Fetch a sample and parse in JS to count refreshable articles.
+    let refreshable = result?.total ?? 0;
+    try {
+      const sample = await db.prepare(
+        `SELECT source_references_json FROM curated_pages WHERE published_status = 'published'`
+      ).all<{ source_references_json: string | null }>();
+      refreshable = sample.results.filter(r => {
+        if (!r.source_references_json) return false;
+        try {
+          const refs = JSON.parse(r.source_references_json) as Array<{ url?: string }>;
+          return Array.isArray(refs) && typeof refs[0]?.url === 'string' && refs[0].url.length > 0;
+        } catch {
+          return false;
+        }
+      }).length;
+    } catch {
+      /* fall back to total published count */
+    }
 
     return NextResponse.json({
       published: result?.total ?? 0,
-      refreshable: withSources?.total ?? 0,
+      refreshable,
       note: 'Framework refresh rewrites content fields for all published articles using their primary source.',
     });
-  } catch {
-    return NextResponse.json({ error: 'Failed to check pages.' }, { status: 500 });
+  } catch (e: unknown) {
+    const message = (e as { message?: string }).message ?? 'Unknown error';
+    console.error('refresh-framework GET error:', message);
+    return NextResponse.json({ error: 'Failed to check pages.', detail: message }, { status: 500 });
   }
 }
 
@@ -200,23 +224,29 @@ export async function POST(req: NextRequest) {
 
   let pages: PageRow[];
 
-  if (body.ids?.length) {
-    const placeholders = body.ids.map(() => '?').join(',');
-    const result = await db.prepare(
-      `SELECT id, title, summary, source_references_json, categories_json
-       FROM curated_pages
-       WHERE id IN (${placeholders}) AND published_status = 'published'`
-    ).bind(...body.ids).all<PageRow>();
-    pages = result.results;
-  } else {
-    const result = await db.prepare(
-      `SELECT id, title, summary, source_references_json, categories_json
-       FROM curated_pages
-       WHERE published_status = 'published'
-       ORDER BY updated_at ASC
-       LIMIT 3`
-    ).all<PageRow>();
-    pages = result.results;
+  try {
+    if (body.ids?.length) {
+      const placeholders = body.ids.map(() => '?').join(',');
+      const result = await db.prepare(
+        `SELECT id, title, summary, source_references_json, categories_json
+         FROM curated_pages
+         WHERE id IN (${placeholders}) AND published_status = 'published'`
+      ).bind(...body.ids).all<PageRow>();
+      pages = result.results;
+    } else {
+      const result = await db.prepare(
+        `SELECT id, title, summary, source_references_json, categories_json
+         FROM curated_pages
+         WHERE published_status = 'published'
+         ORDER BY updated_at ASC
+         LIMIT 3`
+      ).all<PageRow>();
+      pages = result.results;
+    }
+  } catch (e: unknown) {
+    const message = (e as { message?: string }).message ?? 'Unknown error';
+    console.error('refresh-framework POST fetch error:', message);
+    return NextResponse.json({ error: 'Failed to fetch pages.', detail: message }, { status: 500 });
   }
 
   if (pages.length === 0) {
@@ -228,11 +258,12 @@ export async function POST(req: NextRequest) {
 
   for (const page of pages) {
     let rawContent = page.summary ?? '';
+    let sourceUrl: string | null = null;
 
     if (page.source_references_json) {
       try {
-        const refs: Array<{ url: string }> = JSON.parse(page.source_references_json);
-        const sourceUrl = refs[0]?.url;
+        const refs = JSON.parse(page.source_references_json) as Array<{ url?: string }>;
+        sourceUrl = Array.isArray(refs) ? (refs[0]?.url ?? null) : null;
         if (sourceUrl) {
           const fetched = await fetchSourceText(sourceUrl);
           if (fetched.length > 200) rawContent = fetched;
@@ -253,14 +284,18 @@ export async function POST(req: NextRequest) {
 
     let categoriesJson = page.categories_json;
     if (!categoriesJson) {
-      const cats = await classifyArticle(
-        page.title,
-        structured.summary,
-        structured.why_it_matters,
-        apiKey,
-        model,
-      );
-      if (cats.length > 0) categoriesJson = JSON.stringify(cats);
+      try {
+        const cats = await classifyArticle(
+          page.title,
+          structured.summary,
+          structured.why_it_matters,
+          apiKey,
+          model,
+        );
+        if (cats.length > 0) categoriesJson = JSON.stringify(cats);
+      } catch {
+        /* keep existing categories */
+      }
     }
 
     try {
@@ -291,25 +326,34 @@ export async function POST(req: NextRequest) {
         entityType: 'curated_page',
         entityId: page.id,
         before: null,
-        after: { frameworkRefresh: true, aiModel: model },
+        after: { frameworkRefresh: true, aiModel: model, sourceUrl },
       });
 
       results.push({ id: page.id, title: page.title, ok: true });
-    } catch {
-      results.push({ id: page.id, title: page.title, ok: false, error: 'DB update failed' });
+    } catch (e: unknown) {
+      const message = (e as { message?: string }).message ?? 'Unknown error';
+      console.error(`refresh-framework POST update error for ${page.id}:`, message);
+      results.push({ id: page.id, title: page.title, ok: false, error: `DB update failed: ${message}` });
     }
   }
 
   // Remaining published articles not yet refreshed by updated_at
-  const remaining = await db.prepare(
-    `SELECT COUNT(*) as count FROM curated_pages WHERE published_status = 'published' AND updated_at < ?`
-  ).bind(now).first<{ count: number }>();
+  let remaining = 0;
+  try {
+    const remainingResult = await db.prepare(
+      `SELECT COUNT(*) as count FROM curated_pages WHERE published_status = 'published' AND updated_at < ?`
+    ).bind(now).first<{ count: number }>();
+    remaining = remainingResult?.count ?? 0;
+  } catch (e: unknown) {
+    const message = (e as { message?: string }).message ?? 'Unknown error';
+    console.error('refresh-framework POST remaining count error:', message);
+  }
 
   return NextResponse.json({
     ok: true,
     processed: results.filter(r => r.ok).length,
     failed: results.filter(r => !r.ok).length,
-    remaining: remaining?.count ?? 0,
+    remaining,
     results,
   });
 }
