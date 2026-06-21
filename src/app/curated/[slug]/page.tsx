@@ -1,16 +1,15 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, ExternalLink, Lightbulb, TrendingUp, AlertCircle, BookOpen, Sparkles } from 'lucide-react';
+import { ArrowLeft, Calendar, ExternalLink, BookOpen, Sparkles } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import CourseCard from '@/components/ui/CourseCard';
 import CourseSpecTable from '@/components/ui/CourseSpecTable';
 import MarkdownContent from '@/components/ui/MarkdownContent';
 import CuratedViewTracker from '@/components/ui/CuratedViewTracker';
 import CuratedSharePanel from '@/components/ui/CuratedSharePanel';
 import ArticleHelpfulness from '@/components/ui/ArticleHelpfulness';
-import { getCuratedPageBySlug, getCuratedPageBySlugAnyStatus, getCourseBySlug, getDB, distributeCourses } from '@/lib/db';
+import { getCuratedPageBySlug, getCuratedPageBySlugAnyStatus, getCourseBySlug, getDB } from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
@@ -153,38 +152,25 @@ export default async function CuratedDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        <div className="container" style={{ paddingTop: '1.5rem', paddingBottom: '3rem', maxWidth: 900 }}>
+        <div className="container" style={{ paddingTop: '2.5rem', paddingBottom: '4rem' }}>
 
-          {/* Header */}
-          <div style={{ marginBottom: '2.5rem' }}>
-            <h1 className="text-heading" style={{ marginBottom: '1rem', fontSize: 'clamp(1.5rem, 3vw, 2.25rem)' }}>
+          {/* Editorial header */}
+          <header style={{ marginBottom: '2.5rem', maxWidth: 720 }}>
+            <h1 className="text-display" style={{ marginBottom: '1.25rem', fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)' }}>
               {page.title}
             </h1>
             {page.summary && (
-              <div style={{
-                padding: '0.875rem 1.125rem',
-                background: 'rgba(79,110,247,0.04)',
-                border: '1px solid rgba(79,110,247,0.14)',
-                borderLeft: '3px solid var(--accent)',
-                borderRadius: 'var(--radius-md)',
-                marginBottom: '1.25rem',
-              }}>
-                <p style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--accent)', marginBottom: '0.375rem' }}>
-                  TL;DR
-                </p>
-                <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.75 }}>
-                  {page.summary}
-                </p>
-              </div>
+              <p className="article-lead">
+                {page.summary}
+              </p>
             )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div className="article-byline">
               {page.last_verified_at && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
                   <Calendar size={13} />
-                  Last verified {new Date(page.last_verified_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                </div>
+                  Verified {new Date(page.last_verified_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </span>
               )}
-              {/* AI-generated disclosure badge */}
               {page.ai_generated === 1 && (
                 <span
                   title={page.generated_model ? `Generated with AI (${page.generated_model})` : 'Generated with AI assistance'}
@@ -201,145 +187,202 @@ export default async function CuratedDetailPage({ params }: PageProps) {
                   <Sparkles size={10} /> AI-assisted
                 </span>
               )}
-              {/* Share button — sits next to the date */}
-              <CuratedSharePanel slug={page.slug} title={page.title} />
+              <span className="hide-mobile">
+                <CuratedSharePanel slug={page.slug} title={page.title} />
+              </span>
             </div>
-          </div>
+          </header>
 
-          {/* Content sections */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Main two-column layout */}
+          <div className="article-layout">
 
-            {page.why_it_matters && (
-              <section className="card">
-                <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Lightbulb size={20} color="var(--accent)" /> Why this matters right now
-                </h2>
-                <MarkdownContent>{page.why_it_matters}</MarkdownContent>
-              </section>
-            )}
+            {/* Article column */}
+            <article>
+              <div className="article-prose">
+                {page.why_it_matters && (
+                  <section>
+                    <h2>Why this matters right now</h2>
+                    <MarkdownContent variant="article">{page.why_it_matters}</MarkdownContent>
+                  </section>
+                )}
 
-            {page.what_changed && (
-              <section className="card">
-                <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <TrendingUp size={20} color="var(--teal)" /> How this technology has evolved
-                </h2>
-                <MarkdownContent>{page.what_changed}</MarkdownContent>
-              </section>
-            )}
+                {page.what_changed && (
+                  <section>
+                    <h2>How this technology has evolved</h2>
+                    <MarkdownContent variant="article">{page.what_changed}</MarkdownContent>
+                  </section>
+                )}
 
-            {/* Primary recommended course — structured spec table for AI retrieval */}
-            {primaryCourse && (
-              <section style={{
-                padding: '1.25rem 1.5rem',
-                background: 'linear-gradient(135deg, rgba(79,110,247,0.06) 0%, rgba(20,184,166,0.04) 100%)',
-                border: '1px solid rgba(79,110,247,0.15)',
-                borderRadius: 'var(--radius-md)',
-              }}>
-                <p style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--accent)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                  <BookOpen size={13} /> Recommended course
-                </p>
-                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.875rem' }}>
-                  Recommended starting point
-                </h3>
-                <CourseSpecTable course={primaryCourse} rationale={page.primary_course_rationale ?? undefined} />
-              </section>
-            )}
+                {/* Primary recommended course — inline aside */}
+                {primaryCourse && (
+                  <aside className="article-aside">
+                    <p style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--accent)', marginBottom: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <BookOpen size={13} /> Recommended starting point
+                    </p>
+                    <CourseSpecTable course={primaryCourse} rationale={page.primary_course_rationale ?? undefined} />
+                  </aside>
+                )}
 
-            {page.executive_implications && (
-              <section className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
-                <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <AlertCircle size={20} color="var(--accent)" /> What this means for your roadmap
-                </h2>
-                <MarkdownContent>{page.executive_implications}</MarkdownContent>
-              </section>
-            )}
-
-            {/* Related courses */}
-            {validRelated.length > 0 && (
-              <section>
-                <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem' }}>
-                  Related courses
-                </h2>
-                <div className="grid-4">
-                  {distributeCourses(validRelated, 4).map(course => (
-                    <CourseCard key={course.id} course={course} isGuest={!session} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Source references */}
-            {sourceRefs.length > 0 && (
-              <section className="card">
-                <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1rem' }}>
-                  Sources
-                </h2>
-                <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', listStyle: 'none', padding: 0 }}>
-                  {sourceRefs.map((ref, i) => (
-                    <li key={i}>
-                      <a
-                        href={ref.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.875rem', color: 'var(--accent)', fontWeight: 500 }}
-                      >
-                        <ExternalLink size={13} />
-                        {ref.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {/* Article helpfulness — Layer 1: visible after scrolling to bottom */}
-            <ArticleHelpfulness slug={page.slug} pageUrl={`https://learn.bytesai.uk/curated/${page.slug}`} />
-
-            {/* AI disclosure footnote — shown on AI-generated articles */}
-            {page.ai_generated === 1 && (
-              <p style={{
-                fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.6,
-                padding: '0.75rem 1rem',
-                background: 'rgba(139,92,246,0.04)',
-                border: '1px solid rgba(139,92,246,0.12)',
-                borderRadius: 'var(--radius-sm)',
-              }}>
-                <Sparkles size={11} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: '-1px', color: '#8b5cf6' }} />
-                <strong style={{ color: '#8b5cf6' }}>AI-assisted content:</strong>{' '}
-                This article was drafted using AI assistance
-                {page.generated_model ? ` (${page.generated_model})` : ''}
-                {page.generated_at ? ` on ${new Date(page.generated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}` : ''} and reviewed by the BytesAI editorial team before publication.
-                Source references are listed above.{' '}
-                <a href="/about" style={{ color: '#8b5cf6', fontWeight: 600 }}>Learn about our editorial process</a>.
-              </p>
-            )}
-
-            {/* Bottom share nudge */}
-            <section style={{
-              padding: '1.25rem 1.5rem',
-              background: 'rgba(79,110,247,0.04)',
-              border: '1px solid rgba(79,110,247,0.12)',
-              borderRadius: 'var(--radius-md)',
-              display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
-            }}>
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.25rem' }}>
-                  Found this useful?
-                </p>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                  Share it with your team — AI generates platform-optimised copy for you.
-                </p>
+                {page.executive_implications && (
+                  <section>
+                    <h2>What this means for your roadmap</h2>
+                    <MarkdownContent variant="article">{page.executive_implications}</MarkdownContent>
+                  </section>
+                )}
               </div>
-              <CuratedSharePanel slug={page.slug} title={page.title} />
-            </section>
 
-          </div>
+              {/* Related courses — simple linked list */}
+              {validRelated.length > 0 && (
+                <section style={{ marginTop: '3rem', maxWidth: 720 }}>
+                  <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                    Related courses
+                  </h2>
+                  <ol className="article-related-list">
+                    {validRelated.map(course => (
+                      <li key={course.id}>
+                        <Link href={`/courses/${course.slug}`}>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{course.title}</span>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                            {course.provider_id?.replace(/^prov-/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                            {course.level && ` · ${course.level}`}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
 
-          {/* Back link */}
-          <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--border)' }}>
-            <Link href="/curated" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-              <ArrowLeft size={15} /> Back to all insights
-            </Link>
+              {/* Sources — numbered endnotes */}
+              {sourceRefs.length > 0 && (
+                <section style={{ marginTop: '3rem', maxWidth: 720 }}>
+                  <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                    Sources
+                  </h2>
+                  <ol className="article-footnotes">
+                    {sourceRefs.map((ref, i) => (
+                      <li key={i}>
+                        <a
+                          href={ref.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+                        >
+                          {ref.title}
+                          <ExternalLink size={12} />
+                        </a>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
+
+              {/* Article helpfulness */}
+              <div style={{ marginTop: '3rem', maxWidth: 720 }}>
+                <ArticleHelpfulness slug={page.slug} pageUrl={`https://learn.bytesai.uk/curated/${page.slug}`} />
+              </div>
+
+              {/* AI disclosure footnote */}
+              {page.ai_generated === 1 && (
+                <p style={{
+                  fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.6,
+                  marginTop: '1.5rem', padding: '0.75rem 1rem',
+                  background: 'rgba(139,92,246,0.04)',
+                  border: '1px solid rgba(139,92,246,0.12)',
+                  borderRadius: 'var(--radius-sm)',
+                  maxWidth: 720,
+                }}>
+                  <Sparkles size={11} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: '-1px', color: '#8b5cf6' }} />
+                  <strong style={{ color: '#8b5cf6' }}>AI-assisted content:</strong>{' '}
+                  This article, <em>{page.title}</em>, was drafted using AI assistance
+                  {page.generated_model ? ` (${page.generated_model})` : ''}
+                  {page.generated_at ? ` on ${new Date(page.generated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}` : ''} and reviewed by the BytesAI editorial team before publication.
+                  Verified sources:
+                  {sourceRefs.length > 0
+                    ? sourceRefs.map((ref, i) => (
+                        <span key={ref.url}>
+                          {' '}
+                          <a href={ref.url} target="_blank" rel="noopener noreferrer" style={{ color: '#8b5cf6', fontWeight: 600 }}>{ref.title}</a>
+                          {i < sourceRefs.length - 1 ? ',' : '.'}
+                        </span>
+                      ))
+                    : ' none recorded.'}
+                  {' '}<a href="/about" style={{ color: '#8b5cf6', fontWeight: 600 }}>Learn about our editorial process</a>.
+                </p>
+              )}
+
+              {/* Bottom share nudge */}
+              <section style={{
+                marginTop: '2rem', maxWidth: 720,
+                padding: '1.25rem 1.5rem',
+                background: 'rgba(79,110,247,0.04)',
+                border: '1px solid rgba(79,110,247,0.12)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
+              }}>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.25rem' }}>
+                    Found this useful?
+                  </p>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                    Share it with your team — AI generates platform-optimised copy for you.
+                  </p>
+                </div>
+                <CuratedSharePanel slug={page.slug} title={page.title} />
+              </section>
+
+              {/* Back link */}
+              <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--border)', maxWidth: 720 }}>
+                <Link href="/curated" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  <ArrowLeft size={15} /> Back to all insights
+                </Link>
+              </div>
+            </article>
+
+            {/* Sidebar */}
+            <aside className="article-sidebar">
+              <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <CuratedSharePanel slug={page.slug} title={page.title} />
+                {page.last_verified_at && (
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.375rem', margin: 0 }}>
+                    <Calendar size={13} />
+                    Verified {new Date(page.last_verified_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                )}
+                {page.ai_generated === 1 && (
+                  <p style={{
+                    fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+                    color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: '0.3rem', margin: 0,
+                  }}>
+                    <Sparkles size={10} /> AI-assisted
+                  </p>
+                )}
+              </div>
+
+              {sourceRefs.length > 0 && (
+                <div className="card" style={{ padding: '1.25rem' }}>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                    Sources
+                  </p>
+                  <ol className="article-footnotes" style={{ margin: 0 }}>
+                    {sourceRefs.slice(0, 5).map((ref, i) => (
+                      <li key={i}>
+                        <a
+                          href={ref.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+                        >
+                          {ref.title}
+                          <ExternalLink size={12} />
+                        </a>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+            </aside>
+
           </div>
         </div>
       </main>

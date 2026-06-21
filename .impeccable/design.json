@@ -1,0 +1,278 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-20T00:00:00Z",
+  "title": "Design System: BytesAI Learning",
+  "extensions": {
+    "colorMeta": {
+      "editorial-violet": {
+        "role": "primary",
+        "displayName": "Editorial Violet",
+        "canonical": "oklch(0.52 0.20 258)",
+        "tonalRamp": [
+          "oklch(0.18 0.05 258)",
+          "oklch(0.25 0.10 258)",
+          "oklch(0.35 0.15 258)",
+          "oklch(0.45 0.18 258)",
+          "oklch(0.52 0.20 258)",
+          "oklch(0.65 0.16 258)",
+          "oklch(0.80 0.10 258)",
+          "oklch(0.94 0.04 258)"
+        ]
+      },
+      "verified-teal": {
+        "role": "secondary",
+        "displayName": "Verified Teal",
+        "canonical": "oklch(0.65 0.15 195)",
+        "tonalRamp": [
+          "oklch(0.18 0.04 195)",
+          "oklch(0.30 0.08 195)",
+          "oklch(0.45 0.12 195)",
+          "oklch(0.55 0.14 195)",
+          "oklch(0.65 0.15 195)",
+          "oklch(0.78 0.12 195)",
+          "oklch(0.88 0.08 195)",
+          "oklch(0.95 0.03 195)"
+        ]
+      },
+      "attention-amber": {
+        "role": "tertiary",
+        "displayName": "Attention Amber",
+        "canonical": "oklch(0.78 0.16 85)",
+        "tonalRamp": [
+          "oklch(0.22 0.05 85)",
+          "oklch(0.40 0.10 85)",
+          "oklch(0.55 0.13 85)",
+          "oklch(0.68 0.15 85)",
+          "oklch(0.78 0.16 85)",
+          "oklch(0.86 0.13 85)",
+          "oklch(0.92 0.08 85)",
+          "oklch(0.96 0.04 85)"
+        ]
+      },
+      "signal-emerald": {
+        "role": "tertiary",
+        "displayName": "Signal Emerald",
+        "canonical": "oklch(0.70 0.17 160)",
+        "tonalRamp": [
+          "oklch(0.18 0.05 160)",
+          "oklch(0.30 0.10 160)",
+          "oklch(0.45 0.14 160)",
+          "oklch(0.58 0.16 160)",
+          "oklch(0.70 0.17 160)",
+          "oklch(0.82 0.14 160)",
+          "oklch(0.90 0.09 160)",
+          "oklch(0.96 0.04 160)"
+        ]
+      },
+      "caution-rose": {
+        "role": "tertiary",
+        "displayName": "Caution Rose",
+        "canonical": "oklch(0.62 0.20 15)",
+        "tonalRamp": [
+          "oklch(0.20 0.06 15)",
+          "oklch(0.35 0.12 15)",
+          "oklch(0.48 0.17 15)",
+          "oklch(0.56 0.19 15)",
+          "oklch(0.62 0.20 15)",
+          "oklch(0.75 0.16 15)",
+          "oklch(0.86 0.10 15)",
+          "oklch(0.95 0.04 15)"
+        ]
+      },
+      "cool-paper": {
+        "role": "neutral",
+        "displayName": "Cool Paper",
+        "canonical": "oklch(0.99 0.004 270)",
+        "tonalRamp": [
+          "oklch(0.14 0.020 270)",
+          "oklch(0.19 0.022 270)",
+          "oklch(0.25 0.018 270)",
+          "oklch(0.44 0.012 270)",
+          "oklch(0.62 0.008 270)",
+          "oklch(0.975 0.006 270)",
+          "oklch(0.99 0.004 270)",
+          "oklch(1.0 0.001 270)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(0.18 0.015 270)",
+        "tonalRamp": [
+          "oklch(0.14 0.020 270)",
+          "oklch(0.18 0.015 270)",
+          "oklch(0.25 0.012 270)",
+          "oklch(0.44 0.012 270)",
+          "oklch(0.62 0.008 270)",
+          "oklch(0.80 0.005 270)",
+          "oklch(0.94 0.003 270)",
+          "oklch(0.99 0.002 270)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headlines only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page titles and major section headers."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card titles, article section headings, and secondary page headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Long-form reading and descriptions; capped at 65–75ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Badges, eyebrow labels, and metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "ambient-low",
+        "value": "0 1px 2px oklch(0.25 0 0 / 0.04)",
+        "purpose": "Resting state for cards and small controls."
+      },
+      {
+        "name": "ambient-medium",
+        "value": "0 2px 8px oklch(0.25 0 0 / 0.06), 0 1px 2px oklch(0.25 0 0 / 0.04)",
+        "purpose": "Card hover, dropdowns, and focused panels."
+      },
+      {
+        "name": "ambient-large",
+        "value": "0 8px 24px oklch(0.25 0 0 / 0.08), 0 2px 8px oklch(0.25 0 0 / 0.04)",
+        "purpose": "Modals, chat panels, and cookie banners."
+      },
+      {
+        "name": "focus-glow",
+        "value": "0 0 0 3px oklch(0.52 0.20 258 / 0.2)",
+        "purpose": "Focus-visible rings on interactive elements."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-quart",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "Default ease for state transitions and hover feedback."
+      },
+      {
+        "name": "transition-fast",
+        "value": "150ms cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "Button, link, and chip state changes."
+      },
+      {
+        "name": "transition-medium",
+        "value": "300ms cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "Panel reveals, background transitions, and larger state changes."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "600px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "900px" },
+      { "name": "xl", "value": "1024px" },
+      { "name": "2xl", "value": "1400px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main call-to-action. Solid violet pill with white text.",
+      "html": "<button class=\"ds-btn-primary\">Explore courses</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.5rem; border-radius: 9999px; border: none; background: var(--accent, oklch(0.52 0.20 258)); color: white; font-family: Inter, system-ui, sans-serif; font-size: 0.9375rem; font-weight: 600; line-height: 1; cursor: pointer; transition: background 150ms cubic-bezier(0.25, 1, 0.5, 1), transform 150ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-btn-primary:hover { background: var(--accent-hover, oklch(0.57 0.22 258)); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px oklch(0.52 0.20 258 / 0.2); } .ds-btn-primary:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action. Transparent with a neutral border.",
+      "html": "<button class=\"ds-btn-outline\">Read more</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.5rem; border-radius: 9999px; border: 1.5px solid var(--border, oklch(0.915 0.005 258)); background: transparent; color: var(--text-primary, oklch(0.18 0.015 270)); font-family: Inter, system-ui, sans-serif; font-size: 0.9375rem; font-weight: 600; line-height: 1; cursor: pointer; transition: border-color 150ms cubic-bezier(0.25, 1, 0.5, 1), color 150ms cubic-bezier(0.25, 1, 0.5, 1), background 150ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-btn-outline:hover { border-color: var(--accent, oklch(0.52 0.20 258)); color: var(--accent, oklch(0.52 0.20 258)); background: var(--accent-soft, oklch(0.94 0.04 258)); } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 3px oklch(0.52 0.20 258 / 0.2); } .ds-btn-outline:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Standard form field with a soft background and focus ring.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search courses\" />",
+      "css": ".ds-input { width: 100%; padding: 0.75rem 1rem; border-radius: 12px; border: 1.5px solid var(--border, oklch(0.915 0.005 258)); background: var(--bg-input, oklch(0.975 0.006 270)); color: var(--text-primary, oklch(0.18 0.015 270)); font-family: Inter, system-ui, sans-serif; font-size: 0.9375rem; outline: none; transition: border-color 150ms cubic-bezier(0.25, 1, 0.5, 1), box-shadow 150ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-input::placeholder { color: var(--text-muted, oklch(0.62 0.008 270)); } .ds-input:focus { border-color: var(--accent, oklch(0.52 0.20 258)); box-shadow: 0 0 0 3px oklch(0.52 0.20 258 / 0.2); } .ds-input-error { border-color: var(--rose, oklch(0.62 0.20 15)); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "General content container with a soft shadow and hover lift.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Card title</h3><p class=\"ds-card-body\">Card content goes here.</p></div>",
+      "css": ".ds-card { background: var(--bg-card, oklch(1.0 0.001 270)); border: 1px solid var(--border, oklch(0.915 0.005 258)); border-radius: 16px; padding: 1.5rem; box-shadow: 0 1px 2px oklch(0.25 0 0 / 0.04); transition: border-color 150ms cubic-bezier(0.25, 1, 0.5, 1), box-shadow 150ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-card:hover { border-color: var(--border-hover, oklch(0.78 0.06 258)); box-shadow: 0 2px 8px oklch(0.25 0 0 / 0.06), 0 1px 2px oklch(0.25 0 0 / 0.04); } .ds-card-title { font-family: Inter, system-ui, sans-serif; font-size: 1.125rem; font-weight: 700; color: var(--text-primary, oklch(0.18 0.015 270)); margin-bottom: 0.5rem; } .ds-card-body { font-family: Inter, system-ui, sans-serif; font-size: 1rem; line-height: 1.7; color: var(--text-secondary, oklch(0.44 0.012 270)); }"
+    },
+    {
+      "name": "Free Badge",
+      "kind": "chip",
+      "refersTo": "badge-free",
+      "description": "Status pill indicating a free course or resource.",
+      "html": "<span class=\"ds-badge-free\">Free</span>",
+      "css": ".ds-badge-free { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.625rem; border-radius: 9999px; font-family: Inter, system-ui, sans-serif; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; background: var(--emerald-soft, oklch(0.95 0.04 160)); color: var(--emerald, oklch(0.70 0.17 160)); border: 1px solid oklch(0.70 0.17 160 / 0.2); }"
+    },
+    {
+      "name": "Nav Link",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Top-bar navigation item. Pill-shaped with a soft active state.",
+      "html": "<a href=\"#\" class=\"ds-nav-link\">Courses</a>",
+      "css": ".ds-nav-link { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.5rem 0.75rem; border-radius: 9999px; font-family: Inter, system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; color: var(--text-secondary, oklch(0.44 0.012 270)); text-decoration: none; transition: background 150ms cubic-bezier(0.25, 1, 0.5, 1), color 150ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-nav-link:hover, .ds-nav-link.active { background: var(--accent-soft, oklch(0.94 0.04 258)); color: var(--accent, oklch(0.52 0.20 258)); } .ds-nav-link:focus-visible { outline: none; box-shadow: 0 0 0 3px oklch(0.52 0.20 258 / 0.2); }"
+    },
+    {
+      "name": "Course Card",
+      "kind": "card",
+      "refersTo": "course-card",
+      "description": "Signature component for surfacing a course. Gradient header band, badges, provider, and footer link.",
+      "html": "<a href=\"#\" class=\"ds-course-card\"><div class=\"ds-course-card-header\"><svg class=\"ds-course-card-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3\"></path><path d=\"M12 17h.01\"></path></svg><div><p class=\"ds-course-card-category\">AI Foundations</p><p class=\"ds-course-card-provider\">Google</p></div></div><div class=\"ds-course-card-body\"><div class=\"ds-course-card-badges\"><span class=\"ds-badge-free\">Free</span><span class=\"ds-badge-level\">Beginner</span></div><p class=\"ds-course-card-title\">Introduction to Generative AI</p><p class=\"ds-course-card-snippet\">A short, practical introduction to generative AI with real-world examples.</p></div></a>",
+      "css": ".ds-course-card { display: flex; flex-direction: column; background: var(--bg-card, oklch(1.0 0.001 270)); border: 1px solid var(--border, oklch(0.915 0.005 258)); border-radius: 16px; overflow: hidden; text-decoration: none; color: inherit; box-shadow: 0 1px 2px oklch(0.25 0 0 / 0.04); transition: border-color 150ms cubic-bezier(0.25, 1, 0.5, 1), box-shadow 150ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-course-card:hover { border-color: var(--border-hover, oklch(0.78 0.06 258)); box-shadow: 0 2px 8px oklch(0.25 0 0 / 0.06), 0 1px 2px oklch(0.25 0 0 / 0.04); } .ds-course-card-header { height: 80px; background: linear-gradient(135deg, oklch(0.52 0.20 258), oklch(0.60 0.17 230)); display: flex; align-items: center; padding: 0 1.25rem; gap: 0.875rem; } .ds-course-card-icon { width: 20px; height: 20px; flex-shrink: 0; } .ds-course-card-category { color: oklch(1.0 0 0 / 0.7); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin: 0; } .ds-course-card-provider { color: white; font-size: 0.8125rem; font-weight: 700; margin: 0; } .ds-course-card-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; } .ds-course-card-badges { display: flex; flex-wrap: wrap; gap: 0.375rem; } .ds-badge-level { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.625rem; border-radius: 9999px; font-family: Inter, system-ui, sans-serif; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; background: var(--accent-soft, oklch(0.94 0.04 258)); color: var(--accent, oklch(0.52 0.20 258)); border: 1px solid oklch(0.52 0.20 265 / 0.2); } .ds-course-card-title { font-family: Inter, system-ui, sans-serif; font-size: 1rem; font-weight: 700; line-height: 1.35; color: var(--text-primary, oklch(0.18 0.015 270)); margin: 0; } .ds-course-card-snippet { font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; color: var(--text-secondary, oklch(0.44 0.012 270)); line-height: 1.6; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Editor's Desk",
+    "overview": "BytesAI Learning is a curated discovery platform, and its interface should feel like a trusted editor has already done the sorting. The visual system is built around restraint, hierarchy, and clarity: generous whitespace, a single disciplined accent, and typography that does the communicating. Every surface reinforces that the product is making choices on the user's behalf — not aggregating everything and asking them to filter. The design rejects the generic SaaS dark-mode clone, the cold blue/purple space aesthetic, the hero-metric landing page, and the marketplace chaos of catalogues.",
+    "keyCharacteristics": [
+      "Light default, dark by choice. Both themes use cool tinted neutrals with a single violet accent.",
+      "One type family, Inter, used across display, body, and labels. Hierarchy comes from weight and scale.",
+      "Cards and containers sit on slightly lifted surfaces with soft shadows; depth is structural.",
+      "Touch targets are generous; motion is short, ease-out, and reserved for state feedback.",
+      "The accent color is used sparingly for primary actions, current navigation, and verified states."
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "Editorial Violet is the only accent on 90% of any screen. Secondary semantic colors are reserved for specific states.", "section": "colors" },
+      { "name": "The Light-First Rule", "body": "The default experience is light. Dark mode is a first-class variant, not the primary identity.", "section": "colors" },
+      { "name": "The One Voice Rule", "body": "Inter handles every text role. Do not introduce a second font for display or decorative headings.", "section": "typography" },
+      { "name": "The Measure Rule", "body": "Body paragraphs in long-form contexts must not exceed 75ch. Wide running text is forbidden.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest. Shadows appear as a response to state (hover, elevation, focus).", "section": "elevation" }
+    ],
+    "dos": [
+      "Do cap body paragraphs at 65–75ch in any reading context.",
+      "Do use Editorial Violet as the only accent on most screens.",
+      "Do use the fully rounded pill shape for primary and outline buttons.",
+      "Do ensure every interactive element has a visible focus-visible state.",
+      "Do use reduced-motion fallbacks for any animation.",
+      "Do use semantic colors only for their named purpose."
+    ],
+    "donts": [
+      "Don't use gradient text or background-clip text for headings.",
+      "Don't use glassmorphism as a default surface treatment.",
+      "Don't use hero-metric templates.",
+      "Don't use side-stripe borders greater than 1px as a colored accent.",
+      "Don't use identical card grids as the default layout pattern.",
+      "Don't decorate with gradients, glows, or animations that do not carry meaning.",
+      "Don't use display fonts or decorative typefaces for UI labels, buttons, or data.",
+      "Don't build dark mode with cold blue/purple space aesthetics or neon accents.",
+      "Don't create marketplace-style visual chaos; the curation should feel edited, not aggregated.",
+      "Don't use tiny uppercase tracked eyebrows above every section heading."
+    ]
+  }
+}

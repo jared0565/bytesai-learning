@@ -149,16 +149,23 @@ const tdStyle: React.CSSProperties = {
   borderBottom: '1px solid var(--border)', verticalAlign: 'top',
 };
 
-function renderBlock(block: Block, idx: number): React.ReactNode {
+function renderBlock(block: Block, idx: number, variant: 'default' | 'article'): React.ReactNode {
+  const isArticle = variant === 'article';
   switch (block.kind) {
     case 'h2':
-      return <h3 key={idx} style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-primary)', margin: '1.25rem 0 0.375rem' }}>{renderInline(block.text)}</h3>;
+      return isArticle
+        ? <h2 key={idx}>{renderInline(block.text)}</h2>
+        : <h3 key={idx} style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-primary)', margin: '1.25rem 0 0.375rem' }}>{renderInline(block.text)}</h3>;
     case 'h3':
-      return <h4 key={idx} style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)', margin: '1rem 0 0.25rem' }}>{renderInline(block.text)}</h4>;
+      return isArticle
+        ? <h3 key={idx}>{renderInline(block.text)}</h3>
+        : <h4 key={idx} style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)', margin: '1rem 0 0.25rem' }}>{renderInline(block.text)}</h4>;
     case 'h4':
-      return <h5 key={idx} style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-muted)', margin: '0.875rem 0 0.25rem' }}>{renderInline(block.text)}</h5>;
+      return isArticle
+        ? <h4 key={idx}>{renderInline(block.text)}</h4>
+        : <h5 key={idx} style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-muted)', margin: '0.875rem 0 0.25rem' }}>{renderInline(block.text)}</h5>;
     case 'para':
-      return <p key={idx} style={{ marginBottom: '0.625rem', lineHeight: 1.8, color: 'var(--text-secondary)' }}>{renderInline(block.text)}</p>;
+      return <p key={idx} style={{ marginBottom: isArticle ? '1rem' : '0.625rem', lineHeight: 1.8, color: 'var(--text-secondary)' }}>{renderInline(block.text)}</p>;
     case 'table':
       return (
         <div key={idx} style={{ overflowX: 'auto', margin: '0.75rem 0 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
@@ -178,13 +185,13 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
       );
     case 'ul':
       return (
-        <ul key={idx} style={{ paddingLeft: '1.25rem', margin: '0.25rem 0 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+        <ul key={idx} style={{ paddingLeft: '1.25rem', margin: isArticle ? '0.25rem 0 1rem' : '0.25rem 0 0.75rem', display: 'flex', flexDirection: 'column', gap: isArticle ? '0.375rem' : '0.25rem' }}>
           {block.items.map((item, j) => <li key={j} style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>{renderInline(item)}</li>)}
         </ul>
       );
     case 'ol':
       return (
-        <ol key={idx} style={{ paddingLeft: '1.25rem', margin: '0.25rem 0 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+        <ol key={idx} style={{ paddingLeft: '1.25rem', margin: isArticle ? '0.25rem 0 1rem' : '0.25rem 0 0.75rem', display: 'flex', flexDirection: 'column', gap: isArticle ? '0.375rem' : '0.25rem' }}>
           {block.items.map((item, j) => <li key={j} style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>{renderInline(item)}</li>)}
         </ol>
       );
@@ -193,13 +200,14 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
 
 interface Props {
   children: string;
+  variant?: 'default' | 'article';
 }
 
-export default function MarkdownContent({ children }: Props) {
+export default function MarkdownContent({ children, variant = 'default' }: Props) {
   const blocks = tokenise(children);
   return (
-    <div style={{ fontSize: '0.9375rem' }}>
-      {blocks.map((block, i) => renderBlock(block, i))}
+    <div className={variant === 'article' ? 'article-prose' : undefined} style={variant === 'default' ? { fontSize: '0.9375rem' } : undefined}>
+      {blocks.map((block, i) => renderBlock(block, i, variant))}
     </div>
   );
 }

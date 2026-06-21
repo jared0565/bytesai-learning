@@ -170,6 +170,7 @@ interface GeneratedArticle {
 async function generateFromTrend(
   article: ParsedArticle,
   course: { title: string; slug: string; snippet: string | null } | null,
+  referenceContent: string,
   apiKey: string,
   model: string,
 ): Promise<GeneratedArticle | null> {
@@ -182,20 +183,28 @@ Description: ${course.snippet ?? 'An AI course covering this topic'}
 Write the primary_course_rationale to explain why this specific course suits a reader of this article.`
     : `\n\nNo course has been linked yet. Set primary_course_rationale to an empty string "".`;
 
+  const referenceSection = referenceContent.length > 100
+    ? `\n\nADDITIONAL REFERENCE SOURCES (for corroboration and context only — do NOT copy verbatim):
+${referenceContent.slice(0, 3500)}`
+    : '';
+
   const prompt = `You are an editorial writer for BytesAI Learning. Write a high-quality insight article based on this trending AI news article.
 
+PRIMARY SOURCE:
 Source article title: "${article.title}"
 Source: ${article.sourceName}
 Content:
-${article.contentText.slice(0, 4000)}
+${article.contentText.slice(0, 3500)}
+${referenceSection}
 ${courseSection}
 
 QUALITY STANDARDS:
-1. Ground every claim in the source content — no fabricated stats or invented developments
+1. Ground every claim in the primary source — no fabricated stats or invented developments
 2. Write in operator language — practitioner voice, not consultant framing
 3. Pick one concrete mechanism or use-case and go deep rather than broad
 4. Include at least one honest limitation or failure mode
 5. Make executive_implications operational and sequenced — not strategic platitudes
+6. When additional references are provided, check them and cite them naturally in the text only when they corroborate or add necessary context (e.g., "as MIT Technology Review noted"). Do not pad the article with unrelated sources.
 
 BANNED PHRASES: force multiplier, unprecedented, game-changing, transformational, cutting-edge, revolutionary, robust, holistic, paradigm shift, leverage (as verb), synergy, seamlessly, bridge the gap
 
@@ -256,21 +265,25 @@ async function generateFromCourse(
   apiKey: string,
   model: string,
 ): Promise<GeneratedArticle | null> {
+  const referenceSection = referenceContent.length > 100
+    ? `\n\nADDITIONAL REFERENCE SOURCES (for corroboration and context only — do NOT copy verbatim):\n${referenceContent.slice(0, 4500)}`
+    : '';
+
   const prompt = `You are an editorial writer for BytesAI Learning. Write an insight article about the AI topic covered by the course below.
 
 Course title: "${course.title}"
 Category: ${course.category ?? 'Artificial Intelligence'}
 Course description: ${course.snippet ?? 'A free AI course covering the fundamentals and practical applications'}
 Course page: https://learn.bytesai.uk/courses/${course.slug}
-
-${referenceContent.length > 100 ? `Research context (use as background — do NOT copy verbatim):\n${referenceContent.slice(0, 4500)}` : ''}
+${referenceSection}
 
 QUALITY STANDARDS:
-1. Ground every claim — no fabricated stats
+1. Ground every claim in the primary course description and the reference sources below — no fabricated stats
 2. Pick one concrete use-case and stay there
 3. Write like an operator, not a summariser
 4. Include at least one limitation or failure mode
 5. Make executive_implications operational, not strategic
+6. When reference sources are provided, check them and cite them naturally in the text only when they corroborate or add necessary context
 
 BANNED PHRASES: force multiplier, unprecedented, game-changing, transformational, cutting-edge, revolutionary, robust, holistic, paradigm shift, leverage (as verb), synergy, seamlessly
 
@@ -406,24 +419,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Course not found.' }, { status: 404 });
     }
 
-    // Web search for reference context
+    // Web search for reference context and corroborating sources
     const searchQuery = `${course.title} artificial intelligence`;
-    const articleUrls = await searchDDG(searchQuery);
+    const searchResults = await searchDDG(searchQuery);
     let referenceContent = '';
-    for (const url of articleUrls.slice(0, 3)) {
-      const snippet = await fetchSnippet(url);
+    const checkedSources: { url: string; title: string }[] = [];
+    for (const result of searchResults.slice(0, 3)) {
+      const snippet = await fetchSnippet(result.url);
       if (snippet.length > 200) {
-        referenceContent += `\n\n--- Source: ${url} ---\n${snippet}`;
+        referenceContent += `\n\n--- Source: ${result.title} (${result.url}) ---\n${snippet}`;
+        checkedSources.push(result);
         if (referenceContent.length > 5000) break;
       }
     }
 
     generated = await generateFromCourse(course, referenceContent, apiKey, model);
     linkedCourseSlug = course.slug;
-    sourceRefs = articleUrls.slice(0, 4).map(url => {
-      const path = url.replace(/^https?:\/\//, '').split('/').slice(1).join('/');
-      return { title: path ? path.replace(/-/g, ' ').slice(0, 80) : url, url };
-    });
+
+    // Build source references: prefer extracted page titles, fall back to path slugs
+    sourceRefs = await Promise.all(
+      searchResults.slice(0, 4).map(async r => {
+        const title = (await extractPageTitle(r.url)) ?? r.title;
+        return { title, url: r.url };
+      })
+    );
 
   // ── MODE B: Trend — pick top unprocessed RSS article ─────────────────────
   } else {
@@ -495,8 +514,37 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    generated = await generateFromTrend(article, linkedCourse, apiKey, model);
+    // Search for additional reference sources related to the article topic
+    const searchQuery = buildAlisonQuery(article) || article.title.slice(0, 80);
+    const searchResults = await searchDDG(`${searchQuery} AI news`);
+    const primaryDomain = new URL(article.url).hostname;
+    const additionalResults = searchResults.filter(r => {
+      try {
+        return new URL(r.url).hostname !== primaryDomain;
+      } catch {
+        return false;
+      }
+    }).slice(0, 3);
+
+    let referenceContent = '';
+    const checkedAdditional: { url: string; title: string }[] = [];
+    for (const result of additionalResults) {
+      const snippet = await fetchSnippet(result.url);
+      if (snippet.length > 200) {
+        referenceContent += `\n\n--- Source: ${result.title} (${result.url}) ---\n${snippet}`;
+        checkedAdditional.push(result);
+        if (referenceContent.length > 4000) break;
+      }
+    }
+
+    generated = await generateFromTrend(article, linkedCourse, referenceContent, apiKey, model);
+
+    // Primary source first, then checked additional sources
     sourceRefs = [{ title: `${article.sourceName}: ${article.title}`, url: article.url }];
+    for (const r of checkedAdditional) {
+      const title = (await extractPageTitle(r.url)) ?? r.title;
+      sourceRefs.push({ title, url: r.url });
+    }
   }
 
   if (!generated) {
@@ -574,7 +622,7 @@ export async function POST(req: NextRequest) {
 
 // ── Helpers (used by manual/course mode) ─────────────────────────────────────
 
-async function searchDDG(query: string): Promise<string[]> {
+async function searchDDG(query: string): Promise<{ url: string; title: string }[]> {
   try {
     const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
     const res = await fetch(url, {
@@ -583,19 +631,62 @@ async function searchDDG(query: string): Promise<string[]> {
     });
     if (!res.ok) return [];
     const html = await res.text();
-    const urls: string[] = [];
-    const re = /href="\/l\/\?uddg=([^&"]+)/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(html)) !== null) {
+    const results: { url: string; title: string }[] = [];
+
+    // Extract result blocks and pull link + title from each
+    const blockRe = /<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+    let bm: RegExpExecArray | null;
+    while ((bm = blockRe.exec(html)) !== null) {
       try {
-        const decoded = decodeURIComponent(m[1]);
-        if (decoded.startsWith('http') && !decoded.includes('duckduckgo.com')) urls.push(decoded);
+        const rawHref = bm[1];
+        const title = stripHtml(bm[2]).trim();
+        const decoded = rawHref.startsWith('http')
+          ? rawHref
+          : decodeURIComponent(rawHref.replace(/^\/l\/\?uddg=/, '').split('&')[0]);
+        if (decoded.startsWith('http') && !decoded.includes('duckduckgo.com')) {
+          results.push({ url: decoded, title: title || decoded });
+        }
       } catch { /* skip */ }
     }
-    return [...new Set(urls)].slice(0, 6);
+
+    // Fallback: direct uddg links if the block parse misses
+    if (results.length === 0) {
+      const re = /href="\/l\/\?uddg=([^&"]+)/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(html)) !== null) {
+        try {
+          const decoded = decodeURIComponent(m[1]);
+          if (decoded.startsWith('http') && !decoded.includes('duckduckgo.com')) {
+            results.push({ url: decoded, title: decoded });
+          }
+        } catch { /* skip */ }
+      }
+    }
+
+    // De-duplicate by URL
+    const seen = new Set<string>();
+    return results.filter(r => {
+      if (seen.has(r.url)) return false;
+      seen.add(r.url);
+      return true;
+    }).slice(0, 6);
   } catch {
     return [];
   }
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 async function fetchSnippet(url: string): Promise<string> {
@@ -609,17 +700,27 @@ async function fetchSnippet(url: string): Promise<string> {
     });
     if (!res.ok) return '';
     const html = await res.text();
-    return html
-      .replace(/<style[\s\S]*?<\/style>/gi, '')
-      .replace(/<script[\s\S]*?<\/script>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ')
-      .replace(/\s{2,}/g, ' ')
-      .trim()
-      .slice(0, 2000);
+    return stripHtml(html).slice(0, 2000);
   } catch {
     return '';
+  }
+}
+
+async function extractPageTitle(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,*/*',
+      },
+      signal: AbortSignal.timeout(4_000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim() ?? null;
+    return title ? stripHtml(title) : null;
+  } catch {
+    return null;
   }
 }
 
