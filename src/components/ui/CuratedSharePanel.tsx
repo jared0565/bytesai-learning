@@ -137,6 +137,10 @@ export default function CuratedSharePanel({ slug, title }: Props) {
   const [minC, maxC] = selectedMeta.charRange;
   const charCount = copy?.length ?? 0;
   const charOk = charCount >= minC && charCount <= maxC;
+  const effectiveTweetLength = selected === 'twitter'
+    ? (copy?.length ?? 0) + 1 + 23 // body + space + t.co URL
+    : null;
+  const tweetOverLimit = effectiveTweetLength !== null && effectiveTweetLength > 280;
 
   return (
     <>
@@ -266,11 +270,16 @@ export default function CuratedSharePanel({ slug, title }: Props) {
                     <span style={{
                       fontSize: '0.7rem', fontWeight: 700, padding: '0.125rem 0.5rem',
                       borderRadius: 'var(--radius-full)',
-                      color: charOk ? 'var(--emerald)' : charCount > maxC ? 'var(--rose)' : 'var(--amber)',
-                      background: charOk ? 'rgba(16,185,129,0.1)' : charCount > maxC ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
+                      color: selected === 'twitter'
+                        ? (tweetOverLimit ? 'var(--rose)' : effectiveTweetLength! >= 270 ? 'var(--amber)' : 'var(--emerald)')
+                        : charOk ? 'var(--emerald)' : charCount > maxC ? 'var(--rose)' : 'var(--amber)',
+                      background: selected === 'twitter'
+                        ? (tweetOverLimit ? 'rgba(239,68,68,0.1)' : effectiveTweetLength! >= 270 ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)')
+                        : charOk ? 'rgba(16,185,129,0.1)' : charCount > maxC ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
                     }}>
-                      {charCount.toLocaleString()} chars
-                      {selected !== 'linkedin' && ` · target ${minC}–${maxC}`}
+                      {selected === 'twitter'
+                        ? `${effectiveTweetLength}/280 (post + link)`
+                        : `${charCount.toLocaleString()} chars${selected !== 'linkedin' ? ` · target ${minC}–${maxC}` : ''}`}
                     </span>
                   )}
                 </div>
@@ -333,21 +342,26 @@ export default function CuratedSharePanel({ slug, title }: Props) {
                       <button
                         onClick={handleCopy}
                         className="btn btn-primary btn-sm"
+                        disabled={tweetOverLimit}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
                       >
                         {copied ? <Check size={13} /> : <Copy size={13} />}
-                        {copied ? 'Copied!' : 'Copy text + link'}
+                        {copied ? 'Copied!' : tweetOverLimit ? 'Too long for X' : 'Copy text + link'}
                       </button>
                       <a
                         href={buildShareUrl(selected, slug, copy, shortUrl ?? undefined)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="btn btn-outline btn-sm"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
+                          opacity: tweetOverLimit ? 0.5 : 1,
+                          pointerEvents: tweetOverLimit ? 'none' : 'auto',
+                        }}
                         onClick={selected === 'linkedin' || selected === 'facebook' ? handleCopy : undefined}
                       >
                         <ExternalLink size={13} />
-                        Open {selectedMeta.shortLabel}
+                        {tweetOverLimit ? 'Over X limit' : `Open ${selectedMeta.shortLabel}`}
                         {selected === 'linkedin' && ' ↗'}
                       </a>
                       <button

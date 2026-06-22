@@ -105,11 +105,14 @@ Apply this hook structure in order:
 4. Warmth — one grounded line that makes clicking feel like a natural next step, not urgent bait
 
 Rules (strictly follow ALL):
-- 100–200 characters TOTAL (the URL is added separately — do not include it)
+- FINAL TWEET BODY MUST BE UNDER 200 CHARACTERS. The URL is appended separately by the platform. If your draft is longer, cut words ruthlessly until it fits.
 - No rhetorical questions, no hashtags, no emojis
 - No corporate speak, no superlatives
 - End with a pull toward the article — curiosity, not pressure
-- Return ONLY the tweet text — no quotes, no labels, no explanation`,
+- Return ONLY the tweet text — no quotes, no labels, no explanation
+
+Example of an acceptable tweet (do not copy; match the length and directness):
+AI is changing how clinicians spot rare disease. New reasoning models solved 18 cases that had no diagnosis. Families are no longer stuck in years of uncertainty.`,
 
   whatsapp: (title, summary, why) => `Write a WhatsApp message sharing this AI insight from BytesAI Learning.
 
@@ -234,6 +237,18 @@ export async function POST(req: NextRequest) {
       .replace(/—/g, ',');
     // Strip "Final LinkedIn Post:" label if model adds it anyway
     copy = copy.replace(/^Final LinkedIn Post:\s*/i, '').trim();
+
+    // Hard enforce platform length ceilings so users never get blocked by X etc.
+    if (platform === 'twitter') {
+      // X counts a URL as 23 chars. Leave 24 chars buffer for space + rounding.
+      const MAX_TWEET_BODY = 245;
+      if (copy.length > MAX_TWEET_BODY) {
+        copy = copy.slice(0, MAX_TWEET_BODY).replace(/\s+\S*$/, '').trim();
+      }
+      if (copy.length > MAX_TWEET_BODY) {
+        copy = copy.slice(0, MAX_TWEET_BODY).trim();
+      }
+    }
 
     if (!copy) return NextResponse.json({ error: 'Empty response from AI.' }, { status: 502 });
 
