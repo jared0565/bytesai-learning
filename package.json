@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
+    "generate-og-pngs": "node scripts/generate-og-pngs.mjs",
+    "prebuild": "node scripts/generate-og-pngs.mjs",
     "build": "next build --webpack",
     "build:cf": "npx opennextjs-cloudflare build && node scripts/add-cron.mjs",
     "preview": "npx opennextjs-cloudflare build && node scripts/add-cron.mjs && wrangler dev",

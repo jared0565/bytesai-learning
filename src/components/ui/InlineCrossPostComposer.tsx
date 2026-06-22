@@ -349,7 +349,7 @@ export default function InlineCrossPostComposer({ slug, title }: Props) {
           </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`/api/og?slug=${encodeURIComponent(slug)}&type=article&format=png`}
+            src={`/og-images/${encodeURIComponent(slug)}.png`}
             alt="Article share card"
             style={{ width: '100%', maxWidth: 360, borderRadius: 'var(--radius-md)', display: 'block', border: '1px solid var(--border)' }}
           />
