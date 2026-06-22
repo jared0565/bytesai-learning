@@ -182,6 +182,11 @@ async function main() {
     mkdirSync(OUT_DIR, { recursive: true });
   }
 
+  if (!TOKEN) {
+    console.warn('BYTESAI_CLI_TOKEN not set — skipping OG PNG generation. Existing public/og-images/ files will be used.');
+    return;
+  }
+
   const pages = await fetchPublishedPages();
   console.log(`Generating OG PNGs for ${pages.length} published articles…`);
 
