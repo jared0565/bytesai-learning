@@ -1,5 +1,7 @@
 import { getDB, getCourseBySlug, getCuratedPageBySlug } from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
+import { Resvg, initWasm } from '@resvg/resvg-wasm';
+import { RESVG_WASM_BASE64 } from '@/lib/resvg-wasm-inline';
 
 const PROVIDER_NAMES: Record<string, string> = {
   'prov-microsoft': 'Microsoft', 'prov-google': 'Google', 'prov-anthropic': 'Anthropic',
@@ -280,10 +282,43 @@ function buildQuizSvg(score: number, total: number, difficulty: string): string 
 </svg>`;
 }
 
+async function renderSvgToPng(svg: string): Promise<Response> {
+  try {
+    const wasmBytes = Uint8Array.from(atob(RESVG_WASM_BASE64), c => c.charCodeAt(0));
+    await initWasm(wasmBytes);
+    const resvg = new Resvg(svg, {
+      fitTo: { mode: 'width', value: 1200 },
+      font: {
+        fontFiles: [],
+        loadSystemFonts: true,
+        defaultFontFamily: 'Inter,system-ui,sans-serif',
+      },
+    });
+    const png = resvg.render().asPng();
+    return new Response(png.buffer as ArrayBuffer, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=86400, s-maxage=604800',
+      },
+    });
+  } catch (err) {
+    // Fallback to SVG if WASM rasterisation fails in any environment
+    console.error('resvg render failed:', err);
+    return new Response(svg, {
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'public, max-age=300',
+      },
+    });
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug');
   const type = searchParams.get('type');
+  const requestedFormat = searchParams.get('format');
+  const forcePng = requestedFormat !== 'svg';
 
   // Quiz result image: ?type=quiz&score=4&total=5&difficulty=advanced
   if (type === 'quiz') {
@@ -291,6 +326,7 @@ export async function GET(request: Request) {
     const total = parseInt(searchParams.get('total') ?? '5', 10);
     const difficulty = searchParams.get('difficulty') ?? 'beginner';
     const svg = buildQuizSvg(score, total, difficulty);
+    if (forcePng) return renderSvgToPng(svg);
     return new Response(svg, {
       headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400, s-maxage=604800' },
     });
@@ -313,6 +349,7 @@ export async function GET(request: Request) {
         snippet || why,
         snippet ? why : '',
       );
+      if (forcePng) return renderSvgToPng(svg);
       return new Response(svg, {
         headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400, s-maxage=604800' },
       });
@@ -328,6 +365,7 @@ export async function GET(request: Request) {
         course.is_alison === 1,
         course.snippet ?? ''
       );
+      if (forcePng) return renderSvgToPng(svg);
       return new Response(svg, {
         headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400, s-maxage=604800' },
       });
@@ -341,12 +379,14 @@ export async function GET(request: Request) {
       snippet || why,
       snippet ? why : '',
     );
+    if (forcePng) return renderSvgToPng(svg);
     return new Response(svg, {
       headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400, s-maxage=604800' },
     });
 
   } catch {
     const svg = buildArticleSvg('BytesAI Learning', 'Free AI courses and insights curated for the modern learner.');
+    if (forcePng) return renderSvgToPng(svg);
     return new Response(svg, {
       headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=300' },
     });

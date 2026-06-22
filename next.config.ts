@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "huggingface.co" },
     ],
   },
+  serverExternalPackages: ['@resvg/resvg-wasm'],
   async headers() {
     return [
       {

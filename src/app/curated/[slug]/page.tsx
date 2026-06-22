@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const page = await getCuratedPageBySlug(db, slug).catch(() => null);
   if (!page) return { title: 'Insight Not Found' };
 
-  const ogImageUrl = page.og_image_url ?? `/api/og?slug=${slug}&type=article`;
+  const ogImageUrl = page.og_image_url ?? `https://learn.bytesai.uk/api/og?slug=${slug}&type=article&format=png`;
 
   return {
     title: page.meta_title ?? page.title,
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title: page.og_title ?? page.title,
       description: page.og_description ?? page.summary ?? undefined,
-      images: [{ url: ogImageUrl, width: 1200, height: 1200 }],
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
       type: 'article',
     },
     twitter: {
@@ -98,7 +98,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
     headline: page.title,
     description: page.summary ?? undefined,
     url: `https://learn.bytesai.uk/curated/${page.slug}`,
-    image: page.og_image_url ?? `https://learn.bytesai.uk/api/og?slug=${slug}&type=article`,
+    image: page.og_image_url ?? `https://learn.bytesai.uk/api/og?slug=${slug}&type=article&format=png`,
     dateModified: page.last_verified_at ?? page.updated_at,
     datePublished: page.created_at,
     publisher: {

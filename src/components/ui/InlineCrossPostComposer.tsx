@@ -29,15 +29,15 @@ function buildShareUrl(platform: Platform, slug: string, copy: string, shareable
     twitter: 'twitter', linkedin: 'linkedin', whatsapp: 'whatsapp', facebook: 'facebook',
   };
   const articleUrl = shareableUrl ?? `https://learn.bytesai.uk/curated/${slug}?utm_source=${utmMap[platform]}&utm_medium=social&utm_campaign=share`;
-  const fullText = copy + '\n\n' + articleUrl;
 
   switch (platform) {
     case 'twitter':
-      return `https://twitter.com/intent/tweet?text=${encodeURIComponent(fullText)}`;
+      // Pass URL separately so Twitter's card crawler unfurls it reliably.
+      return `https://twitter.com/intent/tweet?text=${encodeURIComponent(copy)}&url=${encodeURIComponent(articleUrl)}`;
     case 'linkedin':
       return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(articleUrl)}`;
     case 'whatsapp':
-      return `https://wa.me/?text=${encodeURIComponent(fullText)}`;
+      return `https://wa.me/?text=${encodeURIComponent(copy + '\n\n' + articleUrl)}`;
     case 'facebook':
       return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`;
   }
@@ -335,7 +335,7 @@ export default function InlineCrossPostComposer({ slug, title }: Props) {
           </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`/api/og?slug=${encodeURIComponent(slug)}&type=article`}
+            src={`/api/og?slug=${encodeURIComponent(slug)}&type=article&format=png`}
             alt="Article share card"
             style={{ width: '100%', maxWidth: 360, borderRadius: 'var(--radius-md)', display: 'block', border: '1px solid var(--border)' }}
           />
