@@ -1,10 +1,18 @@
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
 import { Resvg, initWasm } from '@resvg/resvg-wasm';
-import { readFileSync } from 'fs';
 
 const TOKEN = process.env.BYTESAI_CLI_TOKEN;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://learn.bytesai.uk';
 const OUT_DIR = new URL('../public/og-images/', import.meta.url);
+const WASM_PATH = new URL('../node_modules/@resvg/resvg-wasm/index_bg.wasm', import.meta.url);
+
+let wasmInitialized = false;
+async function ensureWasm() {
+  if (wasmInitialized) return;
+  const wasm = readFileSync(WASM_PATH);
+  await initWasm(wasm);
+  wasmInitialized = true;
+}
 
 function escapeXml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
@@ -125,9 +133,7 @@ ${calloutSvg}
 }
 
 async function renderSvgToPng(svg) {
-  const wasmPath = new URL('../node_modules/@resvg/resvg-wasm/index_bg.wasm', import.meta.url);
-  const wasm = readFileSync(wasmPath);
-  await initWasm(wasm);
+  await ensureWasm();
   const resvg = new Resvg(svg, {
     fitTo: { mode: 'width', value: 1200 },
     font: {
