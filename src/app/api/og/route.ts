@@ -1,7 +1,7 @@
 import { getDB, getCourseBySlug, getCuratedPageBySlug } from '@/lib/db';
 import { isValidSlug } from '@/lib/security';
 import { Resvg, initWasm } from '@resvg/resvg-wasm';
-import { RESVG_WASM_BASE64 } from '@/lib/resvg-wasm-inline';
+
 
 const PROVIDER_NAMES: Record<string, string> = {
   'prov-microsoft': 'Microsoft', 'prov-google': 'Google', 'prov-anthropic': 'Anthropic',
@@ -284,7 +284,23 @@ function buildQuizSvg(score: number, total: number, difficulty: string): string 
 
 async function renderSvgToPng(svg: string): Promise<Response> {
   try {
-    const wasmBytes = Uint8Array.from(atob(RESVG_WASM_BASE64), c => c.charCodeAt(0));
+    const { getCloudflareContext } = await import('@opennextjs/cloudflare');
+    const { env } = await getCloudflareContext({ async: true });
+    const kv = (env as Record<string, unknown>).KV as KVNamespace | undefined;
+
+    let wasmBytes: ArrayBuffer | Uint8Array;
+    if (kv) {
+      const wasm = await kv.get('RESVG_WASM', { type: 'arrayBuffer' }) as ArrayBuffer | null;
+      if (!wasm) throw new Error('RESVG_WASM not found in KV');
+      wasmBytes = wasm;
+    } else {
+      // Fallback only for local dev / build-time: load from node_modules. Not available in worker.
+      const fs = await import('fs');
+      const path = await import('path');
+      const wasmPath = path.join(process.cwd(), 'node_modules', '@resvg', 'resvg-wasm', 'index_bg.wasm');
+      wasmBytes = fs.readFileSync(wasmPath);
+    }
+
     await initWasm(wasmBytes);
     const resvg = new Resvg(svg, {
       fitTo: { mode: 'width', value: 1200 },

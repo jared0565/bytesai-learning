@@ -4,8 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "postinstall": "node scripts/inline-resvg-wasm.mjs",
-    "prebuild": "node scripts/inline-resvg-wasm.mjs",
     "build": "next build --webpack",
     "build:cf": "npx opennextjs-cloudflare build && node scripts/add-cron.mjs",
     "preview": "npx opennextjs-cloudflare build && node scripts/add-cron.mjs && wrangler dev",
@@ -26,6 +24,7 @@
     "db:pull": "wrangler d1 export bytesai-learning-db --remote --output=db/prod-dump.sql && echo 'Prod dump saved. Restart dev server to apply.'"
   },
   "dependencies": {
+    "@cf-wasm/og": "^0.4.0",
     "@cf-wasm/resvg": "^0.3.4",
     "@resvg/resvg-wasm": "^2.6.2",
     "clsx": "^2.1.1",
@@ -39,6 +38,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260621.1",
     "@opennextjs/cloudflare": "^1.18.0",
     "@types/node": "^20",
     "@types/react": "^19",
