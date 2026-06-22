@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Loader2, AlertCircle, Sparkles, CheckCircle2, Save } from 'lucide-react';
+import InlineCrossPostComposer from '@/components/ui/InlineCrossPostComposer';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -420,17 +421,7 @@ interface TipEditorProps {
 }
 
 function TipEditor({ tip, page, draftValue, aiSuggestion, rewritingField, savingField, onDraftChange, onSuggest, onApply, onApprove }: TipEditorProps) {
-  const config = getTipConfig(tip);
-  if (!config) return null;
-
-  const isStatusTip = config.field === 'editorial_review_status';
-  const fieldKey = config.field as string;
-  const currentValue = isStatusTip
-    ? page.editorial_review_status
-    : draftValue[fieldKey] ?? (page[config.field as keyof PageData] as string | null) ?? '';
-  const hasSuggestion = !!aiSuggestion[fieldKey];
-  const isRewriting = rewritingField === fieldKey;
-  const isSaving = savingField === fieldKey;
+  const isCrossPostTip = tip.text.includes('cross-post to social platforms');
 
   return (
     <div style={{
@@ -451,6 +442,41 @@ function TipEditor({ tip, page, draftValue, aiSuggestion, rewritingField, saving
         {tip.text}
       </p>
 
+      {isCrossPostTip ? (
+        <InlineCrossPostComposer slug={page.slug} title={page.title} />
+      ) : (
+        <StandardTipEditor
+          tip={tip}
+          page={page}
+          draftValue={draftValue}
+          aiSuggestion={aiSuggestion}
+          rewritingField={rewritingField}
+          savingField={savingField}
+          onDraftChange={onDraftChange}
+          onSuggest={onSuggest}
+          onApply={onApply}
+          onApprove={onApprove}
+        />
+      )}
+    </div>
+  );
+}
+
+function StandardTipEditor({ tip, page, draftValue, aiSuggestion, rewritingField, savingField, onDraftChange, onSuggest, onApply, onApprove }: TipEditorProps) {
+  const config = getTipConfig(tip);
+  if (!config) return null;
+
+  const isStatusTip = config.field === 'editorial_review_status';
+  const fieldKey = config.field as string;
+  const currentValue = isStatusTip
+    ? page.editorial_review_status
+    : draftValue[fieldKey] ?? (page[config.field as keyof PageData] as string | null) ?? '';
+  const hasSuggestion = !!aiSuggestion[fieldKey];
+  const isRewriting = rewritingField === fieldKey;
+  const isSaving = savingField === fieldKey;
+
+  return (
+    <>
       {isStatusTip ? (
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
@@ -506,7 +532,7 @@ function TipEditor({ tip, page, draftValue, aiSuggestion, rewritingField, saving
           </div>
         </>
       )}
-    </div>
+    </>
   );
 }
 
