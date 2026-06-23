@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { sanitizeText, detectPromptInjection, checkRateLimit, getRateLimitKey, rateLimitResponse } from '@/lib/security';
+import { sanitizeText, detectPromptInjection, checkRateLimitAsync, getRateLimitKey, rateLimitResponse } from '@/lib/security';
 import { getDB, searchCourses } from '@/lib/db';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 import { scrapeAlisonSearchWithFirecrawl, ALISON_AFFILIATE_PARAMS } from '@/lib/alison';
@@ -184,7 +184,7 @@ Rules:
 export async function POST(req: NextRequest) {
   // Rate limit: 30 requests/hour per IP
   const key = getRateLimitKey(req, 'chatbot');
-  const limit = checkRateLimit(key, 30, 60 * 60 * 1000);
+  const limit = await checkRateLimitAsync(key, 30, 60 * 60 * 1000);
   if (!limit.allowed) return rateLimitResponse(limit.resetAt);
 
   let body: unknown;

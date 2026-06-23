@@ -25,16 +25,9 @@ function getInitialTheme(): Theme {
 }
 
 export default function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light');
-  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() => getInitialTheme());
 
   useEffect(() => {
-    setTheme(getInitialTheme());
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
     const root = document.documentElement;
     if (theme === 'dark') {
       root.classList.add('dark');
@@ -42,7 +35,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
       root.classList.remove('dark');
     }
     localStorage.setItem(STORAGE_KEY, theme);
-  }, [theme, mounted]);
+  }, [theme]);
 
   const toggle = () => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
 

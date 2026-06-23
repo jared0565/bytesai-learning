@@ -44,7 +44,6 @@ export default function AdminFeedbackPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setLoading(true);
     const params = new URLSearchParams();
     if (filterType)      params.set('type', filterType);
     if (filterSentiment) params.set('sentiment', filterSentiment);
@@ -59,7 +58,12 @@ export default function AdminFeedbackPage() {
     setLoading(false);
   }, [filterType, filterSentiment, filterReviewed]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
 
   async function toggleReviewed(row: FeedbackRow) {
     const next = !row.reviewed;

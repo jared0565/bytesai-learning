@@ -9,6 +9,7 @@ import { getCoursesByCategory, getDB, distributeCourses } from '@/lib/db';
 import { getCategoryBySlug, CATEGORIES } from '@/lib/ranking';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
+import { defaultSocialImageUrl, SITE_URL } from '@/lib/social-meta';
 
 const CATEGORY_META: Record<string, { tagline: string; description: string }> = {
   'ai-foundations': {
@@ -59,15 +60,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!cat) return {};
   const meta = CATEGORY_META[slug];
   const description = meta?.description ?? `Browse free ${cat.label} courses. Hand-curated from top AI providers.`;
+  const imageUrl = defaultSocialImageUrl();
+  const canonicalUrl = `${SITE_URL}/categories/${slug}`;
   return {
     title: `${cat.label} — Free AI Courses | BytesAI Learning`,
     description,
     openGraph: {
       title: `${cat.label} — Free AI Courses`,
       description,
+      url: canonicalUrl,
+      siteName: 'BytesAI Learning',
+      images: [{ url: imageUrl, width: 1200, height: 1200, alt: `${cat.label} courses on BytesAI Learning` }],
       type: 'website',
     },
-    alternates: { canonical: `/categories/${slug}` },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${cat.label} — Free AI Courses`,
+      description,
+      images: [imageUrl],
+    },
+    alternates: { canonical: canonicalUrl },
   };
 }
 
@@ -90,11 +102,11 @@ export default async function CategoryPage({ params }: PageProps) {
     '@type': 'CollectionPage',
     name: `${cat.label} — Free AI Courses`,
     description: meta.description || meta.tagline,
-    url: `https://bytesai.com/categories/${slug}`,
+    url: `${SITE_URL}/categories/${slug}`,
     hasPart: courses.slice(0, 10).map(c => ({
       '@type': 'Course',
       name: c.title,
-      url: `https://bytesai.com/courses/${c.slug}`,
+      url: `${SITE_URL}/courses/${c.slug}`,
       isAccessibleForFree: true,
     })),
   };

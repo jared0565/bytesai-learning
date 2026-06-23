@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyPassword, signSession, getSessionCookieOptions } from '@/lib/auth';
-import { sanitizeEmail, isValidEmail, checkRateLimit, getRateLimitKey, rateLimitResponse } from '@/lib/security';
+import { sanitizeEmail, isValidEmail, checkRateLimitAsync, getRateLimitKey, rateLimitResponse } from '@/lib/security';
 import { getDB, getUserByEmail, getUserProfile, purgeOldAuditLogs } from '@/lib/db';
 
 const LoginSchema = z.object({
@@ -13,7 +13,7 @@ const LoginSchema = z.object({
 export async function POST(req: NextRequest) {
   // Rate limit: 5 attempts per 15 minutes per IP
   const key = getRateLimitKey(req, 'login');
-  const limit = checkRateLimit(key, 5, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(key, 5, 15 * 60 * 1000);
   if (!limit.allowed) return rateLimitResponse(limit.resetAt);
 
   let body: unknown;

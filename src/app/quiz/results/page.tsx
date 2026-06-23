@@ -130,22 +130,24 @@ function UnsavedDataModal({ topic, onClose, onContinue, topicUrl }: { topic: str
 
 function ResultsContent() {
   const router = useRouter();
-  const [result, setResult] = useState<QuizResult | null>(null);
+  const [result] = useState<QuizResult | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const raw = sessionStorage.getItem('quizResult');
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as QuizResult;
+    } catch {
+      return null;
+    }
+  });
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [pendingTopic, setPendingTopic] = useState<string | null>(null);
 
   useEffect(() => {
-    const raw = sessionStorage.getItem('quizResult');
-    if (!raw) {
-      router.push('/quiz');
-      return;
-    }
-    try {
-      setResult(JSON.parse(raw));
-    } catch {
+    if (!result) {
       router.push('/quiz');
     }
-  }, [router]);
+  }, [result, router]);
 
   const buildTopicUrl = (topic: string) => {
     const cat = getCategoryBySlug(topic);
@@ -168,7 +170,6 @@ function ResultsContent() {
 
   const shareText = `I scored ${result.score}/${result.total} on the BytesAI AI Knowledge Quiz — can you beat me?`;
   const shareUrl = `https://learn.bytesai.uk/quiz`;
-  const ogImageUrl = `https://learn.bytesai.uk/api/og?type=quiz&score=${result.score}&total=${result.total}&difficulty=${result.difficulty}`;
 
   const toggleExplanation = (id: string) => {
     setExpanded(prev => {

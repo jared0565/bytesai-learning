@@ -10,6 +10,7 @@ import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 import CourseSidebarActions from './CourseSidebarActions';
+import { courseSocialImageUrl, SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH, SITE_URL, socialMetaDescription } from '@/lib/social-meta';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -21,23 +22,28 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!db || !isValidSlug(slug)) return { title: 'Course Not Found' };
   const course = await getCourseBySlug(db, slug).catch(() => null);
   if (!course) return { title: 'Course Not Found' };
-  const ogImage = course.og_image_url ?? `/api/og?slug=${slug}&type=course`;
+  const ogImage = courseSocialImageUrl(slug);
+  const canonicalUrl = course.canonical_url ?? `${SITE_URL}/courses/${slug}`;
+  const pageDescription = socialMetaDescription(course.meta_description ?? course.snippet);
+  const socialDescription = socialMetaDescription(course.og_description ?? course.meta_description ?? course.snippet);
   return {
     title: course.meta_title ?? course.title,
-    description: course.meta_description ?? course.snippet ?? undefined,
+    description: pageDescription,
     openGraph: {
       title: course.og_title ?? course.title,
-      description: course.og_description ?? course.snippet ?? undefined,
-      images: [{ url: ogImage, width: 1200, height: 630, alt: course.title }],
+      description: socialDescription,
+      url: canonicalUrl,
+      siteName: 'BytesAI Learning',
+      images: [{ url: ogImage, width: SOCIAL_IMAGE_WIDTH, height: SOCIAL_IMAGE_HEIGHT, alt: course.title }],
       type: 'article',
     },
     twitter: {
       card: 'summary_large_image',
       title: course.og_title ?? course.title,
-      description: course.og_description ?? course.snippet ?? undefined,
+      description: socialDescription,
       images: [ogImage],
     },
-    alternates: { canonical: course.canonical_url ?? `/courses/${slug}` },
+    alternates: { canonical: canonicalUrl },
   };
 }
 

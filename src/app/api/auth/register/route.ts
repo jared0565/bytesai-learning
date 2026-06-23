@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
-import { hashPassword, signSession, getSessionCookieOptions, COOKIE_NAME } from '@/lib/auth';
-import { sanitizeEmail, isValidEmail, checkRateLimit, getRateLimitKey, rateLimitResponse } from '@/lib/security';
+import { hashPassword, signSession, getSessionCookieOptions } from '@/lib/auth';
+import { sanitizeEmail, sanitizeText, isValidEmail, checkRateLimitAsync, getRateLimitKey, rateLimitResponse } from '@/lib/security';
 import { getDB, getUserByEmail } from '@/lib/db';
 import { sendEmail, buildVerificationEmail } from '@/lib/email';
 
@@ -17,7 +17,7 @@ const RegisterSchema = z.object({
 export async function POST(req: NextRequest) {
   // Rate limit: 5 registrations per 15 minutes per IP
   const key = getRateLimitKey(req, 'register');
-  const limit = checkRateLimit(key, 5, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(key, 5, 15 * 60 * 1000);
   if (!limit.allowed) return rateLimitResponse(limit.resetAt);
 
   let body: unknown;
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
 
   const { email: rawEmail, password, displayName, marketingConsent } = parsed.data;
   const email = sanitizeEmail(rawEmail);
+  const safeDisplayName = sanitizeText(displayName ?? '').slice(0, 100) || email.split('@')[0];
 
   if (!isValidEmail(email)) return NextResponse.json({ error: 'Invalid email address.' }, { status: 422 });
 
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
       ).bind(nanoid(), userId, 'email', email, now),
       db.prepare(
         'INSERT INTO user_profiles (user_id, display_name, dark_mode, timezone, marketing_consent, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).bind(userId, displayName ?? email.split('@')[0], 0, 'Europe/London', marketingConsent ? 1 : 0, now, now),
+      ).bind(userId, safeDisplayName, 0, 'Europe/London', marketingConsent ? 1 : 0, now, now),
       db.prepare(
         'INSERT INTO email_verification_tokens (id, user_id, token, expires_at, created_at) VALUES (?, ?, ?, ?, ?)'
       ).bind(nanoid(), userId, verificationToken, verificationExpires, now),
@@ -92,14 +93,14 @@ export async function POST(req: NextRequest) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
   const verificationUrl = `${siteUrl}/api/auth/verify-email?token=${verificationToken}`;
   const { subject, html, text } = buildVerificationEmail({
-    displayName: displayName ?? email.split('@')[0],
+    displayName: safeDisplayName,
     verificationUrl,
     siteUrl,
   });
   await sendEmail({ to: email, subject, html, text });
 
   // Issue session (unverified — middleware will gate dashboard access)
-  const token = await signSession({ userId, email, role: 'learner', displayName: displayName ?? email.split('@')[0], emailVerified: false });
+  const token = await signSession({ userId, email, role: 'learner', displayName: safeDisplayName, emailVerified: false });
   const { name, options } = getSessionCookieOptions(7 * 24 * 60 * 60);
 
   const res = NextResponse.json({ ok: true, redirectTo: '/auth/verify-pending' }, { status: 201 });

@@ -170,6 +170,7 @@ export interface CuratedPage {
   executive_implications: string | null;
   primary_course_rationale: string | null;
   primary_course_slug: string | null;
+  categories_json: string | null;
   related_course_slugs_json: string | null;
   source_references_json: string | null;
   editorial_review_status: 'draft' | 'in_review' | 'approved' | 'rejected';
@@ -179,7 +180,12 @@ export interface CuratedPage {
   og_title: string | null;
   og_description: string | null;
   og_image_url: string | null;
+  og_image_alt: string | null;
+  og_image_data_json: string | null;
   share_image_prompt: string | null;
+  social_share_copy_json: string | null;
+  social_share_copy_model: string | null;
+  social_share_copy_generated_at: string | null;
   last_verified_at: string | null;
   view_count: number;
   last_viewed_at: string | null;

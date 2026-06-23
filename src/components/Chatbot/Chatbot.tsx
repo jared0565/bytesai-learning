@@ -480,7 +480,7 @@ export default function Chatbot() {
                         <Search size={16} style={{ flexShrink: 0 }} />
                         <span>
                           <span style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700 }}>
-                            Browse "{msg.alisonQuery}" courses on Alison
+                            Browse &quot;{msg.alisonQuery}&quot; courses on Alison
                           </span>
                           <span style={{ display: 'block', fontSize: '0.7rem', opacity: 0.8, marginTop: '0.15rem' }}>
                             Results pre-filtered · opens alison.com

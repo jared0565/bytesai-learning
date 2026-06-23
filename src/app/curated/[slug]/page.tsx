@@ -13,6 +13,7 @@ import { getCuratedPageBySlug, getCuratedPageBySlugAnyStatus, getCourseBySlug, g
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
+import { articleSocialImageUrl, SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH, socialMetaDescription } from '@/lib/social-meta';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -25,21 +26,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const page = await getCuratedPageBySlug(db, slug).catch(() => null);
   if (!page) return { title: 'Insight Not Found' };
 
-  const ogImageUrl = page.og_image_url ?? `https://learn.bytesai.uk/og-images/${slug}.png`;
+  const ogImageUrl = articleSocialImageUrl(slug, page.social_share_copy_generated_at ?? page.updated_at);
+  const pageDescription = socialMetaDescription(page.meta_description ?? page.summary ?? page.why_it_matters);
+  const socialDescription = socialMetaDescription(page.og_description ?? page.meta_description ?? page.summary ?? page.why_it_matters);
 
   return {
     title: page.meta_title ?? page.title,
-    description: page.meta_description ?? page.summary ?? undefined,
+    description: pageDescription,
     openGraph: {
       title: page.og_title ?? page.title,
-      description: page.og_description ?? page.summary ?? undefined,
-      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+      description: socialDescription,
+      url: `https://learn.bytesai.uk/curated/${slug}`,
+      siteName: 'BytesAI Learning',
+      images: [{ url: ogImageUrl, width: SOCIAL_IMAGE_WIDTH, height: SOCIAL_IMAGE_HEIGHT, alt: page.og_image_alt ?? page.title }],
       type: 'article',
     },
     twitter: {
       card: 'summary_large_image',
       title: page.og_title ?? page.title,
-      description: page.og_description ?? page.summary ?? undefined,
+      description: socialDescription,
       images: [ogImageUrl],
     },
     alternates: { canonical: `https://learn.bytesai.uk/curated/${slug}` },
@@ -91,6 +96,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
   ]);
 
   const validRelated = relatedCourses.filter(Boolean) as import('@/lib/db').Course[];
+  const structuredDataImageUrl = articleSocialImageUrl(page.slug, page.social_share_copy_generated_at ?? page.updated_at);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -98,7 +104,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
     headline: page.title,
     description: page.summary ?? undefined,
     url: `https://learn.bytesai.uk/curated/${page.slug}`,
-    image: page.og_image_url ?? `https://learn.bytesai.uk/og-images/${slug}.png`,
+    image: structuredDataImageUrl,
     dateModified: page.last_verified_at ?? page.updated_at,
     datePublished: page.created_at,
     publisher: {

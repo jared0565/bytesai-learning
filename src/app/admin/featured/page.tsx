@@ -36,7 +36,7 @@ export default async function AdminFeaturedPage() {
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.625rem', fontWeight: 800, marginBottom: '0.25rem' }}>Featured Slots</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          Control which courses appear in the "Featured this week" homepage section. Higher priority = ranked first.
+          Control which courses appear in the &quot;Featured this week&quot; homepage section. Higher priority = ranked first.
         </p>
       </div>
 

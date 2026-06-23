@@ -33,7 +33,9 @@ export async function GET(req: NextRequest) {
       const page = await db.prepare(
         `SELECT id, slug, title, summary, why_it_matters, what_changed, executive_implications,
                 primary_course_rationale, primary_course_slug, categories_json, related_course_slugs_json, source_references_json,
-                meta_title, meta_description, og_title, og_description, og_image_url,
+                meta_title, meta_description, og_title, og_description, og_image_url, og_image_alt,
+                og_image_data_json, share_image_prompt, social_share_copy_json,
+                social_share_copy_model, social_share_copy_generated_at,
                 editorial_review_status, published_status, last_verified_at, created_at, updated_at
          FROM curated_pages WHERE id = ?`
       ).bind(id).first<import('@/lib/db').CuratedPage>();
@@ -46,6 +48,8 @@ export async function GET(req: NextRequest) {
               primary_course_slug, categories_json, why_it_matters, what_changed, executive_implications,
               meta_description, last_verified_at, view_count, last_viewed_at,
               referrer_counts_json, ai_generated, generated_model, generated_at,
+              og_title, og_description, og_image_url, og_image_alt, og_image_data_json,
+              share_image_prompt, social_share_copy_json, social_share_copy_model, social_share_copy_generated_at,
               created_at, updated_at
        FROM curated_pages ORDER BY updated_at DESC LIMIT 200`
     ).all<import('@/lib/db').CuratedPage>();
@@ -151,7 +155,9 @@ export async function PATCH(req: NextRequest) {
   // Content fields
   const contentFields = ['title', 'slug', 'summary', 'why_it_matters', 'what_changed',
     'executive_implications', 'primary_course_rationale', 'primary_course_slug',
-    'meta_title', 'meta_description', 'og_title', 'og_description', 'og_image_url'] as const;
+    'meta_title', 'meta_description', 'og_title', 'og_description', 'og_image_url',
+    'og_image_alt', 'og_image_data_json', 'share_image_prompt', 'social_share_copy_json',
+    'social_share_copy_model', 'social_share_copy_generated_at'] as const;
 
   for (const field of contentFields) {
     if (field in body) {

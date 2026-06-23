@@ -293,7 +293,7 @@ async function parseFeed(source: RssSource): Promise<ParsedArticle[]> {
       getFirstTag(seg, 'content') ||
       getFirstTag(seg, 'description') ||
       getFirstTag(seg, 'summary');
-    let contentText = rawContent ? cleanArticleText(rawContent) : '';
+    const contentText = rawContent ? cleanArticleText(rawContent) : '';
 
     const article: ParsedArticle = {
       sourceId: source.id,

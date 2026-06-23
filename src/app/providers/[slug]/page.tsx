@@ -10,6 +10,7 @@ import { getProviderBySlug, getCoursesByProvider, getDB, distributeCourses } fro
 import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
+import { defaultSocialImageUrl } from '@/lib/social-meta';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -21,10 +22,28 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!db || !isValidSlug(slug)) return { title: 'Provider Not Found' };
   const provider = await getProviderBySlug(db, slug).catch(() => null);
   if (!provider) return { title: 'Provider Not Found' };
+  const title = `${provider.name} Free AI Courses — BytesAI Learning`;
+  const description = `Browse free AI courses from ${provider.name}. Curated and verified on BytesAI Learning.`;
+  const imageUrl = defaultSocialImageUrl();
+  const canonicalUrl = `https://learn.bytesai.uk/providers/${slug}`;
   return {
-    title: `${provider.name} Free AI Courses — BytesAI Learning`,
-    description: `Browse free AI courses from ${provider.name}. Curated and verified on BytesAI Learning.`,
-    alternates: { canonical: `https://learn.bytesai.uk/providers/${slug}` },
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: 'BytesAI Learning',
+      type: 'website',
+      images: [{ url: imageUrl, width: 1200, height: 1200, alt: `${provider.name} courses on BytesAI Learning` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl],
+    },
+    alternates: { canonical: canonicalUrl },
   };
 }
 

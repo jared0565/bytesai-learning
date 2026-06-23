@@ -60,7 +60,7 @@ export default async function ProvidersPage() {
               <div className="card" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
                 <Building2 size={48} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem' }} />
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>No providers found</h2>
-                <p style={{ color: 'var(--text-secondary)' }}>We couldn't load the list of providers at this time.</p>
+                <p style={{ color: 'var(--text-secondary)' }}>We couldn&apos;t load the list of providers at this time.</p>
               </div>
             ) : (
               <div className="grid-4">

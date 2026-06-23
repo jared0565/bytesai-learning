@@ -3,7 +3,7 @@ import { getDB } from '@/lib/db';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 import {
   sanitizeText, sanitizeEmail, isValidEmail,
-  checkRateLimit, getRateLimitKey,
+  checkRateLimitAsync, getRateLimitKey,
 } from '@/lib/security';
 import { nanoid } from 'nanoid';
 
@@ -13,7 +13,7 @@ const VALID_TYPES = ['general', 'article'] as const;
 export async function POST(req: NextRequest) {
   // ── Layer 3: Rate limit — 3 submissions per IP per hour ───────────────
   const rlKey = getRateLimitKey(req, 'feedback');
-  const rl = checkRateLimit(rlKey, 3, 60 * 60 * 1000);
+  const rl = await checkRateLimitAsync(rlKey, 3, 60 * 60 * 1000);
   if (!rl.allowed) {
     // Silently accept so bots don't know they're blocked
     return NextResponse.json({ ok: true });

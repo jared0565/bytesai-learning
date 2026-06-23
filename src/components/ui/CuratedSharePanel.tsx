@@ -426,7 +426,7 @@ export default function CuratedSharePanel({ slug, title }: Props) {
                   </p>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`/og-images/${encodeURIComponent(slug)}.png`}
+                    src={`/api/og?slug=${encodeURIComponent(slug)}&type=article`}
                     alt="Article share card"
                     style={{ width: '100%', maxWidth: 420, borderRadius: 'var(--radius-md)', display: 'block', border: '1px solid var(--border)' }}
                   />

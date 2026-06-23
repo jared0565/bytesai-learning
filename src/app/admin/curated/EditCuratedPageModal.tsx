@@ -919,7 +919,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                   ))}
                 </div>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.4rem', display: 'block' }}>
-                  "Auto-assign" uses AI to detect categories from the article · These categories also drive "Suggest from article" below
+                  &quot;Auto-assign&quot; uses AI to detect categories from the article · These categories also drive &quot;Suggest from article&quot; below
                 </span>
               </div>
 

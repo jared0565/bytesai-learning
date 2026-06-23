@@ -11,6 +11,14 @@ import {
   ALISON_PROVIDER_ID,
 } from '@/lib/alison';
 import { sanitizeText, isValidSlug } from '@/lib/security';
+import {
+  articleSocialImageUrl,
+  buildArticleOgImageData,
+  serializeSocialShareCopy,
+  stripMarkdown,
+  type ArticleOgImageData,
+  type SocialShareCopy,
+} from '@/lib/social-meta';
 
 async function requireAdmin(req: NextRequest) {
   // Accept session cookie (browser) or Bearer token (CLI/automation)
@@ -165,6 +173,15 @@ interface GeneratedArticle {
   primary_course_rationale: string;
   meta_description: string;
   categories: string[];
+}
+
+interface GeneratedSocialPackage {
+  og_title: string;
+  og_description: string;
+  og_image_alt: string;
+  share_image_prompt: string;
+  og_image_data: ArticleOgImageData;
+  social_share_copy: SocialShareCopy;
 }
 
 async function generateFromTrend(
@@ -338,6 +355,147 @@ Respond ONLY with valid JSON:
     return JSON.parse(jsonMatch[0]) as GeneratedArticle;
   } catch {
     return null;
+  }
+}
+
+function truncateAtWord(value: string, maxLength: number): string {
+  const clean = stripMarkdown(value).replace(/\s+/g, ' ').trim();
+  if (clean.length <= maxLength) return clean;
+  const sliced = clean.slice(0, maxLength);
+  const lastSpace = sliced.lastIndexOf(' ');
+  return `${(lastSpace > maxLength * 0.6 ? sliced.slice(0, lastSpace) : sliced).trim()}...`;
+}
+
+function fallbackSocialPackage(article: GeneratedArticle): GeneratedSocialPackage {
+  const ogTitle = truncateAtWord(article.title, 72);
+  const ogDescription = truncateAtWord(article.meta_description || article.summary || article.why_it_matters, 180);
+  const imageData = buildArticleOgImageData({
+    title: ogTitle,
+    summary: ogDescription,
+    whyItMatters: article.why_it_matters,
+    categories: article.categories,
+  });
+  const shareCopy: SocialShareCopy = {
+    twitter: truncateAtWord(`${article.title}: ${ogDescription}`, 220),
+    linkedin: truncateAtWord(`${article.title}\n\n${stripMarkdown(article.why_it_matters)}\n\nFollow BytesAI Learning for weekly AI operator breakdowns.`, 1800),
+    whatsapp: truncateAtWord(`Worth reading: ${article.title}. ${ogDescription}`, 380),
+    facebook: truncateAtWord(`${article.title}\n${ogDescription}\nRead it free`, 360),
+  };
+
+  return {
+    og_title: ogTitle,
+    og_description: ogDescription,
+    og_image_alt: `BytesAI Learning insight card for ${ogTitle}`,
+    share_image_prompt: `BytesAI Learning editorial social card about: ${ogTitle}`,
+    og_image_data: imageData,
+    social_share_copy: shareCopy,
+  };
+}
+
+async function generateSocialPackage(
+  article: GeneratedArticle,
+  apiKey: string,
+  model: string,
+): Promise<GeneratedSocialPackage> {
+  const fallback = fallbackSocialPackage(article);
+  const prompt = `Create the social distribution package for this BytesAI Learning insight.
+
+ARTICLE:
+Title: ${article.title}
+Summary: ${stripMarkdown(article.summary).slice(0, 900)}
+Why it matters: ${stripMarkdown(article.why_it_matters).slice(0, 900)}
+What changed: ${stripMarkdown(article.what_changed).slice(0, 700)}
+Executive implications: ${stripMarkdown(article.executive_implications).slice(0, 700)}
+Categories: ${article.categories.join(', ')}
+
+Rules:
+- Use only facts from the article fields above.
+- No fabricated numbers.
+- No rhetorical questions.
+- No hashtags except inside facebook only if useful, max one niche hashtag.
+- No URLs. The app appends URLs separately.
+- og_title: under 72 characters, specific, not clickbait.
+- og_description: under 180 characters, plain-language social preview text.
+- share_image_prompt: one sentence describing the card art direction, not a raster URL.
+- og_image_alt: concise alt text for the generated card.
+- og_image_data.headline: under 95 characters.
+- og_image_data.summary: under 180 characters.
+- og_image_data.callout: under 220 characters.
+- og_image_data.badge: 1-3 words.
+- og_image_data.accent: one of violet, teal, amber, blue, rose.
+- social_share_copy.twitter: under 220 characters.
+- social_share_copy.linkedin: 1200-2000 characters, plain text, no markdown.
+- social_share_copy.whatsapp: 300-400 characters.
+- social_share_copy.facebook: 180-420 characters, plain text.
+
+Return ONLY valid JSON:
+{
+  "og_title": "...",
+  "og_description": "...",
+  "og_image_alt": "...",
+  "share_image_prompt": "...",
+  "og_image_data": {
+    "eyebrow": "CURATED INSIGHT",
+    "headline": "...",
+    "summary": "...",
+    "callout": "...",
+    "badge": "...",
+    "accent": "violet"
+  },
+  "social_share_copy": {
+    "twitter": "...",
+    "linkedin": "...",
+    "whatsapp": "...",
+    "facebook": "..."
+  }
+}`;
+
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://learn.bytesai.uk',
+        'X-Title': 'BytesAI Learning Social Package',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.68,
+        max_tokens: 2400,
+      }),
+      signal: AbortSignal.timeout(28_000),
+    });
+
+    if (!res.ok) return fallback;
+    const data = await res.json() as { choices?: { message?: { content?: string } }[] };
+    const raw = data.choices?.[0]?.message?.content ?? '';
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return fallback;
+    const parsed = JSON.parse(jsonMatch[0]) as Partial<GeneratedSocialPackage>;
+
+    const imageData = buildArticleOgImageData({
+      title: String(parsed.og_image_data?.headline || parsed.og_title || fallback.og_title),
+      summary: String(parsed.og_image_data?.summary || parsed.og_description || fallback.og_description),
+      whyItMatters: String(parsed.og_image_data?.callout || article.why_it_matters),
+      categories: article.categories,
+      stored: JSON.stringify(parsed.og_image_data ?? {}),
+    });
+
+    return {
+      og_title: truncateAtWord(String(parsed.og_title || fallback.og_title), 72),
+      og_description: truncateAtWord(String(parsed.og_description || fallback.og_description), 180),
+      og_image_alt: truncateAtWord(String(parsed.og_image_alt || fallback.og_image_alt), 160),
+      share_image_prompt: truncateAtWord(String(parsed.share_image_prompt || fallback.share_image_prompt), 500),
+      og_image_data: imageData,
+      social_share_copy: {
+        ...fallback.social_share_copy,
+        ...parsed.social_share_copy,
+      },
+    };
+  } catch {
+    return fallback;
   }
 }
 
@@ -567,15 +725,21 @@ export async function POST(req: NextRequest) {
     const categoriesJson = Array.isArray(generated.categories) && generated.categories.length
       ? JSON.stringify(generated.categories)
       : null;
+    const socialPackage = await generateSocialPackage(generated, apiKey, model);
+    const socialCopyJson = serializeSocialShareCopy(socialPackage.social_share_copy);
+    const ogImageUrl = articleSocialImageUrl(slug, now);
 
     await db.prepare(`
       INSERT INTO curated_pages (
         id, slug, title, summary, why_it_matters, what_changed, executive_implications,
         primary_course_rationale, primary_course_slug, source_references_json, meta_description,
-        categories_json, editorial_review_status, published_status,
+        categories_json, meta_title, og_title, og_description, og_image_url, og_image_alt,
+        og_image_data_json, share_image_prompt, social_share_copy_json,
+        social_share_copy_model, social_share_copy_generated_at,
+        editorial_review_status, published_status,
         ai_generated, generated_model, generated_at,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
     `).bind(
       id, slug, generated.title,
       generated.summary,
@@ -587,6 +751,16 @@ export async function POST(req: NextRequest) {
       JSON.stringify(sourceRefs),
       generated.meta_description,
       categoriesJson,
+      generated.title,
+      socialPackage.og_title,
+      socialPackage.og_description,
+      ogImageUrl,
+      socialPackage.og_image_alt,
+      JSON.stringify(socialPackage.og_image_data),
+      socialPackage.share_image_prompt,
+      socialCopyJson,
+      model,
+      now,
       editorialStatus,
       'draft',
       model, now, now, now,
@@ -727,4 +901,3 @@ async function extractPageTitle(url: string): Promise<string | null> {
     return null;
   }
 }
-

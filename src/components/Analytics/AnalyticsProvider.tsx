@@ -30,14 +30,16 @@ export default function AnalyticsProvider() {
   const pathname = usePathname();
   const sessionIdRef = useRef<string | null>(null);
   const visitorIdRef = useRef<string | null>(null);
-  const startedAtRef = useRef<number>(Date.now());
-  const lastActivityRef = useRef<number>(Date.now());
+  const startedAtRef = useRef<number>(0);
+  const lastActivityRef = useRef<number>(0);
   const mountedRef = useRef(false);
 
   useEffect(() => {
     const visitorId = getVisitorId();
+    const now = Date.now();
     visitorIdRef.current = visitorId;
-    startedAtRef.current = Date.now();
+    startedAtRef.current = now;
+    lastActivityRef.current = now;
 
     const existing = sessionStorage.getItem(SESSION_KEY);
     if (existing) {

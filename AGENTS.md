@@ -20,11 +20,14 @@ Other deployment rules:
 
 # D1 Database — CRITICAL
 
-**NEVER run `wrangler d1 execute` or any wrangler D1 command.** Wrangler is not authenticated in this environment and will always fail with exit code 1.
+Wrangler D1 commands are allowed only after verifying Wrangler is authenticated and the target database/environment is explicit.
 
 ## Schema migrations (ALTER TABLE, CREATE TABLE)
-Write the `.sql` file as normal, then tell the user:
-> "Please run this migration in Cowork — wrangler is not available here."
+Write the `.sql` file as normal. Before running a migration:
+- Confirm `wrangler whoami` succeeds.
+- Confirm the intended database name, local/remote mode, and migration file path.
+- Prefer a narrow migration file over ad hoc SQL.
+- Use `--remote` only when the user explicitly approves production changes.
 
 ## Content operations (curated pages, articles, course data)
 Use the live production API directly. Never write SQL files for content.

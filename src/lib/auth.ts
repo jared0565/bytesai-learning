@@ -58,16 +58,16 @@ export { COOKIE_NAME };
 
 // ─── Long-lived CLI token (for automated/CLI admin access) ───────────────────
 
-/** Generate a non-expiring admin JWT for CLI/automation use.
- *  Call once from a logged-in admin session via GET /api/admin/cli-token.
+/** Generate a short-lived admin JWT for CLI/automation use.
+ *  Call once from a logged-in admin session via POST /api/admin/cli-token.
  *  Store the result as the BYTESAI_CLI_TOKEN Worker secret.
  */
 export async function signCliToken(userId: string, email: string): Promise<string> {
   return new SignJWT({ userId, email, role: 'admin', purpose: 'cli' } as JWTPayload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    // 10-year expiry — effectively permanent
-    .setExpirationTime(Math.floor(Date.now() / 1000) + 10 * 365 * 24 * 60 * 60)
+    // 90-day expiry. Rotate through Cloudflare secrets before this expires.
+    .setExpirationTime(Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60)
     .sign(getSecret());
 }
 

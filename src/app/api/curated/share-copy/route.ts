@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDB } from '@/lib/db';
+import { verifySession, COOKIE_NAME } from '@/lib/auth';
+import { checkRateLimitAsync, getRateLimitKey, rateLimitResponse } from '@/lib/security';
+import { parseSocialShareCopy, serializeSocialShareCopy, type SocialShareCopy } from '@/lib/social-meta';
 
 type Platform = 'twitter' | 'linkedin' | 'whatsapp' | 'facebook';
 
@@ -153,6 +156,22 @@ RULES (all mandatory):
 - Return ONLY the 4 parts. Nothing else.`,
 };
 
+async function getAdminSession(req: NextRequest) {
+  const token = req.cookies.get(COOKIE_NAME)?.value;
+  const session = token ? await verifySession(token) : null;
+  return session?.role === 'admin' ? session : null;
+}
+
+async function getOpenRouterApiKey(): Promise<string> {
+  try {
+    const { getCloudflareContext } = await import('@opennextjs/cloudflare');
+    const { env } = await getCloudflareContext({ async: true });
+    return String((env as Record<string, unknown>).OPENROUTER_API_KEY ?? '').trim();
+  } catch {
+    return process.env.OPENROUTER_API_KEY?.trim() ?? '';
+  }
+}
+
 export async function POST(req: NextRequest) {
   let body: { slug?: string; platform?: string };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid body.' }, { status: 400 }); }
@@ -162,25 +181,44 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'slug and valid platform required.' }, { status: 422 });
   }
 
+  const admin = await getAdminSession(req);
+  const limitKey = getRateLimitKey(req, `share-copy:${platform}`);
+  const limit = await checkRateLimitAsync(limitKey, admin ? 60 : 10, 60 * 60 * 1000);
+  if (!limit.allowed) return rateLimitResponse(limit.resetAt);
+
   const db = await getDB();
   if (!db) return NextResponse.json({ error: 'DB unavailable.' }, { status: 503 });
 
-  // Allow draft + published — admin may preview share copy before publishing
+  // Public callers can generate copy only for published pages.
+  // Draft previews are admin-only to avoid unpublished-content leakage.
   const page = await db.prepare(
-    `SELECT title, summary, why_it_matters, what_changed, executive_implications
+    `SELECT id, title, summary, why_it_matters, what_changed, executive_implications,
+            published_status, social_share_copy_json
      FROM curated_pages WHERE slug = ?`
   ).bind(slug).first<{
+    id: string;
     title: string;
     summary: string | null;
     why_it_matters: string | null;
     what_changed: string | null;
     executive_implications: string | null;
+    published_status: 'draft' | 'published' | 'archived';
+    social_share_copy_json: string | null;
   }>();
 
   if (!page) return NextResponse.json({ error: 'Article not found.' }, { status: 404 });
+  if (page.published_status !== 'published' && !admin) {
+    return NextResponse.json({ error: 'Article not found.' }, { status: 404 });
+  }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = await getOpenRouterApiKey();
   if (!apiKey) return NextResponse.json({ error: 'AI not configured.' }, { status: 503 });
+
+  const storedCopy = parseSocialShareCopy(page.social_share_copy_json);
+  const cachedCopy = storedCopy[platform as Platform];
+  if (cachedCopy) {
+    return NextResponse.json({ copy: cachedCopy, platform, charCount: cachedCopy.length, cached: true });
+  }
 
   // LinkedIn uses DeepSeek V3 for better human-sounding output; other platforms use CHATBOT_MODEL
   const model = platform === 'linkedin'
@@ -223,6 +261,10 @@ export async function POST(req: NextRequest) {
       signal: AbortSignal.timeout(22_000),
     });
 
+    if (!res.ok) {
+      return NextResponse.json({ error: 'AI model request failed.' }, { status: 502 });
+    }
+
     const data = await res.json() as { choices?: { message?: { content?: string } }[] };
     let copy = data.choices?.[0]?.message?.content?.trim() ?? '';
     // Strip surrounding quotes if model wraps response
@@ -252,7 +294,26 @@ export async function POST(req: NextRequest) {
 
     if (!copy) return NextResponse.json({ error: 'Empty response from AI.' }, { status: 502 });
 
-    return NextResponse.json({ copy, platform, charCount: copy.length });
+    const updatedCopy: SocialShareCopy = {
+      ...storedCopy,
+      [platform]: copy,
+    };
+    await db.prepare(
+      `UPDATE curated_pages
+       SET social_share_copy_json = ?,
+           social_share_copy_model = ?,
+           social_share_copy_generated_at = ?,
+           updated_at = ?
+       WHERE id = ?`
+    ).bind(
+      serializeSocialShareCopy(updatedCopy),
+      model,
+      new Date().toISOString(),
+      new Date().toISOString(),
+      page.id,
+    ).run();
+
+    return NextResponse.json({ copy, platform, charCount: copy.length, cached: false });
   } catch {
     return NextResponse.json({ error: 'Failed to generate copy.' }, { status: 500 });
   }

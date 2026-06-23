@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { sanitizeText, checkRateLimit, getRateLimitKey, rateLimitResponse } from '@/lib/security';
+import { sanitizeText, checkRateLimitAsync, getRateLimitKey, rateLimitResponse } from '@/lib/security';
 
 const AFFILIATE_ID = '27668723';
 const AFFILIATE_PARAMS = `utm_source=alison_user&utm_medium=affiliate&utm_campaign=${AFFILIATE_ID}`;
@@ -151,7 +151,7 @@ function extractCoursesFromNextData(obj: unknown, depth = 0): AlisonCourse[] {
 export async function POST(req: NextRequest) {
   // Rate limit: 20 Alison searches per hour per IP
   const key = getRateLimitKey(req, 'alison-search');
-  const limit = checkRateLimit(key, 20, 60 * 60 * 1000);
+  const limit = await checkRateLimitAsync(key, 20, 60 * 60 * 1000);
   if (!limit.allowed) return rateLimitResponse(limit.resetAt);
 
   let body: unknown;

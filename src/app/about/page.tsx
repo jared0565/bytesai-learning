@@ -38,7 +38,7 @@ export default async function AboutPage() {
 
             <div style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.85, display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '3rem' }}>
               <p>
-                The AI learning landscape moves fast. New courses, papers, and tools appear every week — but most free content is scattered across provider sites, buried in syllabi, or hidden behind "free trial" paywalls.
+                The AI learning landscape moves fast. New courses, papers, and tools appear every week — but most free content is scattered across provider sites, buried in syllabi, or hidden behind &quot;free trial&quot; paywalls.
               </p>
               <p>
                 <strong style={{ color: 'var(--text-primary)' }}>BytesAI Learning</strong> solves that. We hand-pick, verify, and organise the best free AI courses from trusted providers including Microsoft, Google, Anthropic, NVIDIA, DeepLearning.AI, Stanford, Harvard, and more. Every resource on this site is free to start — no credit card, no paywall.

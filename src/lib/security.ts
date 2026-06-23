@@ -1,6 +1,7 @@
 // Security utilities — sanitization, rate limiting, URL validation
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getKV } from '@/lib/kv';
 
 // ─── Input sanitization ───────────────────────────────────────────────
 
@@ -20,6 +21,17 @@ export function sanitizeText(input: unknown): string {
 export function sanitizeEmail(input: unknown): string {
   if (typeof input !== 'string') return '';
   return input.toLowerCase().trim().slice(0, 320);
+}
+
+/** Escape dynamic text before interpolating into trusted HTML templates. */
+export function escapeHtml(input: unknown): string {
+  if (typeof input !== 'string') return '';
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /** Validate slug format */
@@ -106,6 +118,35 @@ export function checkRateLimit(key: string, maxCount: number, windowMs: number):
   }
   entry.count++;
   return { allowed: true, remaining: maxCount - entry.count, resetAt: entry.resetAt };
+}
+
+export async function checkRateLimitAsync(key: string, maxCount: number, windowMs: number): Promise<{
+  allowed: boolean; remaining: number; resetAt: number;
+}> {
+  const kv = await getKV();
+  if (!kv) return checkRateLimit(key, maxCount, windowMs);
+
+  const now = Date.now();
+  const kvKey = `rate-limit:${key}`;
+
+  try {
+    const raw = await kv.get(kvKey);
+    let entry: RateLimitEntry | null = raw ? JSON.parse(raw) as RateLimitEntry : null;
+    if (!entry || entry.resetAt < now) {
+      entry = { count: 0, resetAt: now + windowMs };
+    }
+    if (entry.count >= maxCount) {
+      return { allowed: false, remaining: 0, resetAt: entry.resetAt };
+    }
+
+    entry.count++;
+    await kv.put(kvKey, JSON.stringify(entry), {
+      expirationTtl: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)),
+    });
+    return { allowed: true, remaining: maxCount - entry.count, resetAt: entry.resetAt };
+  } catch {
+    return checkRateLimit(key, maxCount, windowMs);
+  }
 }
 
 export function getRateLimitKey(req: NextRequest, suffix: string): string {
