@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element */
+import { useState } from 'react';
 import { Building2 } from 'lucide-react';
 
 const BRAND_MAP: Record<string, { color: string; bg: string; initials: string }> = {
@@ -27,12 +29,56 @@ const BRAND_MAP: Record<string, { color: string; bg: string; initials: string }>
 interface ProviderLogoProps {
   slug: string;
   name: string;
+  logoUrl?: string | null;
+  logoUrls?: Array<string | null | undefined>;
   size?: number;
   className?: string;
 }
 
-export default function ProviderLogo({ slug, name, size = 48, className }: ProviderLogoProps) {
+export default function ProviderLogo({ slug, name, logoUrl, logoUrls = [], size = 48, className }: ProviderLogoProps) {
   const brand = BRAND_MAP[slug];
+  const [failedLogoUrls, setFailedLogoUrls] = useState<string[]>([]);
+  const logoCandidates = [logoUrl, ...logoUrls]
+    .map(candidate => candidate?.trim())
+    .filter((candidate): candidate is string => Boolean(candidate));
+  const selectedLogoUrl = logoCandidates.find(candidate => !failedLogoUrls.includes(candidate));
+
+  if (selectedLogoUrl) {
+    return (
+      <div
+        className={className}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size * 0.22,
+          background: 'oklch(1 0 0)',
+          border: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          padding: Math.max(5, size * 0.14),
+          overflow: 'hidden',
+        }}
+        title={name}
+      >
+        <img
+          src={selectedLogoUrl}
+          alt={`${name} logo`}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setFailedLogoUrls(prev => prev.includes(selectedLogoUrl) ? prev : [...prev, selectedLogoUrl])}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            display: 'block',
+          }}
+        />
+      </div>
+    );
+  }
 
   if (brand) {
     const fontSize = brand.initials.length > 2 ? size * 0.32 : size * 0.44;
