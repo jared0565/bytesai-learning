@@ -34,6 +34,9 @@ async function readBatchPayload(req: NextRequest): Promise<{
   filename: string;
   dryRun: boolean;
   defaultStatus: 'draft' | 'published' | 'archived';
+  updateExisting: boolean;
+  archiveMissing: boolean;
+  providerId?: string;
 }> {
   const contentType = req.headers.get('content-type') ?? '';
 
@@ -53,6 +56,9 @@ async function readBatchPayload(req: NextRequest): Promise<{
       filename: file.name || 'courses.json',
       dryRun: parseBoolean(form.get('dryRun'), true),
       defaultStatus,
+      updateExisting: parseBoolean(form.get('updateExisting'), false),
+      archiveMissing: parseBoolean(form.get('archiveMissing'), false),
+      providerId: typeof form.get('providerId') === 'string' ? String(form.get('providerId')).trim() || undefined : undefined,
     };
   }
 
@@ -71,6 +77,9 @@ async function readBatchPayload(req: NextRequest): Promise<{
       filename: typeof body.filename === 'string' ? body.filename : 'courses.json',
       dryRun: parseBoolean(body.dryRun as boolean | string | undefined, true),
       defaultStatus,
+      updateExisting: parseBoolean(body.updateExisting as boolean | string | undefined, false),
+      archiveMissing: parseBoolean(body.archiveMissing as boolean | string | undefined, false),
+      providerId: typeof body.providerId === 'string' ? body.providerId.trim() || undefined : undefined,
     };
   }
 
@@ -80,6 +89,9 @@ async function readBatchPayload(req: NextRequest): Promise<{
       filename: 'courses.json',
       dryRun: parseBoolean(body.dryRun as boolean | string | undefined, true),
       defaultStatus,
+      updateExisting: parseBoolean(body.updateExisting as boolean | string | undefined, false),
+      archiveMissing: parseBoolean(body.archiveMissing as boolean | string | undefined, false),
+      providerId: typeof body.providerId === 'string' ? body.providerId.trim() || undefined : undefined,
     };
   }
 
@@ -98,6 +110,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Invalid batch upload.' }, { status: 400 });
   }
 
+  if (payload.archiveMissing && !payload.providerId) {
+    return NextResponse.json({ error: 'Provider ID is required when archiving missing provider courses.' }, { status: 422 });
+  }
+
   const parsed = parseCourseBatchText(payload.text, payload.filename, { publishedStatus: payload.defaultStatus });
   if (parsed.courses.length === 0) {
     const emptyResult: BatchIngestResult = {
@@ -107,8 +123,11 @@ export async function POST(req: NextRequest) {
         total: parsed.issues.length,
         created: 0,
         existing: 0,
+        updated: 0,
         failed: parsed.issues.length,
         validated: 0,
+        archiveCandidates: 0,
+        archived: 0,
       },
       results: parsed.issues.map(issue => ({
         row: issue.row,
@@ -131,6 +150,9 @@ export async function POST(req: NextRequest) {
       courses: parsed.courses,
       parseIssues: parsed.issues,
       dryRun: payload.dryRun,
+      updateExisting: payload.updateExisting,
+      archiveMissing: payload.archiveMissing,
+      providerId: payload.providerId,
     });
     return NextResponse.json(result, { status: result.ok ? 200 : 207 });
   } catch (err) {

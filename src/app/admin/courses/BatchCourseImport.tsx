@@ -7,7 +7,7 @@ import { AlertCircle, CheckCircle2, FileUp, Loader2 } from 'lucide-react';
 interface BatchRowResult {
   row: number;
   title: string;
-  status: 'created' | 'existing' | 'failed' | 'validated';
+  status: 'created' | 'existing' | 'updated' | 'failed' | 'validated' | 'archive_candidate' | 'archived';
   slug?: string;
   id?: string;
   error?: string;
@@ -20,8 +20,11 @@ interface BatchImportResult {
     total: number;
     created: number;
     existing: number;
+    updated: number;
     failed: number;
     validated: number;
+    archiveCandidates: number;
+    archived: number;
   };
   results: BatchRowResult[];
 }
@@ -30,6 +33,9 @@ export default function BatchCourseImport() {
   const [file, setFile] = useState<File | null>(null);
   const [dryRun, setDryRun] = useState(true);
   const [defaultStatus, setDefaultStatus] = useState<'draft' | 'published'>('draft');
+  const [updateExisting, setUpdateExisting] = useState(false);
+  const [archiveMissing, setArchiveMissing] = useState(false);
+  const [providerId, setProviderId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BatchImportResult | null>(null);
@@ -46,6 +52,9 @@ export default function BatchCourseImport() {
     form.append('file', file);
     form.append('dryRun', String(dryRun));
     form.append('defaultStatus', defaultStatus);
+    form.append('updateExisting', String(updateExisting));
+    form.append('archiveMissing', String(archiveMissing));
+    if (providerId.trim()) form.append('providerId', providerId.trim());
 
     try {
       const res = await fetch('/api/admin/courses/batch-ingest', {
@@ -65,7 +74,7 @@ export default function BatchCourseImport() {
     }
   }
 
-  const canSubmit = Boolean(file) && !submitting;
+  const canSubmit = Boolean(file) && !submitting && (!archiveMissing || Boolean(providerId.trim()));
 
   return (
     <div className="card" style={{ padding: '1.75rem 2rem' }}>
@@ -111,6 +120,42 @@ export default function BatchCourseImport() {
           </div>
         </div>
 
+        <div style={{ padding: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--bg)' }}>
+          <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
+            Provider refresh
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer' }}>
+              <input type="checkbox" checked={updateExisting} onChange={e => setUpdateExisting(e.target.checked)} />
+              Refresh existing matches
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={archiveMissing}
+                onChange={e => {
+                  setArchiveMissing(e.target.checked);
+                  if (e.target.checked) setUpdateExisting(true);
+                }}
+              />
+              Archive missing provider courses
+            </label>
+            <div className="form-group">
+              <label className="label">Provider ID for archive comparison</label>
+              <input
+                type="text"
+                className="input"
+                value={providerId}
+                onChange={e => setProviderId(e.target.value)}
+                placeholder="prov-anthropic"
+              />
+            </div>
+          </div>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.75rem', lineHeight: 1.5 }}>
+            Refresh updates matched courses by URL, slug, or provider-scoped title. Archive only marks unmatched provider courses as archived.
+          </p>
+        </div>
+
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer' }}>
             <input type="checkbox" checked={dryRun} onChange={e => setDryRun(e.target.checked)} />
@@ -150,6 +195,9 @@ export default function BatchCourseImport() {
             <SummaryPill label="Validated" value={result.summary.validated} />
             <SummaryPill label="Created" value={result.summary.created} />
             <SummaryPill label="Existing" value={result.summary.existing} />
+            <SummaryPill label="Updated" value={result.summary.updated ?? 0} />
+            <SummaryPill label="Archive candidates" value={result.summary.archiveCandidates ?? 0} tone={(result.summary.archiveCandidates ?? 0) > 0 ? 'warning' : 'neutral'} />
+            <SummaryPill label="Archived" value={result.summary.archived ?? 0} tone={(result.summary.archived ?? 0) > 0 ? 'warning' : 'neutral'} />
             <SummaryPill label="Failed" value={result.summary.failed} tone={result.summary.failed > 0 ? 'error' : 'neutral'} />
           </div>
 
@@ -196,7 +244,7 @@ export default function BatchCourseImport() {
   );
 }
 
-function SummaryPill({ label, value, tone = 'neutral' }: { label: string; value: number; tone?: 'neutral' | 'error' }) {
+function SummaryPill({ label, value, tone = 'neutral' }: { label: string; value: number; tone?: 'neutral' | 'error' | 'warning' }) {
   return (
     <span style={{
       display: 'inline-flex',
@@ -205,8 +253,8 @@ function SummaryPill({ label, value, tone = 'neutral' }: { label: string; value:
       padding: '0.3rem 0.65rem',
       borderRadius: 'var(--radius-full)',
       border: '1px solid var(--border)',
-      background: tone === 'error' ? 'rgba(244,63,94,0.08)' : 'var(--bg)',
-      color: tone === 'error' ? 'var(--rose)' : 'var(--text-secondary)',
+      background: tone === 'error' ? 'rgba(244,63,94,0.08)' : tone === 'warning' ? 'rgba(245,158,11,0.1)' : 'var(--bg)',
+      color: tone === 'error' ? 'var(--rose)' : tone === 'warning' ? 'var(--amber)' : 'var(--text-secondary)',
       fontWeight: 600,
     }}>
       {label}: <strong>{value}</strong>
@@ -216,7 +264,9 @@ function SummaryPill({ label, value, tone = 'neutral' }: { label: string; value:
 
 function statusColor(status: BatchRowResult['status']) {
   if (status === 'created') return 'var(--emerald)';
+  if (status === 'updated') return 'var(--emerald)';
   if (status === 'existing') return 'var(--accent)';
+  if (status === 'archive_candidate' || status === 'archived') return 'var(--amber)';
   if (status === 'failed') return 'var(--rose)';
   return 'var(--text-muted)';
 }

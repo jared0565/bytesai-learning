@@ -60,7 +60,7 @@ export interface BatchParseResult {
 export interface BatchIngestRowResult {
   row: number;
   title: string;
-  status: 'created' | 'existing' | 'failed' | 'validated';
+  status: 'created' | 'existing' | 'updated' | 'failed' | 'validated' | 'archive_candidate' | 'archived';
   slug?: string;
   id?: string;
   error?: string;
@@ -70,8 +70,11 @@ export interface BatchIngestSummary {
   total: number;
   created: number;
   existing: number;
+  updated: number;
   failed: number;
   validated: number;
+  archiveCandidates: number;
+  archived: number;
 }
 
 export interface BatchIngestResult {
@@ -84,6 +87,21 @@ export interface BatchIngestResult {
 
 interface ParseDefaults {
   publishedStatus?: PublishedStatus;
+}
+
+interface ExistingCourseMatch {
+  id: string;
+  slug: string;
+  title: string;
+  provider_id: string | null;
+  official_link: string | null;
+  snippet: string | null;
+  long_description: string | null;
+  category: string | null;
+  subcategory: string | null;
+  level: string | null;
+  content_type: string;
+  published_status: string;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -122,6 +140,87 @@ function valueFrom(record: Record<string, unknown>, keys: string[]): unknown {
     if (record[key] !== undefined) return record[key];
   }
   return undefined;
+}
+
+function normalizeComparableText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function normalizeSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+async function findExistingCourseForRefresh(db: D1Database, course: BatchCourseInput): Promise<ExistingCourseMatch | null> {
+  if (course.official_link) {
+    const byUrl = await db.prepare(
+      `SELECT id, slug, title, provider_id, official_link, snippet, long_description, category, subcategory, level, content_type, published_status
+       FROM courses WHERE official_link = ? LIMIT 1`
+    ).bind(course.official_link).first<ExistingCourseMatch>();
+    if (byUrl) return byUrl;
+  }
+
+  if (course.provider_id && course.slug) {
+    const bySlug = await db.prepare(
+      `SELECT id, slug, title, provider_id, official_link, snippet, long_description, category, subcategory, level, content_type, published_status
+       FROM courses WHERE provider_id = ? AND slug = ? LIMIT 1`
+    ).bind(course.provider_id, course.slug).first<ExistingCourseMatch>();
+    if (bySlug) return bySlug;
+  }
+
+  if (course.provider_id) {
+    const titleKey = normalizeComparableText(course.title);
+    const candidates = await db.prepare(
+      `SELECT id, slug, title, provider_id, official_link, snippet, long_description, category, subcategory, level, content_type, published_status
+       FROM courses WHERE provider_id = ?`
+    ).bind(course.provider_id).all<ExistingCourseMatch>();
+    return candidates.results.find(candidate => normalizeComparableText(candidate.title) === titleKey) ?? null;
+  }
+
+  return null;
+}
+
+function buildRefreshUpdates(existing: ExistingCourseMatch, course: BatchCourseInput): Record<string, unknown> {
+  const updates: Record<string, unknown> = {};
+  const pairs: Array<[string, unknown, unknown]> = [
+    ['official_link', course.official_link, existing.official_link],
+    ['destination_url', course.official_link, existing.official_link],
+    ['snippet', course.snippet, existing.snippet],
+    ['long_description', course.long_description, existing.long_description],
+    ['category', course.category, existing.category],
+    ['subcategory', course.subcategory, existing.subcategory],
+    ['level', course.level, existing.level],
+    ['content_type', course.content_type, existing.content_type],
+    ['published_status', course.published_status, existing.published_status],
+  ];
+
+  for (const [field, next, current] of pairs) {
+    if (next !== undefined && next !== current) {
+      updates[field] = next;
+    }
+  }
+
+  updates.last_verified_at = new Date().toISOString();
+  updates.updated_at = updates.last_verified_at;
+  return updates;
+}
+
+async function updateExistingCourseForRefresh(db: D1Database, existing: ExistingCourseMatch, course: BatchCourseInput): Promise<void> {
+  const updates = buildRefreshUpdates(existing, course);
+  const setClauses = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+  await db.prepare(`UPDATE courses SET ${setClauses} WHERE id = ?`).bind(...Object.values(updates), existing.id).run();
+}
+
+async function archiveCourse(db: D1Database, courseId: string): Promise<void> {
+  const now = new Date().toISOString();
+  await db.prepare('UPDATE courses SET published_status = ?, updated_at = ? WHERE id = ?').bind('archived', now, courseId).run();
 }
 
 export function normalizeBatchCourseInput(
@@ -315,15 +414,22 @@ export async function ingestCourseBatch(input: {
   courses: BatchCourseInput[];
   parseIssues?: BatchParseIssue[];
   dryRun?: boolean;
+  updateExisting?: boolean;
+  archiveMissing?: boolean;
+  providerId?: string;
 }): Promise<BatchIngestResult> {
   const results: BatchIngestRowResult[] = [];
   const parseIssues = input.parseIssues ?? [];
+  const seenExistingIds = new Set<string>();
   const summary: BatchIngestSummary = {
     total: input.courses.length + parseIssues.length,
     created: 0,
     existing: 0,
+    updated: 0,
     failed: parseIssues.length,
     validated: 0,
+    archiveCandidates: 0,
+    archived: 0,
   };
 
   for (const issue of parseIssues) {
@@ -338,9 +444,30 @@ export async function ingestCourseBatch(input: {
   for (const [index, course] of input.courses.entries()) {
     const row = course.source_row ?? index + 1;
     if (input.dryRun) {
+      if (input.updateExisting) {
+        const existing = await findExistingCourseForRefresh(input.db, course);
+        if (existing) seenExistingIds.add(existing.id);
+      }
       summary.validated++;
       results.push({ row, title: course.title, status: 'validated', slug: course.slug });
       continue;
+    }
+
+    if (input.updateExisting) {
+      const existing = await findExistingCourseForRefresh(input.db, course);
+      if (existing) {
+        seenExistingIds.add(existing.id);
+        await updateExistingCourseForRefresh(input.db, existing, course);
+        summary.updated++;
+        results.push({
+          row,
+          title: course.title,
+          status: 'updated',
+          id: existing.id,
+          slug: existing.slug,
+        });
+        continue;
+      }
     }
 
     const { createCourseFromAdminInput } = await import('./course-ingest.ts');
@@ -374,6 +501,38 @@ export async function ingestCourseBatch(input: {
         status: 'failed',
         error: result.body.error ?? 'Failed to create course.',
       });
+    }
+  }
+
+  if (input.updateExisting && input.providerId) {
+    const providerRows = await input.db.prepare(
+      `SELECT id, slug, title, provider_id, official_link, snippet, long_description, category, subcategory, level, content_type, published_status
+       FROM courses WHERE provider_id = ? AND published_status != ?`
+    ).bind(input.providerId, 'archived').all<ExistingCourseMatch>();
+
+    for (const existing of providerRows.results) {
+      if (seenExistingIds.has(existing.id)) continue;
+      const row = input.courses.length + results.length + 1;
+      if (input.archiveMissing && !input.dryRun) {
+        await archiveCourse(input.db, existing.id);
+        summary.archived++;
+        results.push({
+          row,
+          title: existing.title,
+          status: 'archived',
+          id: existing.id,
+          slug: existing.slug,
+        });
+      } else {
+        summary.archiveCandidates++;
+        results.push({
+          row,
+          title: existing.title,
+          status: 'archive_candidate',
+          id: existing.id,
+          slug: existing.slug,
+        });
+      }
     }
   }
 
