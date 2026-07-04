@@ -1,0 +1,90 @@
+{
+  "source": "https://grow.google/intl/uk/courses-and-tools/?category=career&topic=ai",
+  "verification_note": "Included items were selected only where the Google source presented them as a course, learning path, or public learning series and the learning surface was free to access or covered by Google Skills no-cost access. Coursera certificates and product/tool-only links were intentionally excluded.",
+  "courses": [
+    {
+      "title": "Make AI Work for You",
+      "slug": "make-ai-work-for-you",
+      "content_type": "course",
+      "provider_id": "prov-google",
+      "category": "AI Foundations",
+      "level": "Beginner",
+      "brief": "A Google YouTube learning series showing how Gemini, Gemini Live, and NotebookLM can help with everyday work tasks and productivity.",
+      "long_description": "This public Google learning series introduces practical ways to use Google AI tools for workplace productivity, including Gemini, Gemini Live, and NotebookLM.",
+      "official_link": "https://www.youtube.com/playlist?list=PLTZYG7bZ1u6pjtxBt4IQxPTYVH7J2dwOo",
+      "published_status": "published"
+    },
+    {
+      "title": "AI Boost Bites",
+      "slug": "ai-boost-bites",
+      "content_type": "course",
+      "provider_id": "prov-google",
+      "category": "AI Foundations",
+      "level": "Beginner",
+      "brief": "Short Google Skills lessons designed to help learners keep up with practical AI skills in under ten minutes per lesson.",
+      "long_description": "AI Boost Bites is a Google Skills learning path for busy learners who want short, practical AI lessons.",
+      "official_link": "https://www.skills.google/paths/2480",
+      "published_status": "published"
+    },
+    {
+      "title": "AI Literacy for Teens: Experience AI",
+      "slug": "ai-literacy-for-teens-experience-ai",
+      "content_type": "course",
+      "provider_id": "prov-google",
+      "category": "Governance / Responsible AI",
+      "level": "Beginner",
+      "brief": "Free AI and machine learning lessons and classroom materials for teachers and students aged 11 to 14.",
+      "long_description": "Experience AI provides free lessons, resources, and classroom materials to help young learners understand AI and machine learning responsibly.",
+      "official_link": "https://experience-ai.org/en/",
+      "published_status": "published"
+    },
+    {
+      "title": "AI for Students",
+      "slug": "ai-for-students",
+      "content_type": "course",
+      "provider_id": "prov-google",
+      "category": "AI Foundations",
+      "level": "Beginner",
+      "brief": "A Google YouTube series showing students how Gemini can help with studying, research, writing, and understanding difficult subjects.",
+      "long_description": "This public Google learning series introduces practical student uses of Google Gemini for study, research, writing, and learning support.",
+      "official_link": "https://www.youtube.com/playlist?list=PLTZYG7bZ1u6pXfP69ZERZ1Cbkgb7Yd45A",
+      "published_status": "published"
+    },
+    {
+      "title": "Gemini and the Software Development Lifecycle",
+      "slug": "gemini-and-the-software-development-lifecycle",
+      "content_type": "course",
+      "provider_id": "prov-google",
+      "category": "Programming Foundations",
+      "level": "Intermediate",
+      "brief": "Learn how to use Gemini across software development tasks including development, testing, deployment, and application management.",
+      "long_description": "This Google Skills course covers practical use of Gemini in the software development lifecycle, from development and testing through deployment and management.",
+      "official_link": "https://www.skills.google/paths/236/course_templates/885",
+      "published_status": "published"
+    },
+    {
+      "title": "Introduction to AI Image Generation",
+      "slug": "introduction-to-ai-image-generation",
+      "content_type": "course",
+      "provider_id": "prov-google",
+      "category": "LLMs / Generative AI",
+      "level": "Beginner",
+      "brief": "A Google Skills course introducing diffusion models and AI image generation on Google Cloud.",
+      "long_description": "This course introduces diffusion models behind modern AI image generation and covers how image generation models can be trained and deployed on Vertex AI.",
+      "official_link": "https://www.skills.google/paths/183/course_templates/541",
+      "published_status": "published"
+    },
+    {
+      "title": "Introduction to Large Language Models",
+      "slug": "introduction-to-large-language-models",
+      "content_type": "course",
+      "provider_id": "prov-google",
+      "category": "LLMs / Generative AI",
+      "level": "Beginner",
+      "brief": "A Google Skills course introducing large language models and prompt tuning concepts.",
+      "long_description": "This course explains what large language models are and introduces prompt tuning as a way to improve LLM performance.",
+      "official_link": "https://www.skills.google/course_templates/539",
+      "published_status": "published"
+    }
+  ]
+}

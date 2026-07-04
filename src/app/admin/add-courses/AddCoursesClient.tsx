@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Download, Link2, Search, PlusCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, Link2, Search, PlusCircle, FileUp } from 'lucide-react';
 import AlisonPanel from '@/app/admin/alison-import/AlisonPanel';
 import AddCourseForm from '@/app/admin/courses/AddCourseForm';
+import BatchCourseImport from '@/app/admin/courses/BatchCourseImport';
 import DiscoveryPanel from '@/app/admin/courses/DiscoveryPanel';
 
 const SECTIONS = [
@@ -19,6 +20,13 @@ const SECTIONS = [
     label: 'Add by URL or Manual Entry',
     description: 'Paste any course URL to auto-fetch metadata, or fill in all fields by hand',
     icon: <Link2 size={16} />,
+    defaultOpen: false,
+  },
+  {
+    key: 'batch',
+    label: 'Batch Import',
+    description: 'Upload a JSON or Markdown file and import multiple courses with required briefs',
+    icon: <FileUp size={16} />,
     defaultOpen: false,
   },
   {
@@ -85,7 +93,21 @@ export default function AddCoursesClient() {
           </div>
         </Section>
 
-        {/* Section 3 — Discovery */}
+        {/* Section 3 — Batch import */}
+        <Section
+          sectionKey="batch"
+          label="Batch Import"
+          description="Upload a JSON or Markdown file and import multiple courses with required briefs"
+          icon={<FileUp size={16} />}
+          isOpen={open.has('batch')}
+          onToggle={() => toggle('batch')}
+        >
+          <div style={{ padding: '1.5rem 2rem' }}>
+            <BatchCourseImport />
+          </div>
+        </Section>
+
+        {/* Section 4 — Discovery */}
         <Section
           sectionKey="discovery"
           label="Discover via Provider"
