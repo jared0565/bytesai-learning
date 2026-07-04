@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Building2, ExternalLink, Pencil, Plus } from 'lucide-react';
+import { Building2, ExternalLink } from 'lucide-react';
 import ProviderLogo from '@/components/ui/ProviderLogo';
 import ProviderActions from './ProviderActions';
+import { providerLogoCandidates } from '@/lib/provider-logo';
+import ProviderDiscoveryButton from './ProviderDiscoveryButton';
 
 export const metadata: Metadata = {
   title: 'Providers — Admin',
@@ -74,7 +76,7 @@ export default async function AdminProvidersPage() {
                   style={{ borderBottom: i < providers.length - 1 ? '1px solid var(--border)' : 'none' }}
                 >
                   <td style={{ padding: '0.75rem 1rem' }}>
-                    <ProviderLogo slug={p.slug} name={p.name} size={44} />
+                    <ProviderLogo slug={p.slug} name={p.name} logoUrls={providerLogoCandidates(p)} size={44} />
                   </td>
                   <td style={{ padding: '0.75rem 1rem' }}>
                     <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.name}</p>
@@ -100,9 +102,12 @@ export default async function AdminProvidersPage() {
                     )}
                   </td>
                   <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)' }}>
-                    <Link href={`/courses?provider=${p.id}`} style={{ color: 'var(--accent)', fontWeight: 600 }}>
-                      {p.course_count} {p.course_count === 1 ? 'course' : 'courses'}
-                    </Link>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <Link href={`/courses?provider=${p.id}`} style={{ color: 'var(--accent)', fontWeight: 600 }}>
+                        {p.course_count} {p.course_count === 1 ? 'course' : 'courses'}
+                      </Link>
+                      <ProviderDiscoveryButton provider={p} />
+                    </div>
                   </td>
                   <td style={{ padding: '0.75rem 1rem' }}>
                     <ProviderActions
