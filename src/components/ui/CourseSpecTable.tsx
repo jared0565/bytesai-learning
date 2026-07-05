@@ -94,7 +94,7 @@ export default function CourseSpecTable({ course, rationale }: Props) {
             {ctaLabel}
           </a>
           {course.is_affiliate === 1 && (
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: 1.5 }}>
+            <p className="course-affiliate-disclosure">
               Affiliate link — if you enrol through this link, BytesAI Learning may earn a small commission at no extra cost to you.
             </p>
           )}
