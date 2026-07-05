@@ -13,7 +13,7 @@ test('article social image URLs are crawler-friendly PNG paths with render cache
 
   assert.equal(
     url,
-    'https://learn.bytesai.uk/api/og/article/test-insight/20260705T111616007Zr2.png',
+    'https://learn.bytesai.uk/api/og/article/test-insight/20260705T111616007Zr4.png',
   );
   assert.doesNotMatch(url, /\?/);
   assert.match(url, /\.png$/);
@@ -22,7 +22,7 @@ test('article social image URLs are crawler-friendly PNG paths with render cache
 test('course social image URLs use the current render version', () => {
   assert.equal(
     courseSocialImageUrl('test-course'),
-    'https://learn.bytesai.uk/api/og/course/test-course/cardr2.png',
+    'https://learn.bytesai.uk/api/og/course/test-course/cardr4.png',
   );
 });
 
@@ -37,4 +37,12 @@ test('dynamic OG route emits truecolor PNG data instead of indexed-palette PNG',
   assert.match(source, /function encodePngRgb/);
   assert.match(source, /pngChunk\('IHDR', ihdr\(width, height, 2\)\)/);
   assert.doesNotMatch(source, /pngChunk\('PLTE'/);
+});
+
+test('dynamic OG route preserves mixed-case text for more readable card typography', () => {
+  const source = readFileSync('src/app/api/og/route.ts', 'utf8');
+
+  assert.match(source, /a:\s*\['00000', '00000', '01110'/);
+  assert.match(source, /z:\s*\['00000', '00000', '11111'/);
+  assert.doesNotMatch(source, /\.toUpperCase\(\)/);
 });
