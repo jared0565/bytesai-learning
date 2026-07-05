@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Copy, Check, ExternalLink, Loader2, AlertCircle, Download } from 'lucide-react';
+import { Copy, Check, ExternalLink, Loader2, AlertCircle, Download, Image as ImageIcon } from 'lucide-react';
 
 interface Props {
   slug: string;
@@ -51,6 +51,9 @@ export default function InlineCrossPostComposer({ slug, title }: Props) {
   const [copied, setCopied] = useState(false);
   const [shortUrl, setShortUrl] = useState<string | null>(null);
   const [downloadingImage, setDownloadingImage] = useState(false);
+  const [copyingImage, setCopyingImage] = useState(false);
+  const [imageCopied, setImageCopied] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   // Fetch short URL once
   useEffect(() => {
@@ -115,11 +118,17 @@ export default function InlineCrossPostComposer({ slug, title }: Props) {
     setTimeout(() => setCopied(false), 2500);
   }, [selected, copies, slug, shortUrl]);
 
+  const fetchImageBlob = useCallback(async (): Promise<Blob> => {
+    const res = await fetch(`/api/og?slug=${encodeURIComponent(slug)}&type=article`);
+    if (!res.ok) throw new Error('Image card could not be generated.');
+    return res.blob();
+  }, [slug]);
+
   const handleDownloadImage = useCallback(async () => {
     setDownloadingImage(true);
+    setImageError(null);
     try {
-      const res = await fetch(`/api/og?slug=${encodeURIComponent(slug)}&type=article`);
-      const blob = await res.blob();
+      const blob = await fetchImageBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = `bytesai-${slug}.png`;
@@ -127,11 +136,33 @@ export default function InlineCrossPostComposer({ slug, title }: Props) {
       link.click();
       URL.revokeObjectURL(url);
     } catch {
-      // silent fail
+      setImageError('Could not download the image card.');
     } finally {
       setDownloadingImage(false);
     }
-  }, [slug]);
+  }, [fetchImageBlob, slug]);
+
+  const handleCopyImage = useCallback(async () => {
+    setCopyingImage(true);
+    setImageError(null);
+    setImageCopied(false);
+    try {
+      if (!('ClipboardItem' in window) || !navigator.clipboard?.write) {
+        throw new Error('Image clipboard is not supported in this browser.');
+      }
+      const blob = await fetchImageBlob();
+      const pngBlob = blob.type === 'image/png' ? blob : new Blob([blob], { type: 'image/png' });
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': pngBlob }),
+      ]);
+      setImageCopied(true);
+      setTimeout(() => setImageCopied(false), 2500);
+    } catch {
+      setImageError('Could not copy the image. Download it and upload it manually.');
+    } finally {
+      setCopyingImage(false);
+    }
+  }, [fetchImageBlob]);
 
   const selectedMeta = PLATFORMS.find(p => p.id === selected)!;
   const copy = copies[selected];
@@ -308,30 +339,48 @@ export default function InlineCrossPostComposer({ slug, title }: Props) {
               </button>
             </div>
 
-            {selected === 'facebook' && (
+            {['twitter', 'linkedin', 'facebook'].includes(selected) && (
               <div style={{
                 marginTop: '0.875rem', padding: '0.75rem 1rem',
-                background: 'rgba(24,119,242,0.04)',
-                border: '1px solid rgba(24,119,242,0.15)',
+                background: `${selectedMeta.color}0A`,
+                border: `1px solid ${selectedMeta.color}26`,
                 borderRadius: 'var(--radius-md)',
               }}>
-                <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1877f2', marginBottom: '0.25rem' }}>
-                  📸 Native image post — 2–3× more reach
+                <p style={{ fontSize: '0.72rem', fontWeight: 700, color: selectedMeta.color, marginBottom: '0.25rem' }}>
+                  Native image workflow
                 </p>
                 <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '0.5rem' }}>
-                  Facebook suppresses link posts. Download the branded card and post it as a native image with the copy + link in the caption.
+                  Link previews are controlled by the platform. For a reliable visual post, copy or download the image card, upload it in {selectedMeta.shortLabel}, then paste the copied text and link.
                 </p>
-                <button
-                  onClick={handleDownloadImage}
-                  disabled={downloadingImage}
-                  className="btn btn-outline btn-sm"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
-                >
-                  {downloadingImage
-                    ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
-                    : <Download size={13} />}
-                  {downloadingImage ? 'Generating…' : 'Download image card'}
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={handleCopyImage}
+                    disabled={copyingImage}
+                    className="btn btn-outline btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+                  >
+                    {copyingImage
+                      ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                      : imageCopied ? <Check size={13} /> : <ImageIcon size={13} />}
+                    {copyingImage ? 'Copying…' : imageCopied ? 'Image copied' : 'Copy image'}
+                  </button>
+                  <button
+                    onClick={handleDownloadImage}
+                    disabled={downloadingImage}
+                    className="btn btn-outline btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+                  >
+                    {downloadingImage
+                      ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                      : <Download size={13} />}
+                    {downloadingImage ? 'Generating…' : 'Download image'}
+                  </button>
+                </div>
+                {imageError && (
+                  <p style={{ fontSize: '0.7rem', color: 'var(--rose)', marginTop: '0.5rem', lineHeight: 1.5 }}>
+                    {imageError}
+                  </p>
+                )}
               </div>
             )}
           </>
