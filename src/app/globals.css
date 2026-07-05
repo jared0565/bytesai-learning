@@ -1132,8 +1132,15 @@ footer { background: var(--bg-alt); color: var(--text-secondary); border-top: 1p
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+.article-prose a.btn-primary {
+  color: oklch(0.99 0.003 270);
+  text-decoration: none;
+}
 .article-prose a:hover {
   color: var(--accent-hover);
+}
+.article-prose a.btn-primary:hover {
+  color: oklch(0.99 0.003 270);
 }
 
 .article-lead {
