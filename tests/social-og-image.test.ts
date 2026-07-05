@@ -46,3 +46,14 @@ test('dynamic OG route preserves mixed-case text for more readable card typograp
   assert.match(source, /z:\s*\['00000', '00000', '11111'/);
   assert.doesNotMatch(source, /\.toUpperCase\(\)/);
 });
+
+test('dynamic OG route supports SVG output for native share previews', () => {
+  const source = readFileSync('src/app/api/og/route.ts', 'utf8');
+
+  assert.match(source, /buildArticleSvg/);
+  assert.match(source, /buildCourseSvg/);
+  assert.match(source, /buildQuizSvg/);
+  assert.match(source, /format === 'svg'/);
+  assert.match(source, /'Content-Type': 'image\/svg\+xml; charset=utf-8'/);
+  assert.match(source, /X-Content-Type-Options': 'nosniff'/);
+});

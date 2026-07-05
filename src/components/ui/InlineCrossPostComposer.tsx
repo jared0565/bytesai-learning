@@ -43,6 +43,54 @@ function buildShareUrl(platform: Platform, slug: string, copy: string, shareable
   }
 }
 
+function articleImageUrl(slug: string, format: 'svg' | 'png' = 'svg'): string {
+  const base = `/api/og?slug=${encodeURIComponent(slug)}&type=article`;
+  return format === 'svg' ? `${base}&format=svg` : base;
+}
+
+async function svgToPngBlob(svgBlob: Blob): Promise<Blob> {
+  const svgText = await svgBlob.text();
+  const svgUrl = URL.createObjectURL(new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' }));
+
+  try {
+    const image = new Image();
+    image.decoding = 'async';
+    const loaded = new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error('Image card could not be rendered.'));
+    });
+    image.src = svgUrl;
+    await loaded;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 630;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Image card renderer is not available.');
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(blob => {
+        if (blob) resolve(blob);
+        else reject(new Error('Image card could not be exported.'));
+      }, 'image/png');
+    });
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+}
+
+async function fetchNativeImageBlob(slug: string): Promise<Blob> {
+  const svgRes = await fetch(articleImageUrl(slug, 'svg'));
+  if (svgRes.ok && svgRes.headers.get('content-type')?.includes('image/svg+xml')) {
+    return svgToPngBlob(await svgRes.blob());
+  }
+
+  const pngRes = await fetch(articleImageUrl(slug, 'png'));
+  if (!pngRes.ok) throw new Error('Image card could not be generated.');
+  return pngRes.blob();
+}
+
 export default function InlineCrossPostComposer({ slug, title }: Props) {
   const [selected, setSelected] = useState<Platform>('twitter');
   const [copies, setCopies] = useState<Partial<Record<Platform, string>>>({});
@@ -119,9 +167,7 @@ export default function InlineCrossPostComposer({ slug, title }: Props) {
   }, [selected, copies, slug, shortUrl]);
 
   const fetchImageBlob = useCallback(async (): Promise<Blob> => {
-    const res = await fetch(`/api/og?slug=${encodeURIComponent(slug)}&type=article`);
-    if (!res.ok) throw new Error('Image card could not be generated.');
-    return res.blob();
+    return fetchNativeImageBlob(slug);
   }, [slug]);
 
   const handleDownloadImage = useCallback(async () => {
@@ -150,8 +196,7 @@ export default function InlineCrossPostComposer({ slug, title }: Props) {
       if (!('ClipboardItem' in window) || !navigator.clipboard?.write) {
         throw new Error('Image clipboard is not supported in this browser.');
       }
-      const blob = await fetchImageBlob();
-      const pngBlob = blob.type === 'image/png' ? blob : new Blob([blob], { type: 'image/png' });
+      const pngBlob = await fetchImageBlob();
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/png': pngBlob }),
       ]);
@@ -398,7 +443,7 @@ export default function InlineCrossPostComposer({ slug, title }: Props) {
           </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`/api/og?slug=${encodeURIComponent(slug)}&type=article`}
+            src={articleImageUrl(slug, 'svg')}
             alt="Article share card"
             style={{ width: '100%', maxWidth: 360, borderRadius: 'var(--radius-md)', display: 'block', border: '1px solid var(--border)' }}
           />

@@ -6,7 +6,7 @@ import {
   SOCIAL_IMAGE_WIDTH,
   type ArticleOgImageData,
 } from '@/lib/social-meta';
-import { getProviderName } from '@/lib/og-image';
+import { buildArticleSvg, buildCourseSvg, buildQuizSvg, getProviderName } from '@/lib/og-image';
 
 const CACHE_LONG = 'public, max-age=86400, s-maxage=604800';
 const CACHE_SHORT = 'public, max-age=300';
@@ -290,14 +290,29 @@ function pngResponse(data: ArticleOgImageData, cacheControl = CACHE_LONG): Respo
   });
 }
 
+function svgResponse(svg: string, cacheControl = CACHE_LONG): Response {
+  return new Response(svg, {
+    headers: {
+      'Content-Type': 'image/svg+xml; charset=utf-8',
+      'Cache-Control': cacheControl,
+      'Content-Disposition': 'inline; filename="bytesai-og.svg"',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  });
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug');
   const type = searchParams.get('type');
+  const format = searchParams.get('format');
+  const wantsSvg = format === 'svg';
 
   if (type === 'quiz') {
     const score = Number.parseInt(searchParams.get('score') ?? '0', 10);
     const total = Number.parseInt(searchParams.get('total') ?? '5', 10);
+    const difficulty = searchParams.get('difficulty') ?? 'beginner';
+    if (wantsSvg) return svgResponse(buildQuizSvg(score, total, difficulty));
     return pngResponse({
       eyebrow: 'QUIZ RESULT',
       headline: `I scored ${score}/${total} on the BytesAI AI quiz`,
@@ -308,7 +323,12 @@ export async function GET(request: Request) {
     });
   }
 
-  if (!slug || !isValidSlug(slug)) return pngResponse(fallbackData(), CACHE_SHORT);
+  if (!slug || !isValidSlug(slug)) {
+    const data = fallbackData();
+    return wantsSvg
+      ? svgResponse(buildArticleSvg(data.headline, data.summary, data.callout), CACHE_SHORT)
+      : pngResponse(data, CACHE_SHORT);
+  }
 
   try {
     const db = await getDB();
@@ -316,8 +336,23 @@ export async function GET(request: Request) {
 
     if (type === 'course') {
       const course = await getCourseBySlug(db, slug).catch(() => null);
-      if (!course) return pngResponse(fallbackData(), CACHE_SHORT);
+      if (!course) {
+        const data = fallbackData();
+        return wantsSvg
+          ? svgResponse(buildArticleSvg(data.headline, data.summary, data.callout), CACHE_SHORT)
+          : pngResponse(data, CACHE_SHORT);
+      }
       const provider = getProviderName(course.provider_id);
+      if (wantsSvg) {
+        return svgResponse(buildCourseSvg(
+          course.og_title ?? course.title,
+          provider,
+          course.category ?? 'AI Course',
+          course.level ?? '',
+          course.provider_id === 'prov-alison',
+          course.og_description ?? course.snippet ?? '',
+        ));
+      }
       return pngResponse(buildArticleOgImageData({
         title: course.og_title ?? course.title,
         summary: course.og_description ?? course.snippet,
@@ -327,17 +362,28 @@ export async function GET(request: Request) {
     }
 
     const article = await getCuratedPageBySlug(db, slug).catch(() => null);
-    if (!article) return pngResponse(fallbackData(), CACHE_SHORT);
+    if (!article) {
+      const data = fallbackData();
+      return wantsSvg
+        ? svgResponse(buildArticleSvg(data.headline, data.summary, data.callout), CACHE_SHORT)
+        : pngResponse(data, CACHE_SHORT);
+    }
 
-    return pngResponse(buildArticleOgImageData({
+    const data = buildArticleOgImageData({
       title: article.og_title ?? article.title,
       summary: article.og_description ?? article.summary,
       whyItMatters: article.why_it_matters,
       categories: parseCategories(article.categories_json),
       stored: article.og_image_data_json,
-    }));
+    });
+    return wantsSvg
+      ? svgResponse(buildArticleSvg(data.headline, data.summary, data.callout))
+      : pngResponse(data);
   } catch {
-    return pngResponse(fallbackData(), CACHE_SHORT);
+    const data = fallbackData();
+    return wantsSvg
+      ? svgResponse(buildArticleSvg(data.headline, data.summary, data.callout), CACHE_SHORT)
+      : pngResponse(data, CACHE_SHORT);
   }
 }
 

@@ -16,5 +16,10 @@ for (const [name, source] of [
     assert.match(source, /Download image/);
     assert.match(source, /Native image workflow/);
     assert.match(source, /\['twitter', 'linkedin', 'facebook'\]\.includes\(selected\)/);
+    assert.match(source, /format === 'svg'/);
+    assert.match(source, /svgToPngBlob/);
+    assert.match(source, /canvas\.toBlob/);
+    assert.match(source, /fetchNativeImageBlob/);
+    assert.match(source, /articleImageUrl\(slug, 'svg'\)/);
   });
 }

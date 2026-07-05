@@ -4,15 +4,17 @@
 Improve the typography of generated insight/course PNG cards so native social uploads and link previews use normal readable text instead of the current scaled pixel font.
 
 ## Constraints
-- Keep the response as `image/png`; social crawlers and platform uploads need PNG.
 - Do not add new packages.
-- Keep the existing manual truecolor PNG renderer because it is proven in Cloudflare Workers and does not depend on runtime WASM compilation.
-- Keep the change scoped to OG image generation.
+- Keep the existing manual truecolor PNG renderer as the crawler-safe fallback because it is proven in Cloudflare Workers and does not depend on runtime WASM compilation.
+- Do not use server-side WASM rasterization in this stack; previous attempts were build/runtime fragile under OpenNext and Workers.
+- Keep social crawler URLs as PNG.
+- Use escaped same-origin SVG only for the admin/native-share workflow preview and browser-side PNG rasterization.
 
 ## Plan
-1. Preserve mixed-case text instead of forcing all text to uppercase.
-2. Add lowercase glyphs to the built-in bitmap font so titles retain normal word shape.
-3. Bump the social image render version to force fresh crawler URLs.
-4. Add source-level regression tests for the mixed-case typography path.
-5. Run focused tests, current Node tests, and a production build.
-6. Commit, push, and verify Cloudflare deployment.
+1. Add `format=svg` support to the dynamic OG endpoint using the existing SVG builders with Inter/system font stacks.
+2. Preserve the existing PNG response path for crawler URLs and as browser fallback.
+3. Update the modal and inline share composers to preview the SVG image card.
+4. Update Copy image and Download image to fetch the SVG, rasterize it to PNG in the browser with canvas, and fall back to server PNG if needed.
+5. Add source-level regression tests for SVG routing and browser-side rasterization.
+6. Run focused tests, current Node tests, and a production build.
+7. Commit, push, and verify Cloudflare deployment.
