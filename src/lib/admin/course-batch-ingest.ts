@@ -158,6 +158,31 @@ function normalizeSlug(value: string): string {
     .replace(/^-|-$/g, '');
 }
 
+function normalizeOfficialLink(value: string): string {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const path = url.pathname.replace(/\/+$/g, '').toLowerCase();
+    if (host === 'learn.microsoft.com') {
+      return `${host}${path.replace(/^\/[a-z]{2}(?:-[a-z]{2})?\//, '/:locale/')}`;
+    }
+    return `${host}${path}`;
+  } catch {
+    return value.trim().toLowerCase().replace(/\/+$/g, '');
+  }
+}
+
+function microsoftLearnCourseSlug(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (url.hostname.toLowerCase() !== 'learn.microsoft.com') return null;
+    const match = url.pathname.match(/^\/[a-z]{2}(?:-[a-z]{2})?\/training\/courses\/([^/?#]+)\/?$/i);
+    return match?.[1]?.toLowerCase() ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function findExistingCourseForRefresh(db: D1Database, course: BatchCourseInput): Promise<ExistingCourseMatch | null> {
   if (course.official_link) {
     const byUrl = await db.prepare(
@@ -165,6 +190,19 @@ async function findExistingCourseForRefresh(db: D1Database, course: BatchCourseI
        FROM courses WHERE official_link = ? LIMIT 1`
     ).bind(course.official_link).first<ExistingCourseMatch>();
     if (byUrl) return byUrl;
+
+    const microsoftSlug = microsoftLearnCourseSlug(course.official_link);
+    if (microsoftSlug) {
+      const candidates = await db.prepare(
+        `SELECT id, slug, title, provider_id, official_link, snippet, long_description, category, subcategory, level, content_type, published_status
+         FROM courses WHERE official_link LIKE ?`
+      ).bind(`%/training/courses/${microsoftSlug}%`).all<ExistingCourseMatch>();
+      const sourceKey = normalizeOfficialLink(course.official_link);
+      const localeMatch = candidates.results.find(candidate =>
+        candidate.official_link && normalizeOfficialLink(candidate.official_link) === sourceKey
+      );
+      if (localeMatch) return localeMatch;
+    }
   }
 
   if (course.provider_id && course.slug) {
@@ -190,6 +228,9 @@ async function findExistingCourseForRefresh(db: D1Database, course: BatchCourseI
 function buildRefreshUpdates(existing: ExistingCourseMatch, course: BatchCourseInput): Record<string, unknown> {
   const updates: Record<string, unknown> = {};
   const pairs: Array<[string, unknown, unknown]> = [
+    ['title', course.title, existing.title],
+    ['slug', course.slug, existing.slug],
+    ['provider_id', course.provider_id, existing.provider_id],
     ['official_link', course.official_link, existing.official_link],
     ['destination_url', course.official_link, existing.official_link],
     ['snippet', course.snippet, existing.snippet],

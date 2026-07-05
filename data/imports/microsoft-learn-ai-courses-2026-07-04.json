@@ -1,0 +1,163 @@
+{
+  "source": "https://learn.microsoft.com/en-us/training/browse/?terms=AI&resource_type=course&roles=ai-engineer%2Cmaker%2Cdata-analyst%2Cdata-engineer%2Cdata-scientist%2Cdatabase-administrator%2Cdeveloper%2Cdevops-engineer%2Cfunctional-consultant%2Cplatform-engineer%2Csolution-architect%2Cstudent&subjects=artificial-intelligence",
+  "provider_id": "prov-microsoft",
+  "verification_note": "Microsoft Learn returned 14 course records for the supplied filtered browse URL. Included courses were checked against public course pages that expose self-directed learning and Start course entry points. Two future-dated courses were excluded from this published import because Microsoft marks them as not yet available as of 2026-07-04. Do not use archive-missing for prov-microsoft from this file unless intentionally replacing the broader Microsoft catalog, because the provider also contains Microsoft resources outside this filtered Microsoft Learn course result set.",
+  "excluded_future_courses": [
+    {
+      "title": "Developing in Agentic AI Systems",
+      "available_on": "2026-07-20",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/gh-600t00/"
+    },
+    {
+      "title": "Design and build integrated AI agent solutions in Copilot Studio",
+      "available_on": "2026-07-31",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/ab-620t00/"
+    }
+  ],
+  "courses": [
+    {
+      "title": "Build a foundation to build AI agents and extend Microsoft 365 Copilot",
+      "slug": "build-foundation-ai-agents-extend-microsoft-365-copilot",
+      "content_type": "course",
+      "provider_id": "prov-microsoft",
+      "category": "AI Agents",
+      "level": "Beginner",
+      "brief": "A Microsoft Learn course introducing AI agents, Microsoft 365 Copilot extension options, and low-code versus pro-code development paths.",
+      "long_description": "This Microsoft Learn course helps learners compare Microsoft agent development options including Copilot Studio, Microsoft Foundry, and Microsoft 365 Agents Toolkit, then choose an appropriate development path.",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/ms-4014/",
+      "published_status": "published"
+    },
+    {
+      "title": "Develop AI agents on Azure",
+      "slug": "develop-ai-agents-on-azure",
+      "content_type": "course",
+      "provider_id": "prov-microsoft",
+      "category": "AI Agents",
+      "level": "Intermediate",
+      "brief": "A Microsoft Learn course on creating, deploying, and managing intelligent AI agents with Azure AI Foundry.",
+      "long_description": "This course teaches developers, data scientists, and IT professionals how to integrate advanced AI capabilities into scalable agent-based Azure solutions.",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/ai-3026/",
+      "published_status": "published"
+    },
+    {
+      "title": "Implement Generative AI engineering with Azure Databricks",
+      "slug": "implement-generative-ai-engineering-with-azure-databricks",
+      "content_type": "course",
+      "provider_id": "prov-microsoft",
+      "category": "LLMs / Generative AI",
+      "level": "Intermediate",
+      "brief": "A Microsoft Learn course on building generative AI applications with Azure Databricks, Spark, RAG, model tuning, and LLMOps.",
+      "long_description": "This course covers generative AI engineering on Azure Databricks, including retrieval-augmented generation, multi-stage reasoning, model fine-tuning, evaluation, responsible AI, and production model operations.",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/dp-3028/",
+      "published_status": "published"
+    },
+    {
+      "title": "Operationalize machine learning and generative AI solutions",
+      "slug": "operationalize-machine-learning-and-generative-ai-solutions",
+      "content_type": "course",
+      "provider_id": "prov-microsoft",
+      "category": "MLOps / AI Operations",
+      "level": "Intermediate",
+      "brief": "A Microsoft Learn course on MLOps and GenAIOps for secure, scalable AI solutions on Azure.",
+      "long_description": "This course prepares learners to design, implement, and operate MLOps and GenAIOps solutions on Azure, including infrastructure, model lifecycle management, automation, CI/CD, observability, and generative AI application operations.",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/ai-300t00/",
+      "published_status": "published"
+    },
+    {
+      "title": "Introduction to AI in Azure",
+      "slug": "introduction-to-ai-in-azure",
+      "content_type": "course",
+      "provider_id": "prov-microsoft",
+      "category": "AI Foundations",
+      "level": "Beginner",
+      "brief": "A Microsoft Learn course introducing AI concepts and Azure services used to create AI solutions.",
+      "long_description": "This course introduces foundational artificial intelligence concepts and the Microsoft Azure services used to build AI solutions, with recommended background in Python and core cloud concepts.",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/ai-901t00/",
+      "published_status": "published"
+    },
+    {
+      "title": "Develop AI cloud solutions on Azure",
+      "slug": "develop-ai-cloud-solutions-on-azure",
+      "content_type": "course",
+      "provider_id": "prov-microsoft",
+      "category": "Programming Foundations",
+      "level": "Intermediate",
+      "brief": "A Microsoft Learn course on building secure, observable, AI-driven cloud applications on Azure.",
+      "long_description": "This course teaches developers how to create, monitor, and troubleshoot AI solutions on Azure using compute, containers, serverless APIs, event-driven integration, and data services that support AI workloads.",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/ai-200t00/",
+      "published_status": "published"
+    },
+    {
+      "title": "Develop AI apps and agents on Azure",
+      "slug": "develop-ai-apps-and-agents-on-azure",
+      "content_type": "course",
+      "provider_id": "prov-microsoft",
+      "category": "AI Agents",
+      "level": "Intermediate",
+      "brief": "A Microsoft Learn course for software developers building AI apps and agents with Microsoft Foundry.",
+      "long_description": "This course covers developing generative AI apps, building AI agents, implementing knowledge connections and tools, and working with multimodal capabilities in Microsoft Foundry.",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/ai-103t00/",
+      "published_status": "published"
+    },
+    {
+      "title": "Extract insights from visual data on Azure",
+      "slug": "extract-insights-from-visual-data-on-azure",
+      "content_type": "course",
+      "provider_id": "prov-microsoft",
+      "category": "Computer Vision / Multimodal AI",
+      "level": "Intermediate",
+      "brief": "A Microsoft Learn course on building applications that reason over images and documents using multimodal models and agent tools.",
+      "long_description": "This course focuses on visual and document AI workflows, including structured extraction, analysis, tool orchestration, and grounding model responses in visual data.",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/ai-3008/",
+      "published_status": "published"
+    },
+    {
+      "title": "Develop AI-enabled database solutions",
+      "slug": "develop-ai-enabled-database-solutions",
+      "content_type": "course",
+      "provider_id": "prov-microsoft",
+      "category": "Data / Databases",
+      "level": "Intermediate",
+      "brief": "A Microsoft Learn course on designing and developing AI-enabled database solutions across Microsoft SQL platforms.",
+      "long_description": "This course covers modern data solutions that integrate structured and semi-structured data with AI features, including SQL Server, Azure SQL, SQL databases in Microsoft Fabric, vector search, and embeddings.",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/dp-800t00/",
+      "published_status": "published"
+    },
+    {
+      "title": "Implement a data science and machine learning solution for AI with Microsoft Fabric",
+      "slug": "implement-data-science-machine-learning-solution-ai-microsoft-fabric",
+      "content_type": "course",
+      "provider_id": "prov-microsoft",
+      "category": "Machine Learning",
+      "level": "Beginner",
+      "brief": "A Microsoft Learn course on implementing data science and machine learning solutions with Microsoft Fabric.",
+      "long_description": "This course covers the end-to-end data science process in Microsoft Fabric, including data exploration, preparation, model training, evaluation, tracking, deployment, and prediction generation.",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/dp-604t00/",
+      "published_status": "published"
+    },
+    {
+      "title": "Extend Microsoft 365 Copilot in Copilot Studio",
+      "slug": "extend-microsoft-365-copilot-in-copilot-studio",
+      "content_type": "course",
+      "provider_id": "prov-microsoft",
+      "category": "AI Agents",
+      "level": "Intermediate",
+      "brief": "A Microsoft Learn course on building low-code declarative agents that extend Microsoft 365 Copilot using Copilot Studio.",
+      "long_description": "This course guides learners through creating Copilot Studio agents, configuring custom knowledge and conversational instructions, setting up tools, and publishing agents to Microsoft 365 Copilot environments.",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/ms-4022/",
+      "published_status": "published"
+    },
+    {
+      "title": "Introduction to Microsoft 365 and AI administration",
+      "slug": "introduction-to-microsoft-365-and-ai-administration",
+      "content_type": "course",
+      "provider_id": "prov-microsoft",
+      "category": "AI Foundations",
+      "level": "Beginner",
+      "brief": "A Microsoft Learn course introducing Microsoft 365 administration, Copilot, and AI-powered agents.",
+      "long_description": "This course introduces Microsoft 365 services, administrative controls, Microsoft 365 Copilot, and AI-powered agents for beginning technical IT professionals and novice administrators.",
+      "official_link": "https://learn.microsoft.com/en-us/training/courses/ab-900t00/",
+      "published_status": "published"
+    }
+  ]
+}

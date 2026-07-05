@@ -5,11 +5,14 @@ import ProviderLogo from '@/components/ui/ProviderLogo';
 import ProviderActions from './ProviderActions';
 import { providerLogoCandidates } from '@/lib/provider-logo';
 import ProviderDiscoveryButton from './ProviderDiscoveryButton';
+import { getDB } from '@/lib/db';
 
 export const metadata: Metadata = {
   title: 'Providers — Admin',
   robots: { index: false, follow: false },
 };
+
+export const dynamic = 'force-dynamic';
 
 interface ProviderRow {
   id: string;
@@ -22,14 +25,19 @@ interface ProviderRow {
 }
 
 async function getProviders(): Promise<ProviderRow[]> {
+  const db = await getDB();
+  if (!db) return [];
+
   try {
-    const res = await fetch('https://learn.bytesai.uk/api/admin/providers', {
-      cache: 'no-store',
-      headers: { cookie: '' },
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.providers ?? [];
+    const result = await db.prepare(
+      `SELECT p.id, p.slug, p.name, p.website_url, p.logo_url, p.affiliate_enabled,
+              COUNT(c.id) as course_count
+       FROM providers p
+       LEFT JOIN courses c ON c.provider_id = p.id AND c.published_status = 'published'
+       GROUP BY p.id
+       ORDER BY p.name`
+    ).all<ProviderRow>();
+    return result.results ?? [];
   } catch {
     return [];
   }

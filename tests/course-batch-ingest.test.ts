@@ -23,6 +23,14 @@ function createFakeDb(seedCourses) {
           return null;
         },
         async all() {
+          if (query.includes('official_link LIKE ?')) {
+            const pattern = String(this.bindings[0]).replace(/%/g, '');
+            return {
+              results: courses.filter(course => course.official_link?.includes(pattern)),
+              success: true,
+              meta: { duration: 0 },
+            };
+          }
           if (query.includes('WHERE provider_id = ? AND published_status != ?')) {
             return {
               results: courses.filter(course => course.provider_id === this.bindings[0] && course.published_status !== this.bindings[1]),
@@ -192,6 +200,52 @@ test('refresh mode updates an existing provider course matched by normalized tit
   assert.equal(result.results[0].status, 'updated');
   assert.equal(db.courses[0].official_link, 'https://anthropic.skilljar.com/claude-101');
   assert.equal(db.courses[0].snippet, 'Updated brief');
+});
+
+test('refresh mode repairs catalog identity fields on localized Microsoft Learn URL match', async () => {
+  const db = createFakeDb([
+    {
+      id: 'crs-ai-103',
+      slug: 'course-ai-103t00-a-develop-ai-apps-and-agents-on-azure-training',
+      title: 'Course AI-103T00-A: Develop AI apps and agents on Azure - Training',
+      provider_id: null,
+      official_link: 'https://learn.microsoft.com/en-gb/training/courses/ai-103t00',
+      snippet: 'Old brief',
+      long_description: null,
+      category: null,
+      subcategory: null,
+      level: null,
+      content_type: 'course',
+      published_status: 'draft',
+    },
+  ]);
+
+  const result = await ingestCourseBatch({
+    db,
+    adminUserId: 'usr-admin',
+    updateExisting: true,
+    providerId: 'prov-microsoft',
+    courses: [
+      {
+        source_row: 1,
+        title: 'Develop AI apps and agents on Azure',
+        slug: 'develop-ai-apps-and-agents-on-azure',
+        content_type: 'course',
+        provider_id: 'prov-microsoft',
+        category: 'AI Agents',
+        level: 'Intermediate',
+        snippet: 'A Microsoft Learn course on building AI apps and agents with Microsoft Foundry.',
+        official_link: 'https://learn.microsoft.com/en-us/training/courses/ai-103t00/',
+        published_status: 'published',
+      },
+    ],
+  });
+
+  assert.equal(result.summary.updated, 1);
+  assert.equal(db.courses[0].provider_id, 'prov-microsoft');
+  assert.equal(db.courses[0].title, 'Develop AI apps and agents on Azure');
+  assert.equal(db.courses[0].slug, 'develop-ai-apps-and-agents-on-azure');
+  assert.equal(db.courses[0].published_status, 'published');
 });
 
 test('refresh mode reports archive candidates without archiving by default', async () => {

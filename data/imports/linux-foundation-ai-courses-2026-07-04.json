@@ -1,0 +1,84 @@
+{
+  "source": "https://training.linuxfoundation.org/resources/?_sft_topic_area=ai-machine-learning&_sft_content_type=free-course",
+  "provider_id": "prov-linux-foundation",
+  "verification_note": "Linux Foundation's filtered resources page reports 8 AI/ML free-course results. Included items were retained only when the course page was active, showed $0 pricing, and listed online self-paced access. Data and AI Fundamentals was excluded because it redirects to Course Inactive. Ethics in AI and Data Science and Business Considerations for 5G with Edge, IoT and AI were excluded because their direct course URLs returned 404 during verification. Use Batch Import with Refresh existing matches enabled and Provider ID set to prov-linux-foundation. Keep Preview only enabled first; archive-missing is provider-wide and should be used only after reviewing candidates.",
+  "excluded_unavailable_courses": [
+    {
+      "title": "Data and AI Fundamentals (LFS115x)",
+      "reason": "Course URL redirects to the Linux Foundation course-inactive page.",
+      "official_link": "https://training.linuxfoundation.org/training/data-and-ai-fundamentals-lfs115x/"
+    },
+    {
+      "title": "Ethics in AI and Data Science (LFS112)",
+      "reason": "Direct course URL returned 404 during verification.",
+      "official_link": "https://training.linuxfoundation.org/training/ethics-in-ai-and-data-science-lfs112/"
+    },
+    {
+      "title": "Business Considerations for 5G with Edge, IoT and AI (LFS110x)",
+      "reason": "Direct course URL returned 404 during verification.",
+      "official_link": "https://training.linuxfoundation.org/training/business-considerations-for-5g-with-edge-iot-and-ai-lfs110x/"
+    }
+  ],
+  "courses": [
+    {
+      "title": "Conversational AI: Ensuring Compliance and Mitigating Risks",
+      "slug": "conversational-ai-ensuring-compliance-and-mitigating-risks",
+      "content_type": "course",
+      "provider_id": "prov-linux-foundation",
+      "category": "Governance / Responsible AI",
+      "level": "Beginner",
+      "brief": "A free Linux Foundation course on conversational AI compliance, risk mitigation, and trustworthy AI frameworks.",
+      "long_description": "This course covers conversational AI fundamentals, impacts, and benefits, then applies ethical AI principles and risk mitigation strategies using frameworks such as the EU AI Act, NIST AI RMF, and ISO/IEC 42001:2023.",
+      "official_link": "https://training.linuxfoundation.org/training/conversational-ai-ensuring-compliance-and-mitigating-risks-lfs120/",
+      "published_status": "published"
+    },
+    {
+      "title": "Introduction to AI/ML Toolkits with Kubeflow",
+      "slug": "introduction-to-ai-ml-toolkits-with-kubeflow",
+      "content_type": "course",
+      "provider_id": "prov-linux-foundation",
+      "category": "MLOps / AI Operations",
+      "level": "Beginner",
+      "brief": "A free Linux Foundation course introducing Kubeflow architecture, components, deployment options, and ML workflow integrations.",
+      "long_description": "This course explains Kubeflow's origins, distributions, dashboard, notebooks, training operator, pipelines, Katib, and common integrations for machine learning projects on Kubernetes.",
+      "official_link": "https://training.linuxfoundation.org/training/introduction-to-ai-ml-toolkits-with-kubeflow-lfs147/",
+      "published_status": "published"
+    },
+    {
+      "title": "Ethical Principles for Conversational AI",
+      "slug": "ethical-principles-for-conversational-ai",
+      "content_type": "course",
+      "provider_id": "prov-linux-foundation",
+      "category": "Governance / Responsible AI",
+      "level": "Beginner",
+      "brief": "A free Linux Foundation course on the impact, risks, privacy concerns, and ethical frameworks for conversational AI.",
+      "long_description": "This course introduces conversational AI technology, its benefits and risks, and practical ethical principles for building respectful, trustworthy, and beneficial conversational AI experiences.",
+      "official_link": "https://training.linuxfoundation.org/training/ethical-principles-in-conversational-ai-lfs118/",
+      "published_status": "published"
+    },
+    {
+      "title": "PyTorch and Deep Learning for Decision Makers",
+      "slug": "pytorch-and-deep-learning-for-decision-makers",
+      "content_type": "course",
+      "provider_id": "prov-linux-foundation",
+      "category": "Machine Learning",
+      "level": "Beginner",
+      "brief": "A free Linux Foundation course for decision makers learning how PyTorch and deep learning can support AI applications.",
+      "long_description": "This course explains PyTorch's business value, common AI use cases, data quality, model selection trade-offs, deployment challenges, privacy, security, and maintenance concerns for AI applications.",
+      "official_link": "https://training.linuxfoundation.org/training/pytorch-and-deep-learning-for-decision-makers-lfs116/",
+      "published_status": "published"
+    },
+    {
+      "title": "Open Source and the 5G Transition",
+      "slug": "open-source-and-the-5g-transition",
+      "content_type": "course",
+      "provider_id": "prov-linux-foundation",
+      "category": "Networking / Edge AI",
+      "level": "Beginner",
+      "brief": "A free Linux Foundation course on how open source software and standards are shaping 5G, AI, and IoT.",
+      "long_description": "This course helps business and technical learners understand why open source matters to 5G, which open source technologies are driving innovation, and how open source infrastructure supports future wireless and mobile technology strategies.",
+      "official_link": "https://training.linuxfoundation.org/training/open-source-and-the-5g-transition-lfs111/",
+      "published_status": "published"
+    }
+  ]
+}
