@@ -13,7 +13,7 @@ test('article social image URLs are crawler-friendly PNG paths with render cache
 
   assert.equal(
     url,
-    'https://learn.bytesai.uk/api/og/article/test-insight/20260705T111616007Zr6.png',
+    'https://learn.bytesai.uk/api/og/article/test-insight/20260705T111616007Zr7.png',
   );
   assert.doesNotMatch(url, /\?/);
   assert.match(url, /\.png$/);
@@ -22,7 +22,7 @@ test('article social image URLs are crawler-friendly PNG paths with render cache
 test('course social image URLs use the current render version', () => {
   assert.equal(
     courseSocialImageUrl('test-course'),
-    'https://learn.bytesai.uk/api/og/course/test-course/cardr6.png',
+    'https://learn.bytesai.uk/api/og/course/test-course/cardr7.png',
   );
 });
 
@@ -64,6 +64,7 @@ test('versioned OG route redirects known static readable PNG assets before dynam
   assert.match(source, /STATIC_ARTICLE_IMAGES/);
   assert.match(source, /function staticArticleImageRedirect/);
   assert.match(source, /\/og-images\/\$\{encodeURIComponent\(slug\)\}\.png/);
+  assert.match(source, /assetUrl\.searchParams\.set\('v', version\)/);
   assert.match(source, /if \(staticImage\) return staticImage/);
   assert.match(source, /Response\.redirect/);
   assert.match(source, /return renderOgImage/);
