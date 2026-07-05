@@ -2,6 +2,7 @@ export const SITE_URL = 'https://learn.bytesai.uk';
 
 export const SOCIAL_IMAGE_WIDTH = 1200;
 export const SOCIAL_IMAGE_HEIGHT = 630;
+const SOCIAL_IMAGE_RENDER_VERSION = 'r2';
 
 export type SharePlatform = 'twitter' | 'linkedin' | 'whatsapp' | 'facebook';
 
@@ -32,11 +33,11 @@ function imagePath(type: 'article' | 'course', slug: string, version: string): s
 }
 
 export function articleSocialImageUrl(slug: string, version?: string | null): string {
-  return imagePath('article', slug, version ? encodeVersion(version) : 'card');
+  return imagePath('article', slug, `${version ? encodeVersion(version) : 'card'}${SOCIAL_IMAGE_RENDER_VERSION}`);
 }
 
 export function courseSocialImageUrl(slug: string): string {
-  return imagePath('course', slug, 'card');
+  return imagePath('course', slug, `card${SOCIAL_IMAGE_RENDER_VERSION}`);
 }
 
 export function quizSocialImageUrl(score: number, total: number, difficulty: string): string {

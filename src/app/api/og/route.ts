@@ -11,6 +11,8 @@ import { getProviderName } from '@/lib/og-image';
 const CACHE_LONG = 'public, max-age=86400, s-maxage=604800';
 const CACHE_SHORT = 'public, max-age=300';
 
+type Rgb = [number, number, number];
+
 const PALETTES: Record<ArticleOgImageData['accent'], { a: Rgb; b: Rgb; c: Rgb }> = {
   violet: { a: [139, 92, 246], b: [20, 184, 166], c: [15, 23, 42] },
   teal: { a: [20, 184, 166], b: [56, 189, 248], c: [12, 33, 38] },
@@ -19,7 +21,53 @@ const PALETTES: Record<ArticleOgImageData['accent'], { a: Rgb; b: Rgb; c: Rgb }>
   rose: { a: [251, 113, 133], b: [245, 158, 11], c: [42, 15, 26] },
 };
 
-type Rgb = [number, number, number];
+const FONT: Record<string, string[]> = {
+  ' ': ['00000', '00000', '00000', '00000', '00000', '00000', '00000'],
+  '.': ['00000', '00000', '00000', '00000', '00000', '01100', '01100'],
+  ',': ['00000', '00000', '00000', '00000', '01100', '01100', '01000'],
+  '-': ['00000', '00000', '00000', '11110', '00000', '00000', '00000'],
+  ':': ['00000', '01100', '01100', '00000', '01100', '01100', '00000'],
+  '/': ['00001', '00010', '00100', '01000', '10000', '00000', '00000'],
+  '&': ['01100', '10010', '10100', '01000', '10101', '10010', '01101'],
+  '+': ['00000', '00100', '00100', '11111', '00100', '00100', '00000'],
+  '?': ['01110', '10001', '00001', '00010', '00100', '00000', '00100'],
+  '0': ['01110', '10001', '10011', '10101', '11001', '10001', '01110'],
+  '1': ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],
+  '2': ['01110', '10001', '00001', '00010', '00100', '01000', '11111'],
+  '3': ['11110', '00001', '00001', '01110', '00001', '00001', '11110'],
+  '4': ['00010', '00110', '01010', '10010', '11111', '00010', '00010'],
+  '5': ['11111', '10000', '10000', '11110', '00001', '00001', '11110'],
+  '6': ['01110', '10000', '10000', '11110', '10001', '10001', '01110'],
+  '7': ['11111', '00001', '00010', '00100', '01000', '01000', '01000'],
+  '8': ['01110', '10001', '10001', '01110', '10001', '10001', '01110'],
+  '9': ['01110', '10001', '10001', '01111', '00001', '00001', '01110'],
+  A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
+  B: ['11110', '10001', '10001', '11110', '10001', '10001', '11110'],
+  C: ['01110', '10001', '10000', '10000', '10000', '10001', '01110'],
+  D: ['11110', '10001', '10001', '10001', '10001', '10001', '11110'],
+  E: ['11111', '10000', '10000', '11110', '10000', '10000', '11111'],
+  F: ['11111', '10000', '10000', '11110', '10000', '10000', '10000'],
+  G: ['01110', '10001', '10000', '10111', '10001', '10001', '01110'],
+  H: ['10001', '10001', '10001', '11111', '10001', '10001', '10001'],
+  I: ['01110', '00100', '00100', '00100', '00100', '00100', '01110'],
+  J: ['00111', '00010', '00010', '00010', '10010', '10010', '01100'],
+  K: ['10001', '10010', '10100', '11000', '10100', '10010', '10001'],
+  L: ['10000', '10000', '10000', '10000', '10000', '10000', '11111'],
+  M: ['10001', '11011', '10101', '10101', '10001', '10001', '10001'],
+  N: ['10001', '11001', '10101', '10011', '10001', '10001', '10001'],
+  O: ['01110', '10001', '10001', '10001', '10001', '10001', '01110'],
+  P: ['11110', '10001', '10001', '11110', '10000', '10000', '10000'],
+  Q: ['01110', '10001', '10001', '10001', '10101', '10010', '01101'],
+  R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'],
+  S: ['01111', '10000', '10000', '01110', '00001', '00001', '11110'],
+  T: ['11111', '00100', '00100', '00100', '00100', '00100', '00100'],
+  U: ['10001', '10001', '10001', '10001', '10001', '10001', '01110'],
+  V: ['10001', '10001', '10001', '10001', '10001', '01010', '00100'],
+  W: ['10001', '10001', '10001', '10101', '10101', '10101', '01010'],
+  X: ['10001', '10001', '01010', '00100', '01010', '10001', '10001'],
+  Y: ['10001', '10001', '01010', '00100', '00100', '00100', '00100'],
+  Z: ['11111', '00001', '00010', '00100', '01000', '10000', '11111'],
+};
 
 function parseCategories(value: string | null): string[] {
   if (!value) return [];
@@ -31,108 +79,6 @@ function parseCategories(value: string | null): string[] {
   }
 }
 
-function hashString(value: string): number {
-  let hash = 2166136261;
-  for (let i = 0; i < value.length; i++) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function lerp(a: number, b: number, t: number): number {
-  return Math.round(a + (b - a) * t);
-}
-
-function blend(a: Rgb, b: Rgb, t: number): Rgb {
-  return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
-}
-
-function setPixel(buffer: Uint8Array, width: number, x: number, y: number, color: Rgb, alpha = 255) {
-  if (x < 0 || y < 0 || x >= width || y >= SOCIAL_IMAGE_HEIGHT) return;
-  const offset = (y * width + x) * 4;
-  const inv = 255 - alpha;
-  buffer[offset] = Math.round((color[0] * alpha + buffer[offset] * inv) / 255);
-  buffer[offset + 1] = Math.round((color[1] * alpha + buffer[offset + 1] * inv) / 255);
-  buffer[offset + 2] = Math.round((color[2] * alpha + buffer[offset + 2] * inv) / 255);
-  buffer[offset + 3] = 255;
-}
-
-function fillRect(buffer: Uint8Array, width: number, x: number, y: number, w: number, h: number, color: Rgb, alpha = 255) {
-  for (let yy = y; yy < y + h; yy++) {
-    for (let xx = x; xx < x + w; xx++) {
-      setPixel(buffer, width, xx, yy, color, alpha);
-    }
-  }
-}
-
-function drawPattern(buffer: Uint8Array, width: number, seed: number, palette: { a: Rgb; b: Rgb; c: Rgb }) {
-  for (let i = 0; i < 34; i++) {
-    const x = 690 + ((seed >>> (i % 16)) + i * 47) % 420;
-    const y = 110 + ((seed >>> ((i + 5) % 16)) + i * 31) % 360;
-    const w = 16 + ((seed >>> (i % 12)) % 72);
-    const h = 4 + ((seed >>> ((i + 3) % 12)) % 22);
-    fillRect(buffer, width, x, y, w, h, i % 2 === 0 ? palette.a : palette.b, 58);
-  }
-}
-
-function drawBrandMarks(buffer: Uint8Array, width: number, palette: { a: Rgb; b: Rgb }) {
-  fillRect(buffer, width, 64, 48, 42, 42, palette.a, 255);
-  fillRect(buffer, width, 116, 58, 132, 9, [248, 250, 252], 235);
-  fillRect(buffer, width, 116, 76, 104, 8, palette.b, 225);
-  fillRect(buffer, width, 64, 144, 132, 4, palette.b, 230);
-  fillRect(buffer, width, 64, 580, 1072, 2, [148, 163, 184], 44);
-  fillRect(buffer, width, 64, 598, 78, 20, palette.b, 190);
-  fillRect(buffer, width, 1030, 44, 106, 26, palette.a, 150);
-}
-
-function renderCard(data: ArticleOgImageData): Uint8Array {
-  const width = SOCIAL_IMAGE_WIDTH;
-  const height = SOCIAL_IMAGE_HEIGHT;
-  const palette = PALETTES[data.accent] ?? PALETTES.violet;
-  const pixels = new Uint8Array(width * height * 4);
-  const seed = hashString(`${data.headline}|${data.summary}|${data.badge}`);
-
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const radial = Math.max(0, 1 - Math.hypot((x - 940) / 620, (y - 130) / 430));
-      const sweep = (x / width) * 0.55 + (y / height) * 0.45;
-      const base = blend(palette.c, [11, 16, 32], sweep);
-      const glow = blend(base, palette.a, radial * 0.34);
-      const noise = ((x * 13 + y * 7 + seed) % 19) - 9;
-      const offset = (y * width + x) * 4;
-      pixels[offset] = Math.max(0, Math.min(255, glow[0] + noise));
-      pixels[offset + 1] = Math.max(0, Math.min(255, glow[1] + noise));
-      pixels[offset + 2] = Math.max(0, Math.min(255, glow[2] + noise));
-      pixels[offset + 3] = 255;
-    }
-  }
-
-  fillRect(pixels, width, 0, 0, width, 6, palette.a, 255);
-  fillRect(pixels, width, 0, 6, width, 2, palette.b, 255);
-  drawBrandMarks(pixels, width, palette);
-  drawPattern(pixels, width, seed, palette);
-
-  const blocks = Math.min(18, Math.max(8, Math.ceil(data.headline.length / 6)));
-  for (let i = 0; i < blocks; i++) {
-    const blockWidth = 52 + ((seed >>> (i % 15)) % 128);
-    const y = 214 + Math.floor(i / 4) * 54;
-    const x = 64 + (i % 4) * 202;
-    fillRect(pixels, width, x, y, blockWidth, 28, [248, 250, 252], 215);
-  }
-
-  const summaryBlocks = Math.min(7, Math.max(3, Math.ceil(data.summary.length / 24)));
-  for (let i = 0; i < summaryBlocks; i++) {
-    fillRect(pixels, width, 64 + i * 126, 452, 82 + ((seed >>> (i % 13)) % 64), 12, [203, 213, 225], 130);
-  }
-
-  fillRect(pixels, width, 64, 506, 4, 52, palette.b, 230);
-  fillRect(pixels, width, 84, 512, 620, 10, [226, 232, 240], 140);
-  fillRect(pixels, width, 84, 536, 460, 10, [226, 232, 240], 100);
-
-  return encodePng(width, height, pixels);
-}
-
 function fallbackData(): ArticleOgImageData {
   return {
     eyebrow: 'BYTESAI LEARNING',
@@ -142,6 +88,166 @@ function fallbackData(): ArticleOgImageData {
     badge: 'AI LEARNING',
     accent: 'violet',
   };
+}
+
+function clamp(value: number): number {
+  return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+function mix(a: Rgb, b: Rgb, t: number): Rgb {
+  return [
+    clamp(a[0] + (b[0] - a[0]) * t),
+    clamp(a[1] + (b[1] - a[1]) * t),
+    clamp(a[2] + (b[2] - a[2]) * t),
+  ];
+}
+
+function setPixel(buffer: Uint8Array, width: number, x: number, y: number, color: Rgb, alpha = 1) {
+  if (x < 0 || y < 0 || x >= width || y >= SOCIAL_IMAGE_HEIGHT) return;
+  const offset = (y * width + x) * 3;
+  buffer[offset] = clamp(color[0] * alpha + buffer[offset] * (1 - alpha));
+  buffer[offset + 1] = clamp(color[1] * alpha + buffer[offset + 1] * (1 - alpha));
+  buffer[offset + 2] = clamp(color[2] * alpha + buffer[offset + 2] * (1 - alpha));
+}
+
+function fillRect(buffer: Uint8Array, width: number, x: number, y: number, w: number, h: number, color: Rgb, alpha = 1) {
+  for (let yy = y; yy < y + h; yy++) {
+    for (let xx = x; xx < x + w; xx++) setPixel(buffer, width, xx, yy, color, alpha);
+  }
+}
+
+function drawCircle(buffer: Uint8Array, width: number, cx: number, cy: number, radius: number, color: Rgb, alpha = 1) {
+  const r2 = radius * radius;
+  for (let y = cy - radius; y <= cy + radius; y++) {
+    for (let x = cx - radius; x <= cx + radius; x++) {
+      const d2 = (x - cx) ** 2 + (y - cy) ** 2;
+      if (d2 <= r2) setPixel(buffer, width, x, y, color, alpha * (1 - d2 / r2));
+    }
+  }
+}
+
+function normalizeText(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/[^\w\s.,:/&+-]/g, ' ')
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
+function truncateAtWord(value: string, maxLength: number): string {
+  const cleaned = normalizeText(value);
+  if (cleaned.length <= maxLength) return cleaned;
+  const clipped = cleaned.slice(0, maxLength - 3);
+  const lastSpace = clipped.lastIndexOf(' ');
+  const base = lastSpace > maxLength * 0.55 ? clipped.slice(0, lastSpace) : clipped;
+  return `${base.trimEnd()}...`;
+}
+
+function wrapText(value: string, maxChars: number, maxLines: number): string[] {
+  const words = normalizeText(value).split(' ').filter(Boolean);
+  const lines: string[] = [];
+  let current = '';
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length > maxChars && current) {
+      lines.push(current);
+      current = word;
+      if (lines.length === maxLines) break;
+    } else {
+      current = candidate;
+    }
+  }
+
+  if (current && lines.length < maxLines) lines.push(current);
+  if (lines.length === maxLines && lines.join(' ').length < words.join(' ').length) {
+    lines[maxLines - 1] = truncateAtWord(lines[maxLines - 1], Math.max(10, lines[maxLines - 1].length - 2));
+  }
+  return lines.length ? lines : ['BYTESAI LEARNING'];
+}
+
+function drawGlyph(buffer: Uint8Array, width: number, glyph: string, x: number, y: number, scale: number, color: Rgb) {
+  const rows = FONT[glyph] ?? FONT['?'];
+  for (let row = 0; row < rows.length; row++) {
+    for (let col = 0; col < rows[row].length; col++) {
+      if (rows[row][col] !== '1') continue;
+      fillRect(buffer, width, x + col * scale, y + row * scale, scale, scale, color);
+    }
+  }
+}
+
+function drawText(buffer: Uint8Array, width: number, text: string, x: number, y: number, scale: number, color: Rgb) {
+  const normalized = normalizeText(text);
+  let cursor = x;
+  for (const char of normalized) {
+    drawGlyph(buffer, width, char, cursor, y, scale, color);
+    cursor += 6 * scale;
+  }
+}
+
+function drawLines(buffer: Uint8Array, width: number, lines: string[], x: number, y: number, scale: number, color: Rgb) {
+  const lineHeight = 9 * scale;
+  lines.forEach((line, index) => drawText(buffer, width, line, x, y + index * lineHeight, scale, color));
+}
+
+function renderCard(data: ArticleOgImageData): Uint8Array {
+  const width = SOCIAL_IMAGE_WIDTH;
+  const height = SOCIAL_IMAGE_HEIGHT;
+  const pixels = new Uint8Array(width * height * 3);
+  const palette = PALETTES[data.accent] ?? PALETTES.violet;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const sweep = (x / width) * 0.62 + (y / height) * 0.38;
+      const glow = Math.max(0, 1 - Math.hypot((x - 980) / 560, (y - 110) / 360));
+      const base = mix(palette.c, [2, 6, 23], sweep);
+      const color = mix(base, palette.a, glow * 0.24);
+      const offset = (y * width + x) * 3;
+      pixels[offset] = color[0];
+      pixels[offset + 1] = color[1];
+      pixels[offset + 2] = color[2];
+    }
+  }
+
+  drawCircle(pixels, width, 1040, 90, 260, palette.a, 0.22);
+  drawCircle(pixels, width, 78, 590, 250, palette.b, 0.18);
+  fillRect(pixels, width, 0, 0, width, 8, palette.a);
+  fillRect(pixels, width, 0, 8, width, 3, palette.b);
+
+  fillRect(pixels, width, 64, 42, 42, 42, palette.a);
+  drawText(pixels, width, 'B', 77, 52, 4, [248, 250, 252]);
+  drawText(pixels, width, 'BYTESAI', 122, 54, 3, [248, 250, 252]);
+  drawText(pixels, width, 'LEARNING', 276, 54, 3, palette.b);
+
+  fillRect(pixels, width, 930, 42, 206, 36, palette.a, 0.2);
+  drawText(pixels, width, truncateAtWord(data.badge || 'AI INSIGHT', 18), 958, 54, 2, [226, 232, 240]);
+
+  fillRect(pixels, width, 64, 136, 8, 8, palette.b);
+  drawText(pixels, width, truncateAtWord(data.eyebrow || 'CURATED INSIGHT', 30), 86, 130, 2, palette.b);
+  fillRect(pixels, width, 64, 158, 144, 3, palette.b, 0.75);
+
+  const titleLines = wrapText(data.headline, 24, 3);
+  drawLines(pixels, width, titleLines, 64, 210, 7, [248, 250, 252]);
+
+  const summaryLines = wrapText(data.summary || data.callout || 'Practical AI signal for operators and builders.', 34, 2);
+  drawLines(pixels, width, summaryLines, 64, 456, 4, [203, 213, 225]);
+
+  fillRect(pixels, width, 64, 536, 5, 50, palette.b);
+  drawText(pixels, width, 'WHY IT MATTERS', 84, 538, 2, palette.b);
+  const calloutLines = wrapText(data.callout || data.summary || '', 48, 2);
+  drawLines(pixels, width, calloutLines, 84, 566, 3, [226, 232, 240]);
+
+  for (let i = 0; i < 18; i++) {
+    fillRect(pixels, width, 780 + i * 18, 170 + i * 7, 120, 10, i % 2 ? palette.b : palette.a, 0.25);
+  }
+
+  fillRect(pixels, width, 64, 608, 1072, 1, [255, 255, 255], 0.09);
+  drawText(pixels, width, 'CURATED INSIGHT - NO SIGNUP REQUIRED', 64, 616, 2, [100, 116, 139]);
+  drawText(pixels, width, 'LEARN.BYTESAI.UK', 954, 616, 2, [100, 116, 139]);
+
+  return encodePngRgb(width, height, pixels);
 }
 
 function pngResponse(data: ArticleOgImageData, cacheControl = CACHE_LONG): Response {
@@ -209,48 +315,21 @@ export async function GET(request: Request) {
   }
 }
 
-function encodePng(width: number, height: number, rgba: Uint8Array): Uint8Array {
-  const scanlines = new Uint8Array((width + 1) * height);
+function encodePngRgb(width: number, height: number, rgb: Uint8Array): Uint8Array {
+  const stride = width * 3;
+  const scanlines = new Uint8Array((stride + 1) * height);
   for (let y = 0; y < height; y++) {
-    const dst = y * (width + 1);
+    const dst = y * (stride + 1);
     scanlines[dst] = 0;
-    for (let x = 0; x < width; x++) {
-      const src = (y * width + x) * 4;
-      scanlines[dst + 1 + x] = paletteIndex(rgba[src], rgba[src + 1], rgba[src + 2]);
-    }
+    scanlines.set(rgb.subarray(y * stride, (y + 1) * stride), dst + 1);
   }
 
-  const idat = zlibStore(scanlines);
-  const palette = buildPalette();
   return concatBytes([
     Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10]),
-    pngChunk('IHDR', ihdr(width, height, 3)),
-    pngChunk('PLTE', palette),
-    pngChunk('IDAT', idat),
+    pngChunk('IHDR', ihdr(width, height, 2)),
+    pngChunk('IDAT', zlibStore(scanlines)),
     pngChunk('IEND', new Uint8Array(0)),
   ]);
-}
-
-function paletteIndex(r: number, g: number, b: number): number {
-  const ri = Math.min(5, Math.round(r / 51));
-  const gi = Math.min(5, Math.round(g / 51));
-  const bi = Math.min(5, Math.round(b / 51));
-  return ri * 36 + gi * 6 + bi;
-}
-
-function buildPalette(): Uint8Array {
-  const palette = new Uint8Array(216 * 3);
-  let offset = 0;
-  for (let r = 0; r < 6; r++) {
-    for (let g = 0; g < 6; g++) {
-      for (let b = 0; b < 6; b++) {
-        palette[offset++] = r * 51;
-        palette[offset++] = g * 51;
-        palette[offset++] = b * 51;
-      }
-    }
-  }
-  return palette;
 }
 
 function ihdr(width: number, height: number, colorType: number): Uint8Array {
