@@ -4,10 +4,15 @@ on:
   push:
     branches:
       - master
+      - bytesFX/security-hardening
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    concurrency:
+      group: cloudflare-workers-production
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,8 +27,11 @@ jobs:
         run: npm ci
         working-directory: .
 
-      - name: Build (OpenNext + webpack)
-        run: npx opennextjs-cloudflare build
+      - name: Test
+        run: node --test tests/*.test.ts
+
+      - name: Build (OpenNext + webpack + cron)
+        run: npm run build:cf
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
