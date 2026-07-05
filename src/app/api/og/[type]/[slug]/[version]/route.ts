@@ -12,20 +12,17 @@ function stripPngSuffix(value: string): string {
   return value.toLowerCase().endsWith('.png') ? value.slice(0, -4) : value;
 }
 
-async function staticArticleImageResponse(request: Request, slug: string): Promise<Response | null> {
+const STATIC_ARTICLE_IMAGES = new Set([
+  'new-york-city-educators-and-industry-leaders-gathered-at-googles-offices-to-shap',
+]);
+
+function staticArticleImageRedirect(request: Request, slug: string): Response | null {
+  if (!STATIC_ARTICLE_IMAGES.has(slug)) return null;
   const assetUrl = new URL(request.url);
   assetUrl.pathname = `/og-images/${encodeURIComponent(slug)}.png`;
   assetUrl.search = '';
 
-  const asset = await fetch(assetUrl.toString()).catch(() => null);
-  if (!asset?.ok) return null;
-
-  const headers = new Headers(asset.headers);
-  headers.set('Content-Type', 'image/png');
-  headers.set('Cache-Control', 'public, max-age=86400, s-maxage=604800');
-  headers.set('Content-Disposition', 'inline; filename="bytesai-og.png"');
-  headers.set('X-Content-Type-Options', 'nosniff');
-  return new Response(asset.body, { status: 200, headers });
+  return Response.redirect(assetUrl.toString(), 302);
 }
 
 export async function GET(request: Request, context: OgPathContext) {
@@ -36,7 +33,7 @@ export async function GET(request: Request, context: OgPathContext) {
   const url = new URL(request.url);
 
   if (normalizedType === 'article') {
-    const staticImage = await staticArticleImageResponse(request, normalizedSlug);
+    const staticImage = staticArticleImageRedirect(request, normalizedSlug);
     if (staticImage) return staticImage;
   }
 
