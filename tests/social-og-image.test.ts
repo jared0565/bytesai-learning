@@ -13,7 +13,7 @@ test('article social image URLs are crawler-friendly PNG paths with render cache
 
   assert.equal(
     url,
-    'https://learn.bytesai.uk/api/og/article/test-insight/20260705T111616007Zr4.png',
+    'https://learn.bytesai.uk/api/og/article/test-insight/20260705T111616007Zr5.png',
   );
   assert.doesNotMatch(url, /\?/);
   assert.match(url, /\.png$/);
@@ -22,7 +22,7 @@ test('article social image URLs are crawler-friendly PNG paths with render cache
 test('course social image URLs use the current render version', () => {
   assert.equal(
     courseSocialImageUrl('test-course'),
-    'https://learn.bytesai.uk/api/og/course/test-course/cardr4.png',
+    'https://learn.bytesai.uk/api/og/course/test-course/cardr5.png',
   );
 });
 
@@ -56,4 +56,13 @@ test('dynamic OG route supports SVG output for native share previews', () => {
   assert.match(source, /format === 'svg'/);
   assert.match(source, /'Content-Type': 'image\/svg\+xml; charset=utf-8'/);
   assert.match(source, /X-Content-Type-Options': 'nosniff'/);
+});
+
+test('versioned OG route serves static readable PNG assets before dynamic fallback', () => {
+  const source = readFileSync('src/app/api/og/[type]/[slug]/[version]/route.ts', 'utf8');
+
+  assert.match(source, /function staticArticleImageResponse/);
+  assert.match(source, /\/og-images\/\$\{encodeURIComponent\(slug\)\}\.png/);
+  assert.match(source, /if \(staticImage\) return staticImage/);
+  assert.match(source, /return renderOgImage/);
 });

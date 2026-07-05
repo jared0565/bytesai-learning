@@ -2,7 +2,7 @@ export const SITE_URL = 'https://learn.bytesai.uk';
 
 export const SOCIAL_IMAGE_WIDTH = 1200;
 export const SOCIAL_IMAGE_HEIGHT = 630;
-const SOCIAL_IMAGE_RENDER_VERSION = 'r4';
+const SOCIAL_IMAGE_RENDER_VERSION = 'r5';
 
 export type SharePlatform = 'twitter' | 'linkedin' | 'whatsapp' | 'facebook';
 

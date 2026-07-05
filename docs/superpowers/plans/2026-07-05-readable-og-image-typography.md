@@ -12,9 +12,11 @@ Improve the typography of generated insight/course PNG cards so native social up
 
 ## Plan
 1. Add `format=svg` support to the dynamic OG endpoint using the existing SVG builders with Inter/system font stacks.
-2. Preserve the existing PNG response path for crawler URLs and as browser fallback.
-3. Update the modal and inline share composers to preview the SVG image card.
-4. Update Copy image and Download image to fetch the SVG, rasterize it to PNG in the browser with canvas, and fall back to server PNG if needed.
-5. Add source-level regression tests for SVG routing and browser-side rasterization.
-6. Run focused tests, current Node tests, and a production build.
-7. Commit, push, and verify Cloudflare deployment.
+2. Serve pre-rendered static PNG assets from `public/og-images/<slug>.png` through the versioned crawler route when available.
+3. Preserve the existing manual PNG renderer as the dynamic fallback if no static asset exists.
+4. Bump the social image render version so Facebook sees a fresh `og:image` URL instead of its cached bitmap card.
+5. Update the modal and inline share composers to preview the SVG image card.
+6. Update Copy image and Download image to fetch the SVG, rasterize it to PNG in the browser with canvas, and fall back to server PNG if needed.
+7. Add source-level regression tests for SVG routing, crawler PNG rendering, version bumping, and browser-side rasterization.
+8. Run focused tests, current Node tests, and a production build.
+9. Commit, push, and verify Cloudflare deployment.
