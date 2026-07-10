@@ -66,6 +66,10 @@ interface RestructuredPage {
   meta_description: string;
 }
 
+type AiRestructureResult =
+  | { ok: true; page: RestructuredPage }
+  | { ok: false; error: string };
+
 function hasRequiredFields(obj: unknown): obj is RestructuredPage {
   if (!obj || typeof obj !== 'object') return false;
   const p = obj as Record<string, unknown>;
@@ -73,12 +77,20 @@ function hasRequiredFields(obj: unknown): obj is RestructuredPage {
   return keys.every(k => typeof p[k] === 'string' && (p[k] as string).trim().length > 0);
 }
 
+function providerErrorMessage(status: number): string {
+  if (status === 402) return 'OpenRouter has insufficient credits. Add credits, then run Apply framework again.';
+  if (status === 401 || status === 403) return 'OpenRouter rejected the configured API key or permissions.';
+  if (status === 429) return 'OpenRouter rate limit reached. Wait and run Apply framework again.';
+  if (status >= 500) return 'OpenRouter is temporarily unavailable. Try again later.';
+  return `OpenRouter request failed with HTTP ${status}.`;
+}
+
 async function aiRestructure(
   title: string,
   rawContent: string,
   apiKey: string,
   model: string,
-): Promise<RestructuredPage | null> {
+): Promise<AiRestructureResult> {
   const prompt = `You are an editorial writer for BytesAI Learning, an AI education platform.
 Given the article content below, rewrite it into the Executive Briefing Standard for a curated insight page.
 
@@ -125,16 +137,27 @@ Respond ONLY with valid JSON — no markdown fences, no explanation, no preamble
       }),
       signal: AbortSignal.timeout(30_000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) return { ok: false, error: providerErrorMessage(res.status) };
     const data = await res.json() as { choices: Array<{ message: { content: string } }> };
     const raw = data.choices?.[0]?.message?.content ?? '';
     const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) return null;
-    const parsed = JSON.parse(match[0]) as unknown;
-    if (!hasRequiredFields(parsed)) return null;
-    return parsed as RestructuredPage;
-  } catch {
-    return null;
+    if (!match) return { ok: false, error: 'OpenRouter returned a response without a JSON object.' };
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(match[0]) as unknown;
+    } catch {
+      return { ok: false, error: 'OpenRouter returned invalid JSON.' };
+    }
+    if (!hasRequiredFields(parsed)) {
+      return { ok: false, error: 'OpenRouter response was missing required article fields.' };
+    }
+    return { ok: true, page: parsed as RestructuredPage };
+  } catch (e: unknown) {
+    const name = (e as { name?: string }).name;
+    if (name === 'TimeoutError' || name === 'AbortError') {
+      return { ok: false, error: 'OpenRouter request timed out. Try again later.' };
+    }
+    return { ok: false, error: 'OpenRouter request failed before a response was received.' };
   }
 }
 
@@ -280,11 +303,12 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const structured = await aiRestructure(page.title, rawContent, apiKey, model);
-    if (!structured) {
-      results.push({ id: page.id, title: page.title, ok: false, error: 'AI restructure failed' });
+    const structuredResult = await aiRestructure(page.title, rawContent, apiKey, model);
+    if (!structuredResult.ok) {
+      results.push({ id: page.id, title: page.title, ok: false, error: structuredResult.error });
       continue;
     }
+    const structured = structuredResult.page;
 
     let categoriesJson = page.categories_json;
     if (!categoriesJson) {
