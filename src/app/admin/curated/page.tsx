@@ -1,8 +1,9 @@
 'use client';
 
+import type { FormEvent } from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { FileText, ExternalLink, Plus, BookOpen, Sparkles, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FileText, ExternalLink, Plus, BookOpen, Sparkles, Loader2, CheckCircle2, AlertCircle, Search, X } from 'lucide-react';
 import CuratedActions from './CuratedActions';
 import NewCuratedPageModal from './NewCuratedPageModal';
 import EditCuratedPageModal from './EditCuratedPageModal';
@@ -113,6 +114,9 @@ const publishedColor: Record<string, string> = {
 export default function AdminCuratedPage() {
   const [pages, setPages] = useState<CuratedRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeQuery, setActiveQuery] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tipsModalPageId, setTipsModalPageId] = useState<string | null>(null);
@@ -138,11 +142,32 @@ export default function AdminCuratedPage() {
   const [refreshProcessed, setRefreshProcessed] = useState(0);
   const [refreshFailed, setRefreshFailed] = useState(0);
 
+  const loadPages = useCallback(async (query: string) => {
+    setLoading(true);
+    setListError('');
+    const params = new URLSearchParams({ limit: '200' });
+    const trimmed = query.trim();
+    if (trimmed) params.set('q', trimmed);
+
+    try {
+      const res = await fetch(`/api/admin/curated?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setListError(data.error ?? 'Failed to load curated pages.');
+        setPages([]);
+        return;
+      }
+      setPages(data.pages ?? []);
+    } catch {
+      setListError('Network error: curated pages could not be loaded.');
+      setPages([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    fetch('/api/admin/curated')
-      .then(r => r.json())
-      .then(d => { if (d.pages) setPages(d.pages); })
-      .finally(() => setLoading(false));
+    loadPages('');
     // Load regen stats
     fetch('/api/admin/curated/regenerate')
       .then(r => r.json())
@@ -158,7 +183,20 @@ export default function AdminCuratedPage() {
       .then(r => r.json())
       .then(d => { if (d.published !== undefined) setRefreshStats(d); })
       .catch(() => {});
-  }, []);
+  }, [loadPages]);
+
+  function handleSearchSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const nextQuery = searchQuery.trim();
+    setActiveQuery(nextQuery);
+    void loadPages(nextQuery);
+  }
+
+  function clearSearch() {
+    setSearchQuery('');
+    setActiveQuery('');
+    void loadPages('');
+  }
 
   // Run one batch of regeneration, loop until done
   const runRegen = useCallback(async () => {
@@ -195,8 +233,8 @@ export default function AdminCuratedPage() {
     // Refresh stats
     fetch('/api/admin/curated/regenerate').then(r => r.json()).then(d => { if (d.total !== undefined) setRegenStats(d); });
     // Refresh page list
-    fetch('/api/admin/curated').then(r => r.json()).then(d => { if (d.pages) setPages(d.pages); });
-  }, [regenStats]);
+    void loadPages(activeQuery);
+  }, [regenStats, activeQuery, loadPages]);
 
   const runFillRationale = useCallback(async () => {
     setRationaleRunning(true);
@@ -282,10 +320,8 @@ export default function AdminCuratedPage() {
     fetch('/api/admin/curated/refresh-framework')
       .then(r => r.json())
       .then(d => { if (d.published !== undefined) setRefreshStats(d); });
-    fetch('/api/admin/curated')
-      .then(r => r.json())
-      .then(d => { if (d.pages) setPages(d.pages); });
-  }, [refreshStats]);
+    void loadPages(activeQuery);
+  }, [refreshStats, activeQuery, loadPages]);
 
   function handleCreated(page: { id: string; slug: string; title: string }) {
     setShowNewModal(false);
@@ -352,7 +388,7 @@ export default function AdminCuratedPage() {
           <h1 style={{ fontSize: '1.625rem', fontWeight: 800, marginBottom: '0.25rem' }}>Curated Pages</h1>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-              {pages.length} total
+              {activeQuery ? `${pages.length} matching` : `${pages.length} total`}
             </p>
             {publishedCount > 0 && (
               <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--emerald)', background: 'rgba(16,185,129,0.1)', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-full)' }}>
@@ -384,6 +420,64 @@ export default function AdminCuratedPage() {
           </Link>
         </div>
       </div>
+
+      <form
+        onSubmit={handleSearchSubmit}
+        className="card"
+        style={{
+          marginBottom: '1.25rem',
+          padding: '0.875rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 260, position: 'relative' }}>
+          <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input
+            className="input"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search insight title, slug, topic, source, or course slug..."
+            style={{ paddingLeft: '2.25rem', paddingRight: activeQuery ? '2rem' : undefined }}
+          />
+          {activeQuery && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              title="Clear search"
+              style={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                padding: 4,
+              }}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        <button
+          type="submit"
+          className="btn btn-outline btn-sm"
+          disabled={loading}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', whiteSpace: 'nowrap' }}
+        >
+          {loading ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Searching...</> : <><Search size={13} /> Search</>}
+        </button>
+        {activeQuery && (
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            Showing results for <strong style={{ color: 'var(--text-secondary)' }}>{activeQuery}</strong>
+          </span>
+        )}
+      </form>
 
       {/* ── Regenerate panel — shown when articles have missing fields ── */}
       {regenStats && regenStats.needsRegen > 0 && !regenDone && (
@@ -546,21 +640,40 @@ export default function AdminCuratedPage() {
         </div>
       )}
 
-      {loading ? (
+      {listError ? (
+        <div className="card" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+          <AlertCircle size={16} color="var(--rose)" style={{ flexShrink: 0, marginTop: 2 }} />
+          <p style={{ color: 'var(--rose)', fontSize: '0.875rem' }}>{listError}</p>
+        </div>
+      ) : loading ? (
         <div className="card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Loading…</p>
         </div>
       ) : pages.length === 0 ? (
         <div className="card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
           <FileText size={40} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem' }} />
-          <p style={{ fontWeight: 700, marginBottom: '0.5rem' }}>No curated pages yet</p>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', maxWidth: 360, margin: '0 auto 1.5rem' }}>
-            Use <strong>New article</strong> to write one manually, or head to
-            the <strong>Trend Engine</strong> to generate articles from RSS or Alison courses.
-          </p>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowNewModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
-            <Plus size={14} /> New article
-          </button>
+          {activeQuery ? (
+            <>
+              <p style={{ fontWeight: 700, marginBottom: '0.5rem' }}>No matching insight found</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', maxWidth: 420, margin: '0 auto 1.5rem' }}>
+                Try fewer words from the title, the slug, or the provider/source name.
+              </p>
+              <button className="btn btn-outline btn-sm" onClick={clearSearch} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
+                <X size={14} /> Clear search
+              </button>
+            </>
+          ) : (
+            <>
+              <p style={{ fontWeight: 700, marginBottom: '0.5rem' }}>No curated pages yet</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', maxWidth: 360, margin: '0 auto 1.5rem' }}>
+                Use <strong>New article</strong> to write one manually, or head to
+                the <strong>Trend Engine</strong> to generate articles from RSS or Alison courses.
+              </p>
+              <button className="btn btn-primary btn-sm" onClick={() => setShowNewModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
+                <Plus size={14} /> New article
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>

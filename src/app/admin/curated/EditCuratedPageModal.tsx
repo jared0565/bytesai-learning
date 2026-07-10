@@ -281,6 +281,9 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [frameworkRefreshing, setFrameworkRefreshing] = useState(false);
+  const [frameworkError, setFrameworkError] = useState('');
+  const [frameworkSuccess, setFrameworkSuccess] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [slugEdited, setSlugEdited] = useState(false);
@@ -313,35 +316,38 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   const [editorialStatus, setEditorialStatus] = useState('draft');
   const [publishedStatus, setPublishedStatus] = useState('draft');
 
+  const applyPageData = useCallback((p: PageData) => {
+    setPage(p);
+    setTitle(p.title ?? '');
+    setSlug(p.slug ?? '');
+    setSummary(p.summary ?? '');
+    setWhyItMatters(p.why_it_matters ?? '');
+    setWhatChanged(p.what_changed ?? '');
+    setExecutiveImplications(p.executive_implications ?? '');
+    setPrimaryCourseRationale(p.primary_course_rationale ?? '');
+    setPrimaryCourse(p.primary_course_slug ?? '');
+    setEditorialStatus(p.editorial_review_status ?? 'draft');
+    setPublishedStatus(p.published_status ?? 'draft');
+    setMetaTitle(p.meta_title ?? '');
+    setMetaDescription(p.meta_description ?? '');
+    const relSlugs: string[] = p.related_course_slugs_json
+      ? JSON.parse(p.related_course_slugs_json) : [];
+    setRelatedSlugs(relSlugs);
+    const cats: string[] = p.categories_json ? JSON.parse(p.categories_json) : [];
+    setCategories(cats);
+  }, []);
+
   // Load
   useEffect(() => {
     fetch(`/api/admin/curated?id=${pageId}`)
       .then(r => r.json())
       .then(d => {
         if (d.error) { setLoadError(d.error); return; }
-        const p: PageData = d.page;
-        setPage(p);
-        setTitle(p.title ?? '');
-        setSlug(p.slug ?? '');
-        setSummary(p.summary ?? '');
-        setWhyItMatters(p.why_it_matters ?? '');
-        setWhatChanged(p.what_changed ?? '');
-        setExecutiveImplications(p.executive_implications ?? '');
-        setPrimaryCourseRationale(p.primary_course_rationale ?? '');
-        setPrimaryCourse(p.primary_course_slug ?? '');
-        setEditorialStatus(p.editorial_review_status ?? 'draft');
-        setPublishedStatus(p.published_status ?? 'draft');
-        setMetaTitle(p.meta_title ?? '');
-        setMetaDescription(p.meta_description ?? '');
-        const relSlugs: string[] = p.related_course_slugs_json
-          ? JSON.parse(p.related_course_slugs_json) : [];
-        setRelatedSlugs(relSlugs);
-        const cats: string[] = p.categories_json ? JSON.parse(p.categories_json) : [];
-        setCategories(cats);
+        applyPageData(d.page as PageData);
       })
       .catch(() => setLoadError('Failed to load article.'))
       .finally(() => setLoading(false));
-  }, [pageId]);
+  }, [pageId, applyPageData]);
 
   // Auto slug only if untouched & page had no slug
   useEffect(() => {
@@ -351,6 +357,43 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   // ── Toolbar actions ─────────────────────────────────────────────────────────
 
   const totalWords = wordCount([summary, whyItMatters, whatChanged, executiveImplications].join(' '));
+
+  async function handleFrameworkRefresh() {
+    setFrameworkError('');
+    setFrameworkSuccess(false);
+    setFrameworkRefreshing(true);
+    try {
+      const res = await fetch('/api/admin/curated/refresh-framework', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [pageId] }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFrameworkError(data.error ?? 'Framework refresh failed.');
+        return;
+      }
+      const failed = data.results?.find((r: { ok: boolean; error?: string }) => !r.ok);
+      if ((data.processed ?? 0) < 1) {
+        setFrameworkError(failed?.error ?? 'No article was updated. Check that the article has source content.');
+        return;
+      }
+
+      const refreshed = await fetch(`/api/admin/curated?id=${pageId}`);
+      const refreshedData = await refreshed.json();
+      if (!refreshed.ok || refreshedData.error) {
+        setFrameworkError(refreshedData.error ?? 'Updated, but the refreshed article could not be loaded.');
+        return;
+      }
+      applyPageData(refreshedData.page as PageData);
+      setFrameworkSuccess(true);
+      setTimeout(() => setFrameworkSuccess(false), 3500);
+    } catch {
+      setFrameworkError('Network error: framework refresh could not run.');
+    } finally {
+      setFrameworkRefreshing(false);
+    }
+  }
 
   function copyArticle() {
     const parts = [
@@ -697,6 +740,21 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
 
           <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
 
+          <button
+            type="button"
+            onClick={handleFrameworkRefresh}
+            disabled={frameworkRefreshing || saving}
+            title="Rewrite this article into the Executive Briefing Standard"
+            className="btn btn-outline btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--accent)', borderColor: 'rgba(79,110,247,0.35)' }}
+          >
+            {frameworkRefreshing
+              ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Restructuring…</>
+              : frameworkSuccess
+                ? <><CheckCircle2 size={13} color="var(--emerald)" /> Restructured</>
+                : <><Sparkles size={13} /> Apply framework</>}
+          </button>
+
           {/* Word count */}
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
             {totalWords.toLocaleString()} words
@@ -754,6 +812,12 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
             <div style={{ padding: '1rem', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.5rem' }}>
               <AlertCircle size={15} color="var(--rose)" />
               <p style={{ fontSize: '0.875rem', color: 'var(--rose)' }}>{loadError}</p>
+            </div>
+          )}
+          {frameworkError && !loading && (
+            <div style={{ marginBottom: '1rem', padding: '0.75rem 0.875rem', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+              <AlertCircle size={15} color="var(--rose)" style={{ flexShrink: 0, marginTop: 2 }} />
+              <p style={{ fontSize: '0.8125rem', color: 'var(--rose)', lineHeight: 1.5 }}>{frameworkError}</p>
             </div>
           )}
 

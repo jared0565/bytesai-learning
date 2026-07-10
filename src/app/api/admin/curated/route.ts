@@ -16,9 +16,13 @@ async function requireAdmin(req: NextRequest) {
 const VALID_EDITORIAL = ['draft', 'in_review', 'approved', 'rejected'] as const;
 const VALID_PUBLISHED = ['draft', 'published', 'archived'] as const;
 
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, char => `\\${char}`);
+}
+
 // ── GET /api/admin/curated ────────────────────────────────────────────────────
 // ?id=xxx  → single page (all fields)
-// (no id)  → list (summary fields)
+// ?q=xxx   → searchable list (summary fields)
 export async function GET(req: NextRequest) {
   const session = await requireAdmin(req);
   if (!session) return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 });
@@ -26,7 +30,8 @@ export async function GET(req: NextRequest) {
   const db = await getDB();
   if (!db) return NextResponse.json({ error: 'DB unavailable.' }, { status: 503 });
 
-  const id = new URL(req.url).searchParams.get('id');
+  const url = new URL(req.url);
+  const id = url.searchParams.get('id');
 
   try {
     if (id) {
@@ -43,6 +48,24 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ page });
     }
 
+    const rawQuery = (url.searchParams.get('q') ?? '').trim();
+    const rawLimit = Number.parseInt(url.searchParams.get('limit') ?? '200', 10);
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 500) : 200;
+    const where: string[] = [];
+    const bindings: Array<string | number> = [];
+
+    if (rawQuery) {
+      const like = `%${escapeLike(rawQuery.toLowerCase())}%`;
+      where.push(`(
+        lower(title) LIKE ? ESCAPE '\\'
+        OR lower(slug) LIKE ? ESCAPE '\\'
+        OR lower(coalesce(summary, '')) LIKE ? ESCAPE '\\'
+        OR lower(coalesce(primary_course_slug, '')) LIKE ? ESCAPE '\\'
+        OR lower(coalesce(source_references_json, '')) LIKE ? ESCAPE '\\'
+      )`);
+      bindings.push(like, like, like, like, like);
+    }
+
     const result = await db.prepare(
       `SELECT id, slug, title, summary, editorial_review_status, published_status,
               primary_course_slug, categories_json, why_it_matters, what_changed, executive_implications,
@@ -51,9 +74,12 @@ export async function GET(req: NextRequest) {
               og_title, og_description, og_image_url, og_image_alt, og_image_data_json,
               share_image_prompt, social_share_copy_json, social_share_copy_model, social_share_copy_generated_at,
               created_at, updated_at
-       FROM curated_pages ORDER BY updated_at DESC LIMIT 200`
-    ).all<import('@/lib/db').CuratedPage>();
-    return NextResponse.json({ pages: result.results });
+       FROM curated_pages
+       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+       ORDER BY updated_at DESC
+       LIMIT ?`
+    ).bind(...bindings, limit).all<import('@/lib/db').CuratedPage>();
+    return NextResponse.json({ pages: result.results, query: rawQuery || null, limit });
   } catch {
     return NextResponse.json({ error: 'Failed to fetch curated pages.' }, { status: 500 });
   }

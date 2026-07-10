@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
       const result = await db.prepare(
         `SELECT id, title, summary, source_references_json, categories_json
          FROM curated_pages
-         WHERE id IN (${placeholders}) AND published_status = 'published'`
+         WHERE id IN (${placeholders})`
       ).bind(...body.ids).all<PageRow>();
       pages = result.results;
     } else {
