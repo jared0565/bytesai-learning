@@ -59,6 +59,7 @@ async function fetchSourceText(url: string): Promise<string> {
 // ── AI re-structuring to Executive Briefing Standard ──────────────────────────
 
 interface RestructuredPage {
+  lead: string;
   summary: string;
   why_it_matters: string;
   what_changed: string;
@@ -73,7 +74,7 @@ type AiRestructureResult =
 function hasRequiredFields(obj: unknown): obj is RestructuredPage {
   if (!obj || typeof obj !== 'object') return false;
   const p = obj as Record<string, unknown>;
-  const keys = ['summary', 'why_it_matters', 'what_changed', 'executive_implications', 'meta_description'];
+  const keys = ['lead', 'summary', 'why_it_matters', 'what_changed', 'executive_implications', 'meta_description'];
   return keys.every(k => typeof p[k] === 'string' && (p[k] as string).trim().length > 0);
 }
 
@@ -103,6 +104,7 @@ RULES:
 - Write as flowing, authoritative editorial prose
 - Do not start sentences with "I" or refer to "the article"
 - Operator voice, not consultant framing. No buzzwords.
+- lead: One sentence (≤ 30 words) that creates a curiosity gap or personal stake. Front-load the surprise, the risk, or the counter-intuitive claim already present in the source content.
 - summary: Start with 3–5 Markdown bullet lines (each starting with "- "). Every bullet must be one sentence; at least two bullets must contain a specific number, benchmark size, or named entity already present in the source content. Follow the bullets with ONE short framing sentence (≤25 words). This is the executive TL;DR.
 - why_it_matters: 3–5 sentences. Frame both risk and opportunity: what bad thing happens if ignored, and what becomes possible if acted on. Include one specific use-case and one honest limitation.
 - what_changed: 3–5 sentences. Quantify the development: exact figures, benchmark size, authors/institution already in the source content. Explain how it works + what specifically changed + one current limitation. Use a Markdown table if comparing methods.
@@ -113,12 +115,13 @@ BANNED PHRASES: force multiplier, unprecedented, game-changing, transformational
 
 Respond ONLY with valid JSON — no markdown fences, no explanation, no preamble:
 {
+  "lead": "...",
   "summary": "...",
   "why_it_matters": "...",
   "what_changed": "...",
   "executive_implications": "...",
   "meta_description": "..."
-}`;
+}`
 
   try {
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -329,6 +332,7 @@ export async function POST(req: NextRequest) {
     try {
       await db.prepare(`
         UPDATE curated_pages SET
+          lead = ?,
           summary = ?,
           why_it_matters = ?,
           what_changed = ?,
@@ -338,6 +342,7 @@ export async function POST(req: NextRequest) {
           updated_at = ?
         WHERE id = ?
       `).bind(
+        structured.lead || null,
         structured.summary || page.summary || null,
         structured.why_it_matters || null,
         structured.what_changed || null,

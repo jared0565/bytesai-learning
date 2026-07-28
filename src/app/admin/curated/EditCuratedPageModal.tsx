@@ -13,6 +13,7 @@ interface PageData {
   id: string;
   slug: string;
   title: string;
+  lead: string | null;
   summary: string | null;
   why_it_matters: string | null;
   what_changed: string | null;
@@ -291,6 +292,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   // Form state
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
+  const [lead, setLead] = useState('');
   const [summary, setSummary] = useState('');
   const [whyItMatters, setWhyItMatters] = useState('');
   const [whatChanged, setWhatChanged] = useState('');
@@ -320,6 +322,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
     setPage(p);
     setTitle(p.title ?? '');
     setSlug(p.slug ?? '');
+    setLead(p.lead ?? '');
     setSummary(p.summary ?? '');
     setWhyItMatters(p.why_it_matters ?? '');
     setWhatChanged(p.what_changed ?? '');
@@ -398,6 +401,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   function copyArticle() {
     const parts = [
       `# ${title}`,
+      lead && `\n${lead}`,
       summary && `\n${summary}`,
       whyItMatters && `\n## Why it matters\n${whyItMatters}`,
       whatChanged && `\n## What changed\n${whatChanged}`,
@@ -418,6 +422,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   h1 { font-size: 1.85rem; line-height: 1.25; margin-bottom: 0.5rem; }
   h2 { font-size: 1.15rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.6rem; color: #333; }
   p { margin-bottom: 1.1rem; }
+  .lead { font-size: 1.1rem; font-weight: 600; color: #222; margin-bottom: 1.25rem; }
   .summary { font-size: 1.05rem; color: #444; border-left: 3px solid #4f6ef7; padding-left: 1rem; margin-bottom: 2rem; }
   .course-box { border: 1px solid #e5e7eb; padding: 0.875rem 1.125rem; border-radius: 8px; margin: 2rem 0; background: #f9fafb; font-size: 0.9rem; }
   .course-box strong { display: block; margin-bottom: 0.25rem; color: #4f6ef7; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -425,6 +430,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
   @media print { body { margin: 0; } }
 </style></head><body>
   <h1>${title}</h1>
+  ${lead ? `<p class="lead">${lead}</p>` : ''}
   ${summary ? `<p class="summary">${summary}</p>` : ''}
   ${whyItMatters ? `<h2>Why it matters</h2><p>${whyItMatters}</p>` : ''}
   ${whatChanged ? `<h2>What changed</h2><p>${whatChanged}</p>` : ''}
@@ -454,6 +460,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(), slug: slug.trim(),
+          lead: lead.trim() || null,
           summary: summary.trim() || null,
           why_it_matters: whyItMatters.trim() || null,
           what_changed: whatChanged.trim() || null,
@@ -474,6 +481,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
       setTimeout(() => setSaveSuccess(false), 3000);
       onSaved(pageId, {
         title: title.trim(), slug: slug.trim(),
+        lead: lead.trim() || null,
         summary: summary.trim() || null,
         editorial_review_status: editorialStatus,
         published_status: publishedStatus,
@@ -482,7 +490,7 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
     } finally {
       setSaving(false);
     }
-  }, [pageId, title, slug, summary, whyItMatters, whatChanged, executiveImplications, primaryCourseRationale, primaryCourse, relatedSlugs, metaTitle, metaDescription, editorialStatus, publishedStatus, onSaved]);
+  }, [pageId, title, slug, lead, summary, whyItMatters, whatChanged, executiveImplications, primaryCourseRationale, primaryCourse, relatedSlugs, metaTitle, metaDescription, editorialStatus, publishedStatus, onSaved]);
 
   // Ctrl/Cmd+S to save
   useEffect(() => {
@@ -888,6 +896,16 @@ export default function EditCuratedPageModal({ pageId, onClose, onSaved }: Props
                   Executive Briefing Standard ↗
                 </span>
               </div>
+
+              <SmartTextarea
+                label="Lead (hook)"
+                value={lead}
+                onChange={setLead}
+                rows={2}
+                placeholder="One sentence (≤ 30 words) that creates a curiosity gap or personal stake. Front-load the surprise, the risk, or the counter-intuitive claim."
+                hint="This is the first thing the reader sees after the title. Keep it under 30 words."
+                articleTitle={title}
+              />
 
               <SmartTextarea
                 label="Summary"

@@ -164,6 +164,7 @@ export interface CuratedPage {
   id: string;
   slug: string;
   title: string;
+  lead: string | null;
   summary: string | null;
   why_it_matters: string | null;
   what_changed: string | null;

@@ -90,6 +90,10 @@ export default async function CuratedDetailPage({ params }: PageProps) {
     ? JSON.parse(page.source_references_json)
     : [];
 
+  const categories: string[] = page.categories_json
+    ? JSON.parse(page.categories_json)
+    : [];
+
   const [primaryCourse, ...relatedCourses] = await Promise.all([
     page.primary_course_slug ? getCourseBySlug(db, page.primary_course_slug).catch(() => null) : Promise.resolve(null),
     ...relatedSlugs.map(s => getCourseBySlug(db, s).catch(() => null)),
@@ -165,18 +169,42 @@ export default async function CuratedDetailPage({ params }: PageProps) {
             <h1 className="text-display" style={{ marginBottom: '1.25rem', fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)' }}>
               {page.title}
             </h1>
+            {page.lead && (
+              <p style={{
+                fontSize: 'clamp(1.05rem, 2vw, 1.25rem)',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                lineHeight: 1.5,
+                marginBottom: '1.25rem',
+              }}>
+                {page.lead}
+              </p>
+            )}
             {page.summary && (
               <div className="article-lead">
                 <MarkdownContent variant="default">{page.summary}</MarkdownContent>
               </div>
             )}
-            <div className="article-byline">
+            <div className="article-byline" style={{ flexWrap: 'wrap', gap: '0.5rem 0.75rem' }}>
               {page.last_verified_at && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
                   <Calendar size={13} />
                   Verified {new Date(page.last_verified_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </span>
               )}
+              {/* Read time estimate */}
+              {(() => {
+                const wordCount = [
+                  page.summary, page.why_it_matters, page.what_changed, page.executive_implications,
+                  page.primary_course_rationale,
+                ].filter(Boolean).join(' ').trim().split(/\s+/).filter(Boolean).length;
+                const minutes = Math.max(1, Math.ceil(wordCount / 200));
+                return (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                    {minutes} min read
+                  </span>
+                );
+              })()}
               {page.ai_generated === 1 && (
                 <span
                   title={page.generated_model ? `Generated with AI (${page.generated_model})` : 'Generated with AI assistance'}
@@ -197,6 +225,27 @@ export default async function CuratedDetailPage({ params }: PageProps) {
                 <CuratedSharePanel slug={page.slug} title={page.title} />
               </span>
             </div>
+            {/* Category pills */}
+            {categories.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.875rem' }}>
+                {categories.map(cat => (
+                  <Link
+                    key={cat}
+                    href={`/categories/${cat.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                      fontSize: '0.75rem', fontWeight: 600, padding: '0.25rem 0.75rem',
+                      borderRadius: 'var(--radius-full)',
+                      background: 'rgba(79,110,247,0.08)', color: 'var(--accent)',
+                      border: '1px solid rgba(79,110,247,0.2)',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    {cat}
+                  </Link>
+                ))}
+              </div>
+            )}
           </header>
 
           {/* Main two-column layout */}
@@ -317,7 +366,7 @@ export default async function CuratedDetailPage({ params }: PageProps) {
                 </p>
               )}
 
-              {/* Bottom share nudge */}
+              {/* Bottom share nudge — topic-specific */}
               <section style={{
                 marginTop: '2rem', maxWidth: 720,
                 padding: '1.25rem 1.5rem',
@@ -328,10 +377,25 @@ export default async function CuratedDetailPage({ params }: PageProps) {
               }}>
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.25rem' }}>
-                    Found this useful?
+                    {(() => {
+                      const topic = categories[0] ?? '';
+                      const prompts: Record<string, string> = {
+                        'AI Governance': 'Know a compliance team wrestling with AI risk frameworks?',
+                        'AI Safety': 'Know a researcher or engineer working on alignment?',
+                        'Foundation Models': 'Know a builder choosing between foundation models right now?',
+                        'AI Tooling': 'Know a dev evaluating AI tools for their stack?',
+                        'AI Workflow': 'Know a team redesigning workflows around AI agents?',
+                        'Ethics & Bias': 'Know someone auditing AI for fairness and representation?',
+                        'Regulation & Compliance': 'Know a legal team tracking AI regulation?',
+                        'Technical Implementation': 'Know an engineer shipping AI features to production?',
+                        'Research & Models': 'Know a researcher keeping up with the latest papers?',
+                        'AI in Business': 'Know a leader making AI investment decisions?',
+                      };
+                      return prompts[topic] || 'Know someone who needs to see this?';
+                    })()}
                   </p>
                   <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                    Share it with your team — AI generates platform-optimised copy for you.
+                    Forward this briefing — AI generates platform-optimised copy for you.
                   </p>
                 </div>
                 <CuratedSharePanel slug={page.slug} title={page.title} />

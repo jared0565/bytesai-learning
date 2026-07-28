@@ -166,6 +166,7 @@ async function resolveAlisonCourse(
 
 interface GeneratedArticle {
   title: string;
+  lead: string;
   summary: string;
   why_it_matters: string;
   what_changed: string;
@@ -229,6 +230,7 @@ BANNED PHRASES: force multiplier, unprecedented, game-changing, transformational
 
 SECTION INSTRUCTIONS:
 - title: A specific article headline under 85 characters — not the source title verbatim, editorially reframed
+- lead: One sentence (≤ 30 words) that creates a curiosity gap or personal stake. Front-load the surprise, the risk, or the counter-intuitive claim. This is the first thing the reader sees after the title. Examples: "Most teams over-provision AI infrastructure by 3x." or "Your next AI agent might run 40% faster on the same hardware — but only if you understand why Google just killed the parameter race."
 - summary: Start with 3–5 Markdown bullet lines (each starting with "- "). Every bullet must be one sentence; at least two bullets must contain a specific number, benchmark size, or named entity. Follow the bullets with ONE short framing sentence (≤25 words). This is the executive TL;DR.
 - why_it_matters: 3–5 sentences. Frame both risk and opportunity: what bad thing happens if ignored, and what becomes possible if acted on. Include one specific use-case, the mechanism, and one honest limitation.
 - what_changed: 3–5 sentences. Quantify the development: exact figures, benchmark size, authors/institution. Explain how it works + what specifically changed + one current limitation. Use a Markdown table if comparing methods.
@@ -240,6 +242,7 @@ SECTION INSTRUCTIONS:
 Respond ONLY with valid JSON — no markdown fences:
 {
   "title": "...",
+  "lead": "...",
   "summary": "...",
   "why_it_matters": "...",
   "what_changed": "...",
@@ -247,7 +250,7 @@ Respond ONLY with valid JSON — no markdown fences:
   "primary_course_rationale": "...",
   "meta_description": "...",
   "categories": ["..."]
-}`;
+}`
 
   try {
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -310,6 +313,7 @@ BANNED PHRASES: force multiplier, unprecedented, game-changing, transformational
 
 SECTIONS:
 - title: Specific headline under 85 characters
+- lead: One sentence (≤ 30 words) that creates a curiosity gap or personal stake. Front-load the surprise, the risk, or the counter-intuitive claim.
 - summary: Start with 3–5 Markdown bullet lines (each starting with "- "). Every bullet must be one sentence; at least two bullets must contain a specific number, benchmark size, or named entity. Follow the bullets with ONE short framing sentence (≤25 words). This is the executive TL;DR.
 - why_it_matters: 3–5 sentences. Frame both risk and opportunity: what bad thing happens if ignored, and what becomes possible if acted on. Include one specific use-case, the mechanism, and one honest limitation.
 - what_changed: 3–5 sentences. Quantify the development: exact figures, benchmark size, authors/institution. Explain how it works + what specifically changed + one current limitation. Use a Markdown table if comparing methods.
@@ -321,6 +325,7 @@ SECTIONS:
 Respond ONLY with valid JSON:
 {
   "title": "...",
+  "lead": "...",
   "summary": "...",
   "why_it_matters": "...",
   "what_changed": "...",
@@ -328,7 +333,7 @@ Respond ONLY with valid JSON:
   "primary_course_rationale": "...",
   "meta_description": "...",
   "categories": ["..."]
-}`;
+}`
 
   try {
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -731,7 +736,7 @@ export async function POST(req: NextRequest) {
 
     await db.prepare(`
       INSERT INTO curated_pages (
-        id, slug, title, summary, why_it_matters, what_changed, executive_implications,
+        id, slug, title, lead, summary, why_it_matters, what_changed, executive_implications,
         primary_course_rationale, primary_course_slug, source_references_json, meta_description,
         categories_json, meta_title, og_title, og_description, og_image_url, og_image_alt,
         og_image_data_json, share_image_prompt, social_share_copy_json,
@@ -739,9 +744,10 @@ export async function POST(req: NextRequest) {
         editorial_review_status, published_status,
         ai_generated, generated_model, generated_at,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
     `).bind(
       id, slug, generated.title,
+      generated.lead || null,
       generated.summary,
       generated.why_it_matters,
       generated.what_changed,

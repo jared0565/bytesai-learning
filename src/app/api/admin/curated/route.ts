@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   try {
     if (id) {
       const page = await db.prepare(
-        `SELECT id, slug, title, summary, why_it_matters, what_changed, executive_implications,
+        `SELECT id, slug, title, lead, summary, why_it_matters, what_changed, executive_implications,
                 primary_course_rationale, primary_course_slug, categories_json, related_course_slugs_json, source_references_json,
                 meta_title, meta_description, og_title, og_description, og_image_url, og_image_alt,
                 og_image_data_json, share_image_prompt, social_share_copy_json,
@@ -179,7 +179,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   // Content fields
-  const contentFields = ['title', 'slug', 'summary', 'why_it_matters', 'what_changed',
+  const contentFields = ['title', 'slug', 'lead', 'summary', 'why_it_matters', 'what_changed',
     'executive_implications', 'primary_course_rationale', 'primary_course_slug',
     'meta_title', 'meta_description', 'og_title', 'og_description', 'og_image_url',
     'og_image_alt', 'og_image_data_json', 'share_image_prompt', 'social_share_copy_json',
