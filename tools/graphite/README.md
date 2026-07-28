@@ -1,6 +1,6 @@
 # Graphite
 
-Local-first, deterministic knowledge graph extraction for codebases. A safer, faster, cheaper replacement for `graphify`.
+Local-first, deterministic knowledge graph extraction for codebases. A safer, faster, cheaper replacement for `graphite`.
 
 ## Principles
 

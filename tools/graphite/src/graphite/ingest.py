@@ -43,7 +43,7 @@ LANGUAGE_BY_EXT: dict[str, str] = {
 # Directories and file patterns to skip entirely.
 SKIP_DIRS: frozenset[str] = frozenset({
     "node_modules", ".git", ".next", ".wrangler", ".open-next", "dist", "build",
-    "out", "coverage", ".cache", ".claude", "graph-out", "graphify-out",
+    "out", "coverage", ".cache", ".claude", "graph-out",
 })
 
 SKIP_SUFFIXES: frozenset[str] = frozenset({
