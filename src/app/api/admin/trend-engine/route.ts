@@ -18,6 +18,7 @@ async function requireAdmin(req: NextRequest) {
 interface AiFilledPage {
   title: string;
   slug: string;
+  lead: string;
   summary: string;
   whyItMatters: string;
   whatChanged: string;
@@ -43,6 +44,7 @@ ${article.contentText.slice(0, 5000)}
 RULES:
 - Each field must be written as flowing prose — no bullet points, no asterisks, no markdown
 - Write in a confident, knowledgeable editorial voice
+- lead: One sentence (≤ 30 words) that creates a curiosity gap or personal stake. Front-load the surprise, the risk, or the counter-intuitive claim.
 - summary: 2–3 sentences that hook the reader and explain why this news matters RIGHT NOW
 - why_it_matters: 3–5 sentences on real-world significance for AI practitioners and learners
 - what_changed: 3–5 sentences on the specific development, announcement, or breakthrough described
@@ -51,12 +53,13 @@ RULES:
 
 Respond ONLY with valid JSON — no markdown fences, no extra text:
 {
+  "lead": "...",
   "summary": "...",
   "why_it_matters": "...",
   "what_changed": "...",
   "executive_implications": "...",
   "meta_description": "..."
-}`;
+}`
 
   try {
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -92,6 +95,7 @@ Respond ONLY with valid JSON — no markdown fences, no extra text:
     return {
       title: article.title,
       slug,
+      lead: parsed.lead ?? '',
       summary: parsed.summary ?? '',
       whyItMatters: parsed.why_it_matters ?? '',
       whatChanged: parsed.what_changed ?? '',
@@ -111,12 +115,12 @@ function naiveFill(article: ParsedArticle) {
   const n = paras.length;
   const slug = article.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 80);
 
-  if (n === 0) return { title: article.title, slug, summary: text.slice(0, 300), whyItMatters: text.slice(300, 600), whatChanged: text.slice(600, 900), executiveImplications: text.slice(900), metaDescription: '' };
-  if (n <= 2) return { title: article.title, slug, summary: fill(0, 1), whyItMatters: fill(1, 2), whatChanged: '', executiveImplications: '', metaDescription: '' };
+  if (n === 0) return { title: article.title, slug, lead: text.slice(0, 120), summary: text.slice(120, 420), whyItMatters: text.slice(420, 720), whatChanged: text.slice(720, 1020), executiveImplications: text.slice(1020), metaDescription: '' };
+  if (n <= 2) return { title: article.title, slug, lead: fill(0, 1).slice(0, 120), summary: fill(0, 1), whyItMatters: fill(1, 2), whatChanged: '', executiveImplications: '', metaDescription: '' };
   const p1 = Math.max(1, Math.round(n * 0.20));
   const p2 = Math.max(p1 + 1, Math.round(n * 0.50));
   const p3 = Math.max(p2 + 1, Math.round(n * 0.78));
-  return { title: article.title, slug, summary: fill(0, p1), whyItMatters: fill(p1, p2), whatChanged: fill(p2, p3), executiveImplications: fill(p3, n), metaDescription: '' };
+  return { title: article.title, slug, lead: fill(0, p1).slice(0, 120), summary: fill(0, p1), whyItMatters: fill(p1, p2), whatChanged: fill(p2, p3), executiveImplications: fill(p3, n), metaDescription: '' };
 }
 
 // ── GET /api/admin/trend-engine ───────────────────────────────────────────────
@@ -165,6 +169,26 @@ export async function POST(req: NextRequest) {
   const skipped: Array<{ title: string; reason: string }> = [];
 
   for (const article of body.articles) {
+    // Compute the slug up front and check for an existing page BEFORE spending
+    // an AI call on a duplicate. The UNIQUE constraint remains as a backstop.
+    const preSlug = article.title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .slice(0, 80);
+
+    if (!preSlug) {
+      skipped.push({ title: article.title, reason: 'Could not generate slug' });
+      continue;
+    }
+
+    const existing = await db.prepare('SELECT 1 FROM curated_pages WHERE slug = ?').bind(preSlug).first();
+    if (existing) {
+      skipped.push({ title: article.title, reason: 'Page with this slug already exists' });
+      continue;
+    }
+
     // Try AI structuring first, fall back to naive split
     const aiResult = apiKey ? await aiStructureArticle(article, apiKey, model) : null;
     const usedAi = !!aiResult;
@@ -181,14 +205,15 @@ export async function POST(req: NextRequest) {
     try {
       await db.prepare(`
         INSERT INTO curated_pages (
-          id, slug, title, summary, why_it_matters, what_changed, executive_implications,
+          id, slug, title, lead, summary, why_it_matters, what_changed, executive_implications,
           meta_description, source_references_json,
           editorial_review_status, published_status,
           ai_generated, generated_model, generated_at,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 'draft', ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 'draft', ?, ?, ?, ?, ?)
       `).bind(
         id, filled.slug, filled.title,
+        filled.lead || null,
         filled.summary || null,
         filled.whyItMatters || null,
         filled.whatChanged || null,
@@ -207,7 +232,7 @@ export async function POST(req: NextRequest) {
         entityType: 'curated_page',
         entityId: id,
         before: null,
-        after: { id, slug: filled.slug, title: filled.title, source: 'trend-engine', aiStructured: !!apiKey },
+        after: { id, slug: filled.slug, title: filled.title, source: 'trend-engine', aiStructured: usedAi },
       });
 
       created.push(filled.slug);

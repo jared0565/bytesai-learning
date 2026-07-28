@@ -62,6 +62,10 @@ function stripHtml(html: string): string {
   return html
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<script[\s\S]*?<\/script>/gi, '')
+    // Preserve paragraph structure: block-level boundaries become newlines
+    // BEFORE any whitespace collapsing, so downstream paragraph splits work.
+    .replace(/<\/(?:p|div|li|h[1-6]|blockquote|section|article|figure|figcaption|ul|ol|table|tr)>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -70,7 +74,10 @@ function stripHtml(html: string): string {
     .replace(/&apos;|&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
     .replace(/&#\d+;/g, ' ')
-    .replace(/\s{2,}/g, ' ')
+    // Collapse horizontal whitespace only — never newlines
+    .replace(/[^\S\n]{2,}/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
@@ -149,31 +156,42 @@ const BOILERPLATE_PATTERNS: RegExp[] = [
 
 /**
  * Strip exact duplicate sentences from extracted text.
- * Splits on sentence boundaries, lower-cases for comparison,
- * and keeps only the first occurrence of each sentence.
+ * Works per-paragraph so paragraph breaks survive; dedupe scope is the
+ * paragraph, and sentences are kept regardless of length (only exact
+ * duplicates are removed).
  */
 function deduplicateSentences(text: string): string {
-  const sentences = text.split(/(?<=[.!?])\s+/);
-  const seen = new Set<string>();
-  return sentences
-    .filter(s => {
-      const key = s.trim().toLowerCase().replace(/\s+/g, ' ');
-      if (key.length < 20 || seen.has(key)) return false;
-      seen.add(key);
-      return true;
+  return text
+    .split(/\n{2,}/)
+    .map(para => {
+      const sentences = para.split(/(?<=[.!?])\s+/);
+      const seen = new Set<string>();
+      return sentences
+        .filter(s => {
+          const key = s.trim().toLowerCase().replace(/\s+/g, ' ');
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .join(' ')
+        .trim();
     })
-    .join(' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+    .filter(p => p.length > 0)
+    .join('\n\n');
 }
 
-function cleanArticleText(raw: string): string {
+export function cleanArticleText(raw: string): string {
   let text = stripHtml(raw);
   for (const pattern of BOILERPLATE_PATTERNS) {
     text = text.replace(pattern, ' ');
   }
-  // Collapse extra whitespace introduced by removals
-  text = text.replace(/\s{3,}/g, '\n\n').trim();
+  // Tidy whitespace introduced by removals — horizontal runs collapse to a
+  // single space, newline runs cap at one blank line (paragraph break)
+  text = text
+    .replace(/[^\S\n]{2,}/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
   // Deduplicate sentences
   return deduplicateSentences(text);
 }

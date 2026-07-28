@@ -44,6 +44,7 @@ export default function TrendEnginePage() {
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [settingsError, setSettingsError] = useState(false);
   const [lastRun, setLastRun] = useState<string | null>(null);
   const [lastCronAttempt, setLastCronAttempt] = useState<string | null>(null);
   const [lastCronResult, setLastCronResult] = useState<{ status: string; msg: string; at: string } | null>(null);
@@ -54,10 +55,12 @@ export default function TrendEnginePage() {
   // ── Trend Engine state ──────────────────────────────────────────────────────
   const [status, setStatus] = useState<TrendStatus>('idle');
   const [articles, setArticles] = useState<ParsedArticle[]>([]);
+  const [sourceCount, setSourceCount] = useState(13);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [creating, setCreating] = useState(false);
   const [result, setResult] = useState<CreateResult | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [filterTier, setFilterTier] = useState<'all' | '1' | '2'>('all');
 
   // ── Load article gen settings on mount ─────────────────────────────────────
@@ -83,14 +86,21 @@ export default function TrendEnginePage() {
   async function saveSettings() {
     setSavingSettings(true);
     setSettingsSaved(false);
+    setSettingsError(false);
     try {
-      await fetch('/api/admin/settings', {
+      const res = await fetch('/api/admin/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ article_gen_mode: genMode, article_gen_frequency: genFreq, article_gen_auto_approve: String(autoApprove) }),
       });
+      if (!res.ok) {
+        setSettingsError(true);
+        return;
+      }
       setSettingsSaved(true);
       setTimeout(() => setSettingsSaved(false), 3000);
+    } catch {
+      setSettingsError(true);
     } finally {
       setSavingSettings(false);
     }
@@ -133,6 +143,7 @@ export default function TrendEnginePage() {
       if (!res.ok) throw new Error('Fetch failed');
       const data = await res.json();
       setArticles(data.articles ?? []);
+      if (Array.isArray(data.sources) && data.sources.length > 0) setSourceCount(data.sources.length);
       setStatus('loaded');
     } catch {
       setStatus('error');
@@ -144,6 +155,7 @@ export default function TrendEnginePage() {
     if (toCreate.length === 0) return;
     setCreating(true);
     setResult(null);
+    setCreateError(null);
     try {
       const res = await fetch('/api/admin/trend-engine', {
         method: 'POST',
@@ -151,6 +163,10 @@ export default function TrendEnginePage() {
         body: JSON.stringify({ articles: toCreate }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        setCreateError(data.error ?? 'Failed to create drafts — please try again.');
+        return;
+      }
       setResult(data);
       if (data.created?.length) {
         const createdSlugs = new Set<string>(data.created);
@@ -163,6 +179,8 @@ export default function TrendEnginePage() {
           return next;
         });
       }
+    } catch {
+      setCreateError('Network error — please try again.');
     } finally {
       setCreating(false);
     }
@@ -190,7 +208,9 @@ export default function TrendEnginePage() {
   const filtered = articles.filter(a =>
     filterTier === 'all' ? true : String(a.sourceTier) === filterTier
   );
-  const selectedCount = filtered.filter(a => selected.has(a.url)).length;
+  // Count ALL selected articles — createDrafts submits every selected article,
+  // not just the ones visible under the current tier filter.
+  const selectedCount = selected.size;
 
   return (
     <div style={{ padding: '2rem', maxWidth: 1100 }}>
@@ -382,7 +402,9 @@ export default function TrendEnginePage() {
                   ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Saving…</>
                   : settingsSaved
                     ? <><CheckCircle2 size={13} color="var(--emerald)" /> Saved</>
-                    : 'Save settings'}
+                    : settingsError
+                      ? <><AlertCircle size={13} color="var(--rose)" /> Save failed — retry</>
+                      : 'Save settings'}
               </button>
             )}
 
@@ -482,7 +504,7 @@ export default function TrendEnginePage() {
               Trend Engine
             </h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', maxWidth: 520 }}>
-              Fetches latest articles from {14} authoritative AI sources, scores them by tier, recency and completeness, and auto-drafts curated pages with all fields pre-filled.
+              Fetches latest articles from {sourceCount} authoritative AI sources, scores them by tier, recency and completeness, and auto-drafts curated pages with all fields pre-filled.
             </p>
           </div>
           <button
@@ -565,6 +587,18 @@ export default function TrendEnginePage() {
                 </button>
               </div>
             </div>
+
+            {/* Create error banner */}
+            {createError && (
+              <div className="card" style={{
+                padding: '1rem 1.25rem', marginBottom: '1.25rem',
+                borderLeft: '3px solid var(--rose)',
+                display: 'flex', alignItems: 'flex-start', gap: '0.5rem',
+              }}>
+                <AlertCircle size={15} color="var(--rose)" style={{ flexShrink: 0, marginTop: 1 }} />
+                <p style={{ fontSize: '0.875rem', color: 'var(--rose)', fontWeight: 600 }}>{createError}</p>
+              </div>
+            )}
 
             {/* Result banner */}
             {result && (
@@ -690,7 +724,7 @@ export default function TrendEnginePage() {
             <Rss size={44} style={{ color: 'var(--text-muted)', margin: '0 auto 1.25rem' }} />
             <p style={{ fontWeight: 700, fontSize: '1.0625rem', marginBottom: '0.5rem' }}>Ready to fetch</p>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', maxWidth: 380, margin: '0 auto 1.5rem' }}>
-              Click <strong>Fetch latest articles</strong> to pull from 14 authoritative AI sources. Complete article text will be retrieved and all curated page fields auto-filled.
+              Click <strong>Fetch latest articles</strong> to pull from {sourceCount} authoritative AI sources. Complete article text will be retrieved and all curated page fields auto-filled.
             </p>
             <button className="btn btn-primary" onClick={fetchArticles} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
               <RefreshCw size={15} /> Fetch latest articles
