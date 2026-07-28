@@ -34,7 +34,7 @@ const FEED_TIMEOUT = 10_000;
 const ARTICLE_TIMEOUT = 8_000;
 const MIN_COMPLETE_CHARS = 800;
 const MIN_ACCEPTABLE_CHARS = 300;
-const MAX_AGE_DAYS = 14; // Hard cutoff — articles older than this are never surfaced
+export const MAX_AGE_HOURS = 24; // Hard cutoff — articles older than this are never surfaced
 
 const AI_KEYWORDS =
   /\b(ai|artificial intelligence|machine learning|deep learning|llm|large language model|neural network|gpt|claude|gemini|llama|transformer|generative ai|chatbot|nlp|computer vision|reinforcement learning|foundation model|agent|agi|openai|anthropic|deepmind|mistral|copilot|diffusion model)\b/i;
@@ -100,9 +100,13 @@ function getLinkAttr(xml: string): string {
   return m ? m[1] : '';
 }
 
-function parseDate(s: string): string {
-  if (!s) return new Date().toISOString();
-  try { return new Date(s).toISOString(); } catch { return new Date().toISOString(); }
+/**
+ * Returns null (never "now") when the date is missing or unparseable —
+ * callers must skip the article rather than treat it as fresh.
+ */
+export function parseDate(s: string): string | null {
+  if (!s) return null;
+  try { return new Date(s).toISOString(); } catch { return null; }
 }
 
 function splitSegments(xml: string, tag: string): string[] {
@@ -243,6 +247,15 @@ async function fetchArticleText(url: string): Promise<string> {
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
 
+/**
+ * Hours between publishedAt and now, clamped to >= 0 so future-dated /
+ * clock-skew items don't produce a negative age. `nowMs` is injectable for
+ * tests; production call sites omit it and get the real clock.
+ */
+export function ageHoursClamped(publishedAt: string, nowMs: number = Date.now()): number {
+  return Math.max(0, (nowMs - new Date(publishedAt).getTime()) / 3_600_000);
+}
+
 function scoreArticle(
   tier: 1 | 2 | 3,
   isComplete: boolean,
@@ -251,10 +264,11 @@ function scoreArticle(
 ): number {
   let s = tier === 1 ? 30 : tier === 2 ? 20 : 10;
   if (isComplete) s += 20;
-  const ageDays = (Date.now() - new Date(publishedAt).getTime()) / 86_400_000;
-  if (ageDays <= 1) s += 15;
-  else if (ageDays <= 3) s += 10;
-  else if (ageDays <= 7) s += 5;
+  // Recency tiers re-scaled for the 24h hard cutoff — anything older never
+  // reaches this function (see the MAX_AGE_HOURS check in parseFeed).
+  const ageHours = ageHoursClamped(publishedAt);
+  if (ageHours <= 6) s += 15;
+  else if (ageHours <= 24) s += 10;
   if (AI_KEYWORDS.test(title)) s += 10;
   return s;
 }
@@ -300,10 +314,13 @@ async function parseFeed(source: RssSource): Promise<ParsedArticle[]> {
       ? (getFirstTag(seg, 'published') || getFirstTag(seg, 'updated'))
       : (getFirstTag(seg, 'pubDate') || getFirstTag(seg, 'date'));
     const publishedAt = parseDate(pubRaw);
+    // No parseable date — never treat as fresh, skip rather than default to "now".
+    if (publishedAt === null) continue;
 
-    // Hard age cutoff — skip anything older than MAX_AGE_DAYS
-    const ageDays = (Date.now() - new Date(publishedAt).getTime()) / 86_400_000;
-    if (ageDays > MAX_AGE_DAYS) continue;
+    // Hard age cutoff — skip anything older than MAX_AGE_HOURS. Clamp
+    // negative ages (future-dated / clock-skew items) to 0 instead of
+    // letting them pass as an unbounded "fresher than fresh" value.
+    if (ageHoursClamped(publishedAt) > MAX_AGE_HOURS) continue;
 
     // Get whatever content the feed provides
     const rawContent =
