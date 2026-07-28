@@ -1,39 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyBearerToken } from '@/lib/auth';
 import { getDB } from '@/lib/db';
-
-/**
- * Derive a logo URL for a provider domain.
- * Tries Clearbit Logo API first, falls back to Google Favicon API.
- */
-function deriveLogoUrl(websiteUrl: string | null): string | null {
-  if (!websiteUrl) return null;
-
-  try {
-    const url = new URL(websiteUrl);
-    const domain = url.hostname.replace(/^www\./, '');
-
-    // Use Clearbit Logo API as primary (serves actual logos, not just favicons)
-    return `https://logo.clearbit.com/${domain}`;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Derive an alternative logo URL using Google Favicon API.
- */
-function deriveFallbackLogoUrl(websiteUrl: string | null): string | null {
-  if (!websiteUrl) return null;
-
-  try {
-    const url = new URL(websiteUrl);
-    const domain = url.hostname.replace(/^www\./, '');
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-  } catch {
-    return null;
-  }
-}
+import { deriveProviderFallbackLogoUrl, deriveProviderLogoUrl } from '@/lib/provider-logo';
 
 interface ProviderRow {
   id: string;
@@ -81,7 +49,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const logoUrl = deriveLogoUrl(p.website_url);
+      const logoUrl = deriveProviderLogoUrl(p.website_url);
       if (!logoUrl) {
         skipped.push({ slug: p.slug, reason: 'No website_url or unparseable URL' });
         continue;
@@ -126,8 +94,8 @@ export async function GET(request: NextRequest) {
 
     const providers = result.results.map(p => ({
       ...p,
-      derived: deriveLogoUrl(p.website_url),
-      fallback: deriveFallbackLogoUrl(p.website_url),
+      derived: deriveProviderLogoUrl(p.website_url),
+      fallback: deriveProviderFallbackLogoUrl(p.website_url),
     }));
 
     return NextResponse.json({ providers });

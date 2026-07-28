@@ -11,6 +11,7 @@ import { isValidSlug } from '@/lib/security';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 import { defaultSocialImageUrl } from '@/lib/social-meta';
+import { providerLogoCandidates } from '@/lib/provider-logo';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -109,7 +110,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <section style={{ background: 'transparent', padding: '3.5rem 0 2.5rem', color: 'white' }}>
           <div className="container">
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', flexWrap: 'wrap' }}>
-              <ProviderLogo slug={provider.slug} name={provider.name} size={72} />
+              <ProviderLogo slug={provider.slug} name={provider.name} logoUrls={providerLogoCandidates(provider)} size={72} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                   <h1 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 800, color: 'white' }}>

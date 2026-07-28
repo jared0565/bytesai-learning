@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer';
 import ProviderLogo from '@/components/ui/ProviderLogo';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
+import { providerLogoCandidates } from '@/lib/provider-logo';
 
 export const metadata: Metadata = {
   title: 'AI Course Providers',
@@ -89,7 +90,7 @@ function ProviderCard({ provider, courseCount }: { provider: import('@/lib/db').
       background: isAlison ? 'rgba(245, 158, 11, 0.03)' : undefined
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <ProviderLogo slug={provider.slug} name={provider.name} size={52} />
+        <ProviderLogo slug={provider.slug} name={provider.name} logoUrls={providerLogoCandidates(provider)} size={52} />
         {isAlison && <span className="badge badge-alison text-xs">Partner</span>}
       </div>
 
